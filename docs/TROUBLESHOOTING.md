@@ -84,6 +84,37 @@ Subagent depth limit reached (1). Increase "experimental.subagent_depth" to allo
 
 不要用“代写专家报告”绕过限制；深度不足时应报 `BLOCKED`。
 
+### 3.2 常用版本命令被拒绝（Permission denied: shell）
+
+**现象**：
+
+```text
+Write-Output "--- java ---"; java -version 2>&1; mvn -version 2>&1; ...
+Permission denied: shell
+```
+
+**原因**：当前 agent 是只读角色（Chief/PM/UX/Architect/Reviewer/Security），shell 默认拒绝。  
+Chief 从 `1.1.1` 起允许一组只读工具链版本检查；PM/UX/Architect 仍按设计不跑 shell。
+
+**处理**：
+
+1. 确认版本 ≥ `1.1.1`：
+
+```bash
+node scripts/version.mjs --update
+```
+
+2. 如果仍在只读角色里被拒：
+   - 切到 `ai-team/engineer` 或 `ai-team/devops-engineer` 执行；
+   - 或让 Chief 调度 engineer 做工具链诊断；
+   - 或在源 agent 的 `permissions` 里加精确 allow，然后 `publish`。
+
+3. `java -version` 输出到 stderr，PowerShell 可能显示 `NativeCommandError`；这不是权限失败。需要干净输出时：
+
+```powershell
+cmd /c "java -version 2>&1"
+```
+
 ## 4. 一直弹权限确认
 
 原因：规则没匹配到，默认 `ask`。

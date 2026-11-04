@@ -3,6 +3,19 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.1.1] - 2026-11-04
+
+### Fixed
+
+- Chief no longer rejects common read-only toolchain diagnostics. Added a narrow shell allowlist for `Write-Output`, `Write-Host`, and version/doctor commands for Java, Maven, Node, npm, pnpm, yarn, Bun, Python, pip, Go, Cargo, .NET, Docker, kubectl, Terraform, and Git.
+- Chief's prompt now states that read-only version checks are allowed, while build/test/install/deploy commands must still be delegated to the owning engineer/QA/DevOps role.
+- Documented the permission model and the `Permission denied: shell` diagnosis in README and TROUBLESHOOTING.
+
+### Verified
+
+- Ran the exact compound command on the Chief permission profile: all six version checks completed.
+- Observed environment: Java 1.8.0_421, Maven 3.9.15, Node v24.15.0, npm 11.12.1, Docker 29.9.2, Git 2.45.1.
+
 ## [1.1.0] - 2026-11-04
 
 ### Added

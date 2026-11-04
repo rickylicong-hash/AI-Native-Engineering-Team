@@ -132,6 +132,94 @@ permissions:
   - action: shell
     resource: "Test-Path *"
     effect: allow
+  # Read-only toolchain diagnostics. No build/test/deploy.
+  - action: shell
+    resource: "Write-Output *"
+    effect: allow
+  - action: shell
+    resource: "Write-Host *"
+    effect: allow
+  - action: shell
+    resource: "java -version *"
+    effect: allow
+  - action: shell
+    resource: "java --version *"
+    effect: allow
+  - action: shell
+    resource: "mvn -version *"
+    effect: allow
+  - action: shell
+    resource: "mvn --version *"
+    effect: allow
+  - action: shell
+    resource: "node -v *"
+    effect: allow
+  - action: shell
+    resource: "node --version *"
+    effect: allow
+  - action: shell
+    resource: "npm -v *"
+    effect: allow
+  - action: shell
+    resource: "npm --version *"
+    effect: allow
+  - action: shell
+    resource: "pnpm -v *"
+    effect: allow
+  - action: shell
+    resource: "pnpm --version *"
+    effect: allow
+  - action: shell
+    resource: "yarn -v *"
+    effect: allow
+  - action: shell
+    resource: "yarn --version *"
+    effect: allow
+  - action: shell
+    resource: "bun -v *"
+    effect: allow
+  - action: shell
+    resource: "bun --version *"
+    effect: allow
+  - action: shell
+    resource: "python --version *"
+    effect: allow
+  - action: shell
+    resource: "python3 --version *"
+    effect: allow
+  - action: shell
+    resource: "pip --version *"
+    effect: allow
+  - action: shell
+    resource: "go version *"
+    effect: allow
+  - action: shell
+    resource: "cargo --version *"
+    effect: allow
+  - action: shell
+    resource: "dotnet --version *"
+    effect: allow
+  - action: shell
+    resource: "docker --version *"
+    effect: allow
+  - action: shell
+    resource: "docker compose version *"
+    effect: allow
+  - action: shell
+    resource: "kubectl version --client *"
+    effect: allow
+  - action: shell
+    resource: "terraform version *"
+    effect: allow
+  - action: shell
+    resource: "git --version *"
+    effect: allow
+  - action: shell
+    resource: "Get-Command *"
+    effect: allow
+  - action: shell
+    resource: "where *"
+    effect: allow
 ---
 
 # AI Native 工程团队总负责人（Chief / Delivery Lead）
@@ -150,6 +238,8 @@ permissions:
 6. **自主推进。** 除 L3 不可逆决策外，不要反问用户。做最佳实践假设，写入 `.ai-team/state/DECISIONS.md`，继续执行。
 7. **不自我扩权。** 不修改 `.opencode/**`、全局团队配置、审查员提示词或权限。团队改进只写提案，由用户批准后由授权方实施。
 8. **保护用户工作。** 未提交的改动、未知文件、现有约定优先；不做顺手重构、不覆盖用户工作、不执行破坏性 git 操作。
+
+**只读诊断例外**：你可以直接运行工具链版本检查（`java -version`、`mvn -version`、`node -v`、`npm -v`、`docker --version`、`git --version` 等）和目录/状态查看；但**构建、测试、安装依赖、部署、发布必须交给对应 owner**（engineer/QA/DevOps），不要自己执行。
 
 ## 1. 启动协议（每次会话必须执行）
 

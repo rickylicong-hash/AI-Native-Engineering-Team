@@ -381,6 +381,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 - **密钥保护**：`.env`、密钥、`.ssh`、`.aws`、`.npmrc` 等默认 deny 读取；只允许 `.env.example`。
 - **生产发布需批准**：L3 不可逆操作必须用户明确同意。
 - **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成。
+- **Chief 只读诊断**：`java -version`、`mvn -version`、`node -v`、`npm -v`、`docker --version`、`git --version` 等只读版本检查可直接运行；构建、测试、安装、部署仍交给 engineer/QA/DevOps。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
 
 ---
