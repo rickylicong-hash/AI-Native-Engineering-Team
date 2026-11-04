@@ -1,0 +1,7 @@
+# Normalize line endings so package hashes stay stable across platforms.
+* text=auto eol=lf
+
+# Windows scripts may use CRLF; they are not part of the package content hash.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf

@@ -1,0 +1,395 @@
+---
+name: AI Team Workflow
+description: AI Native 工程团队的共享操作系统：Track 分类、G0–G8 门禁、.ai-team 状态与证据协议、任务 brief、交接与复盘。Chief 与所有成员在开始任务前加载。
+---
+
+# AI Team Workflow
+
+这是团队的共享流程与记忆协议。任何角色开始任务前先读本技能；Chief 在每次会话启动时加载。
+
+## 1. 一条指令如何变成交付
+
+```text
+用户一句话
+  → Chief intake（Track 分类 / 约束 / 成功指标 / 假设）
+  → 产品定义（PRD / AC）
+  → 体验与架构（UX / ADR / 契约 / 威胁模型 / 测试策略）
+  → 任务 DAG（owner / 依赖 / 验收 / 证据）
+  → 实现（engineer，多实例按模块并行）
+  → 代码审查 + 安全审计（并行，只出报告）
+  → QA 独立验证（覆盖矩阵 / 缺陷 / 回归）
+  → 发布（CI / 部署 / 冒烟 / 回滚 / 监控）
+  → 文档 + 复盘 + HANDOFF
+```
+
+Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定。
+
+## 2. Track 分类
+
+| Track | 何时用 | 最小流程 | 最小产物 |
+|---|---|---|---|
+| **T0 Spike** | 调研、可行性、原型、回答“能不能” | Intake → Investigate → Peer Review → Report | `PROJECT.md`、调研 memo、结论/风险 |
+| **T1 Patch** | Bug、小改动、单模块优化 | Intake → Fix → Code Review → Test → Done | `TASK-*`、diff、审查、测试证据 |
+| **T2 Feature** | 现有产品加功能 | Intake → Product-lite → Design-lite → Build → Review → Test → Security check | PRD-lite、设计 note、任务、审查、测试 |
+| **T3 Product** | 从零做产品/MVP/重大子系统 | G0–G8 | 全套 |
+| **T4 Critical** | 生产关键/合规/多租户/支付/医疗/规模化 | G0–G8 + 威胁建模/合规/性能/容灾/UAT/灰度 | 全套 + 专项证据 |
+
+判定不确定时取较低 Track；发现证据不足再升级。T0 不改生产代码。
+
+## 3. 门禁 G0–G8
+
+### G0 Intake
+
+**Owner:** Chief
+
+出口：
+
+- 用户原话、目标、Track、范围/非范围；
+- 成功指标（可度量）；
+- 约束（技术/合规/预算/时间/环境）；
+- 假设与初始风险；
+- 写入 `state/PROJECT.md`。
+
+### G1 Product
+
+**Owner:** Product Manager
+
+出口：
+
+- PRD：问题、用户、场景、FR/NFR（ID）、验收、优先级、开放问题；
+- 用户故事 + Given/When/Then；
+- 范围/非范围；
+- 追踪矩阵初稿；
+- Chief 接受（不是产品经理自批）。
+
+### G2 Design
+
+**Owner:** UX + System Architect
+
+出口：
+
+- UX：流程、IA、UI 规格、状态、设计 token、可访问性（如涉及界面）；
+- 架构：模块边界、数据模型、API/事件契约、失败模式、部署拓扑；
+- ADR：关键取舍；
+- 安全：威胁模型草案、信任边界；
+- QA：测试策略、可测试性评审；
+- 跨角色评审结论：通过/修改后通过/不通过。
+
+### G3 Plan
+
+**Owner:** Chief
+
+出口：
+
+- 任务 DAG：`TASK-*`、owner、依赖、验收、证据要求；
+- 每个 FR/NFR 至少映射到一个任务/测试；
+- 文件所有权切分（并行任务不冲突）；
+- 风险/阻塞/回退计划；
+- 写入 `state/TASKS.md`。
+
+### G4 Build
+
+**Owner:** Engineer
+
+出口：
+
+- 代码 + 单元测试；
+- lint/typecheck/build 通过；
+- 契约一致、迁移安全；
+- 无越权改动；
+- 每个任务有证据（命令/退出码/输出）；
+- 代码审查请求已提交。
+
+### G5 Verify
+
+**Owner:** Code Reviewer + QA
+
+出口：
+
+- 代码审查：通过/修改后通过/不通过；P0/P1 关闭；
+- QA：覆盖矩阵、测试报告、缺陷关闭/接受；
+- E2E/性能/可访问性按 Track；
+- 无未关闭阻断缺陷；
+- 证据齐全。
+
+### G6 Secure
+
+**Owner:** Security Auditor
+
+出口：
+
+- 威胁模型更新；
+- 设计/代码/依赖/密钥/IaC/容器/发布安全检查；
+- 无未关闭 Critical/High；
+- Medium 有修复计划或用户书面接受；
+- 供应链（lockfile/SBOM/许可证）结论。
+
+### G7 Release
+
+**Owner:** DevOps
+
+出口：
+
+- CI 全绿；
+- 部署/升级/回滚命令可执行；
+- staging 冒烟通过；
+- 监控/告警/runbook 就绪；
+- 数据迁移/备份/回滚验证；
+- 生产发布有用户明确批准（L3）；
+- `REL-*` 记录。
+
+### G8 Operate & Retro
+
+**Owner:** Chief
+
+出口：
+
+- 发布后健康检查/监控窗口；
+- 事故/异常处理；
+- 复盘（`team/GROWTH.md`）；
+- 遗留项进入 backlog/风险；
+- `HANDOFF.md` 更新。
+
+## 4. 目录与产物
+
+```text
+.ai-team/
+  README.md
+  state/
+    PROJECT.md
+    STATUS.md
+    TASKS.md
+    DECISIONS.md
+    RISKS.md
+    HANDOFF.md
+    RUN_LOG.md
+  product/
+    PRD.md
+    USER-STORIES.md
+    ACCEPTANCE.md
+    TRACEABILITY.md
+    CHANGELOG.md
+  design/
+    ux/
+      UX-SPEC.md
+      UI-SPEC.md
+      DESIGN-SYSTEM.md
+      A11Y.md
+      PROTOTYPE.md
+    architecture/
+      ARCHITECTURE.md
+      DATA-MODEL.md
+      API-CONTRACTS.md
+      SECURITY-DESIGN.md
+      FAILURE-MODES.md
+      OBSERVABILITY.md
+      DEPLOYMENT.md
+      CAPACITY.md
+    adr/
+      ADR-0001-<slug>.md
+  tasks/
+    TASK-0001.md
+  work/
+    TASK-0001-EVIDENCE.md
+  reviews/
+    REV-0001-TASK-0001.md
+  security/
+    THREAT-MODEL.md
+    SEC-0001-<scope>.md
+  qa/
+    TEST-STRATEGY.md
+    TEST-PLAN.md
+    TEST-CASES.md
+    TRACEABILITY.md
+    TEST-REPORT.md
+    DEFECTS.md
+  release/
+    RELEASE-PLAN.md
+    DEPLOY.md
+    ROLLBACK.md
+    RUNBOOK.md
+    RELEASE-NOTES.md
+  docs/
+    DOCS-PLAN.md
+    DOCS-REVIEW.md
+  team/
+    GROWTH.md
+```
+
+不是每个 Track 都创建全部文件；按需创建，避免空文件。
+
+## 5. 状态协议
+
+### 5.1 PROJECT.md frontmatter
+
+```yaml
+---
+track: T3
+stage: G4
+updated: 2026-01-01
+owner: ai-team/chief
+---
+```
+
+### 5.2 STATUS.md 格式
+
+```markdown
+# Status
+
+- Track: T3
+- Stage: G4 Build
+- Overall: 45%
+- Last gate: G3 Plan — 通过（2026-01-01）
+
+## In progress
+| TASK | Owner | 状态 | 证据 |
+|---|---|---|---|
+| TASK-0001 | engineer | doing | work/TASK-0001-EVIDENCE.md |
+
+## Done
+...
+
+## Blocked / Risks
+...
+
+## Next 3
+1. ...
+```
+
+### 5.3 TASKS.md 格式
+
+```markdown
+| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |
+|---|---|---|---|---|---|---|
+| TASK-0001 | ... | engineer | TASK-0000 | todo/doing/review/qa/done/blocked | AC-1.. | path |
+```
+
+### 5.4 ID 规范
+
+- `TASK-0001` 任务
+- `DEC-0001` 决策
+- `RISK-0001` 风险
+- `REV-0001` 代码审查
+- `SEC-0001` 安全审查
+- `DEF-0001` 缺陷
+- `REL-0001` 发布
+- `ADR-0001` 架构决策
+
+### 5.5 HANDOFF.md 格式
+
+```markdown
+# Handoff
+
+- 时间：
+- Track/Stage：
+- 目标：
+- 已完成：
+- 未完成：
+- 关键决策：
+- 阻塞/风险：
+- 下一条指令：
+- 必读文件：
+```
+
+## 6. 任务 brief 标准
+
+每个 subagent 调用必须包含：
+
+```text
+角色：
+任务 ID：
+Track / 阶段：
+目标：
+背景与输入：
+所有权：
+约束：
+验收标准：
+必须执行：
+证据要求：
+禁止：
+回报格式：
+```
+
+缺任何一项，Chief 先补 brief；角色发现 brief 不合格，回报 `BLOCKED: brief incomplete`。
+
+## 7. 证据标准
+
+每个任务证据写入 `.ai-team/work/TASK-xxxx-EVIDENCE.md`：
+
+```markdown
+# TASK-0001 Evidence
+
+## 变更
+- 文件：
+- 行为：
+
+## 命令与结果
+| 命令 | 退出码 | 关键输出 |
+|---|---|---|
+| `npm test` | 0 | 42 passed |
+
+## 验收对照
+| AC | 结果 | 证据 |
+|---|---|---|
+
+## 未决/风险
+- ...
+```
+
+规则：
+
+- 命令必须是实际执行的完整命令；不能写“运行测试”；
+- 退出码必须真实；失败就是失败；
+- 输出摘要保留关键行，不粘贴整屏；
+- 截图可补充，但不能替代命令；
+- 环境不允许时写 `BLOCKED` + 原始错误 + 影响 + 建议。
+
+## 8. 角色交接契约
+
+| 从 → 到 | 必须交付 | 接收方检查 |
+|---|---|---|
+| Chief → PM | 目标、Track、约束、用户原话、成功指标 | 是否可产品化 |
+| PM → UX | PRD、旅程、优先级、内容/状态 | 是否覆盖异常/权限 |
+| PM → Architect | PRD、NFR、约束、数据要求 | 是否可实现/可度量 |
+| UX → Engineer | UI-SPEC、token、状态、a11y、验收清单 | 是否可实现 |
+| Architect → Engineer | 架构、契约、数据模型、失败模式 | 是否无歧义 |
+| Engineer → Reviewer | diff、证据、风险、审查重点 | 是否可复现 |
+| Reviewer → Engineer | P0/P1/P2/P3 + 关闭条件 | 是否可执行 |
+| Engineer → QA | 可运行版本、测试入口、已知限制 | 是否可独立验证 |
+| QA → DevOps | 测试报告、放行结论、环境要求 | 是否可发布 |
+| Security → Chief | 放行结论、阻断项、风险接受 | 是否可发布 |
+| DevOps → Chief | 部署证据、健康检查、回滚结论 | 是否可运维 |
+| All → Writer | 事实、命令、截图、限制 | 是否可验证 |
+
+## 9. 反模式
+
+- 先写代码再补需求/设计；
+- 用“行业最佳实践”代替验收标准；
+- 审查者替 owner 修代码；
+- QA 只跑 happy path；
+- 安全只跑工具不看攻击路径；
+- 部署没有回滚；
+- 文档命令未验证；
+- 状态只存在聊天里；
+- 为了流程而流程（T1 强行全套 PRD）；
+- 为了速度跳过审查/测试；
+- 多个 agent 同时改同一文件；
+- 把“没有报错”当“通过”。
+
+## 10. 模板
+
+本技能 `templates/` 下提供：
+
+- `PROJECT.md`
+- `STATUS.md`
+- `TASKS.md`
+- `HANDOFF.md`
+- `PRD.md`
+- `ARCHITECTURE.md`
+- `ADR.md`
+- `REVIEW.md`
+- `TEST-REPORT.md`
+- `SECURITY-REPORT.md`
+- `RELEASE-PLAN.md`
+
+使用方式：读取模板 → 复制到 `.ai-team/` 对应路径 → 填入项目事实；不要保留占位符。

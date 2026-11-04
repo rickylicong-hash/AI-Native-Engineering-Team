@@ -1,0 +1,117 @@
+{
+  "name": "AI Native Engineering Team",
+  "id": "ai-team",
+  "version": "1.1.0",
+  "description": "A stack-agnostic, globally installable AI engineering team for OpenCode V2. One instruction drives product, UX, architecture, implementation, review, testing, security, deployment and documentation.",
+  "default_agent": "ai-team/chief",
+  "entry_command": "/ai <goal>",
+  "agents": [
+    {
+      "id": "ai-team/chief",
+      "file": "agents/ai-team/chief.md",
+      "mode": "primary",
+      "role": "Delivery Lead / Orchestrator",
+      "owns": [".ai-team/state/**", ".ai-team/tasks/**", ".ai-team/team/**", ".ai-team/README.md"]
+    },
+    {
+      "id": "ai-team/product-manager",
+      "file": "agents/ai-team/product-manager.md",
+      "mode": "subagent",
+      "role": "Product Manager",
+      "owns": [".ai-team/product/**"]
+    },
+    {
+      "id": "ai-team/ux-designer",
+      "file": "agents/ai-team/ux-designer.md",
+      "mode": "subagent",
+      "role": "UX / UI Designer",
+      "owns": [".ai-team/design/ux/**", "design/**", "mockups/**", "prototypes/**"]
+    },
+    {
+      "id": "ai-team/system-architect",
+      "file": "agents/ai-team/system-architect.md",
+      "mode": "subagent",
+      "role": "System Architect",
+      "owns": [".ai-team/design/architecture/**", ".ai-team/design/adr/**", "docs/adr/**"]
+    },
+    {
+      "id": "ai-team/engineer",
+      "file": "agents/ai-team/engineer.md",
+      "mode": "subagent",
+      "role": "Software Engineer",
+      "owns": ["source code", "unit tests", ".ai-team/work/**"]
+    },
+    {
+      "id": "ai-team/code-reviewer",
+      "file": "agents/ai-team/code-reviewer.md",
+      "mode": "subagent",
+      "role": "Code Reviewer",
+      "owns": [".ai-team/reviews/**"]
+    },
+    {
+      "id": "ai-team/qa-engineer",
+      "file": "agents/ai-team/qa-engineer.md",
+      "mode": "subagent",
+      "role": "QA Engineer",
+      "owns": ["tests/**", "test/**", "e2e/**", "qa/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", ".ai-team/qa/**"]
+    },
+    {
+      "id": "ai-team/security-auditor",
+      "file": "agents/ai-team/security-auditor.md",
+      "mode": "subagent",
+      "role": "Security Auditor",
+      "owns": [".ai-team/security/**"]
+    },
+    {
+      "id": "ai-team/devops-engineer",
+      "file": "agents/ai-team/devops-engineer.md",
+      "mode": "subagent",
+      "role": "DevOps / Release Engineer",
+      "owns": ["deploy/**", "ops/**", "infra/**", "terraform/**", "k8s/**", "helm/**", "docker/**", ".github/**", "Dockerfile*", "docker-compose*", ".ai-team/release/**"]
+    },
+    {
+      "id": "ai-team/technical-writer",
+      "file": "agents/ai-team/technical-writer.md",
+      "mode": "subagent",
+      "role": "Technical Writer",
+      "owns": ["docs/**", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", ".ai-team/docs/**"]
+    }
+  ],
+  "commands": [
+    { "id": "ai", "file": "commands/ai.md", "description": "One instruction starts the full lifecycle" },
+    { "id": "ai-plan", "file": "commands/ai-plan.md", "description": "Product, UX, architecture and task plan only" },
+    { "id": "ai-design", "file": "commands/ai-design.md", "description": "UX, architecture and contracts only" },
+    { "id": "ai-review", "file": "commands/ai-review.md", "description": "Independent code review and security audit" },
+    { "id": "ai-test", "file": "commands/ai-test.md", "description": "Test strategy, execution, defects and report" },
+    { "id": "ai-deploy", "file": "commands/ai-deploy.md", "description": "Release preflight, deploy, smoke and rollback" },
+    { "id": "ai-status", "file": "commands/ai-status.md", "description": "Read-only project status" },
+    { "id": "ai-resume", "file": "commands/ai-resume.md", "description": "Resume from HANDOFF" },
+    { "id": "ai-hotfix", "file": "commands/ai-hotfix.md", "description": "T1 fast fix with regression" },
+    { "id": "ai-retro", "file": "commands/ai-retro.md", "description": "Retrospective and growth proposals" },
+    { "id": "ai-docs", "file": "commands/ai-docs.md", "description": "README, API, runbooks and changelog" }
+  ],
+  "skills": [
+    { "id": "ai-team-workflow", "path": "skills/ai-team-workflow/SKILL.md", "purpose": "Tracks, gates, state, evidence, handoff, templates" },
+    { "id": "ai-team-standards", "path": "skills/ai-team-standards/SKILL.md", "purpose": "Engineering standards and quality gates" },
+    { "id": "ai-team-release", "path": "skills/ai-team-release/SKILL.md", "purpose": "One-click deployment, CI, observability, rollback" },
+    { "id": "ai-team-ai-native", "path": "skills/ai-team-ai-native/SKILL.md", "purpose": "Evals, guardrails, RAG, agents, cost, privacy" }
+  ],
+  "tracks": [
+    { "id": "T0", "name": "Spike", "stages": ["G0", "Investigate", "Review", "Report"] },
+    { "id": "T1", "name": "Patch", "stages": ["G0", "Fix", "G5", "Done"] },
+    { "id": "T2", "name": "Feature", "stages": ["G0", "G1-lite", "G2-lite", "G4", "G5", "Security check"] },
+    { "id": "T3", "name": "Product", "stages": ["G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8"] },
+    { "id": "T4", "name": "Critical", "stages": ["G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "Compliance", "DR"] }
+  ],
+  "compatibility": {
+    "opencode": "V2",
+    "config": "https://opencode.ai/config.json",
+    "platforms": ["windows", "linux", "macos"]
+  },
+  "versionManagement": {
+    "marker": "ai-team-install.json",
+    "check": "node scripts/version.mjs --check",
+    "update": "node scripts/version.mjs --update",
+    "statuses": ["up-to-date", "update-available", "drift", "incomplete", "legacy", "not-installed", "installed-newer", "unknown"]
+  }
+}

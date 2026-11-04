@@ -1,0 +1,40 @@
+# Runtime / generated
+.ai-team/
+node_modules/
+coverage/
+.nyc_output/
+dist/
+build/
+out/
+.next/
+.nuxt/
+.turbo/
+.cache/
+tmp/
+temp/
+*.log
+*.tmp
+*.temp
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Installer / editor backups
+*.bak
+*.bak-*
+opencode-backups/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
