@@ -3,6 +3,19 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.1.3] - 2026-11-04
+
+### Added
+
+- System Architect and Security Auditor can now run the same read-only toolchain diagnostics as Chief: Java, Maven, Node, npm, pnpm, yarn, Bun, Python, pip, Go, Cargo, .NET, Docker, kubectl, Terraform, and Git version commands, plus `Get-Command`, `where`, and `Select-Object -ExpandProperty`.
+- This supports technology selection/compatibility checks (Architect) and CVE/runtime mapping (Security).
+
+### Security notes
+
+- No `Sort-Object`, `Measure-Object`, `Format-Table`, `Format-List`, or `Out-String` was added to these read-only roles; only `Select-Object -ExpandProperty` is allowed.
+- No external-directory read, edit, build, test, install, or deploy permission was added.
+- PM, UX, and Code Reviewer remain unchanged.
+
 ## [1.1.2] - 2026-11-04
 
 ### Fixed

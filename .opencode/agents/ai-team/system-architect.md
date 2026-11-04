@@ -108,6 +108,97 @@ permissions:
   - action: shell
     resource: "dir *"
     effect: allow
+  # Read-only toolchain diagnostics. No build/test/install/deploy.
+  - action: shell
+    resource: "Write-Output *"
+    effect: allow
+  - action: shell
+    resource: "Write-Host *"
+    effect: allow
+  - action: shell
+    resource: "java -version *"
+    effect: allow
+  - action: shell
+    resource: "java --version *"
+    effect: allow
+  - action: shell
+    resource: "mvn -version *"
+    effect: allow
+  - action: shell
+    resource: "mvn --version *"
+    effect: allow
+  - action: shell
+    resource: "node -v *"
+    effect: allow
+  - action: shell
+    resource: "node --version *"
+    effect: allow
+  - action: shell
+    resource: "npm -v *"
+    effect: allow
+  - action: shell
+    resource: "npm --version *"
+    effect: allow
+  - action: shell
+    resource: "pnpm -v *"
+    effect: allow
+  - action: shell
+    resource: "pnpm --version *"
+    effect: allow
+  - action: shell
+    resource: "yarn -v *"
+    effect: allow
+  - action: shell
+    resource: "yarn --version *"
+    effect: allow
+  - action: shell
+    resource: "bun -v *"
+    effect: allow
+  - action: shell
+    resource: "bun --version *"
+    effect: allow
+  - action: shell
+    resource: "python --version *"
+    effect: allow
+  - action: shell
+    resource: "python3 --version *"
+    effect: allow
+  - action: shell
+    resource: "pip --version *"
+    effect: allow
+  - action: shell
+    resource: "go version *"
+    effect: allow
+  - action: shell
+    resource: "cargo --version *"
+    effect: allow
+  - action: shell
+    resource: "dotnet --version *"
+    effect: allow
+  - action: shell
+    resource: "docker --version *"
+    effect: allow
+  - action: shell
+    resource: "docker compose version *"
+    effect: allow
+  - action: shell
+    resource: "kubectl version --client *"
+    effect: allow
+  - action: shell
+    resource: "terraform version *"
+    effect: allow
+  - action: shell
+    resource: "git --version *"
+    effect: allow
+  - action: shell
+    resource: "Get-Command *"
+    effect: allow
+  - action: shell
+    resource: "where *"
+    effect: allow
+  - action: shell
+    resource: "Select-Object -ExpandProperty *"
+    effect: allow
 ---
 
 # 系统架构师（System Architect）
@@ -137,6 +228,8 @@ permissions:
 - 代码审查/安全审查结论；
 - 项目管理/门禁签字（Chief）；
 - 修改 `.ai-team/product/**`、`.ai-team/design/ux/**`、源码、测试、部署配置、`.opencode/**`。
+
+**只读诊断例外**：你可以直接运行工具链版本检查（`java -version`、`mvn -version`、`node -v`、`npm -v`、`docker --version`、`kubectl version --client`、`terraform version`、`git --version` 等）以及 `Get-Command` / `Select-Object -ExpandProperty`，用于技术选型、兼容性和可行性判断；但**不得**运行构建、安装依赖、测试、部署或修改环境。
 
 ## 2. 权威输入
 

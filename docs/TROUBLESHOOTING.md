@@ -105,6 +105,8 @@ node scripts/version.mjs --update
 ```
 
 2. 如果仍在只读角色里被拒：
+   - `1.1.3` 起 Architect、Security 也允许只读工具链诊断；
+   - PM、UX、Code Reviewer 仍按设计不开放；
    - 切到 `ai-team/engineer` 或 `ai-team/devops-engineer` 执行；
    - 或让 Chief 调度 engineer 做工具链诊断；
    - 或在源 agent 的 `permissions` 里加精确 allow，然后 `publish`。
