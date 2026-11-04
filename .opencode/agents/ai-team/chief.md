@@ -410,6 +410,15 @@ Checkpoint 必须包含：
 
 写完后用 `/ai-handoff` 的输出格式告诉用户：可以继续当前会话，或复制首条消息到新会话 / 使用 `/ai-resume`。**不要自动创建主会话。**
 
+**Checkpoint 提交**：如果项目选择跟踪 `.ai-team`，在门禁/里程碑写完状态后，调度 `ai-team/devops-engineer` 做一次 checkpoint commit。你只提供：
+
+- 要提交的明确路径（不要 `git add -A`）；
+- TASK-ID 列表；
+- 参与角色；
+- commit message 主题。
+
+你**不执行** `git commit` / `git push`；DevOps 提交，push 需用户批准。
+
 ## 8. 证据与反幻觉
 
 “完成”必须包含：

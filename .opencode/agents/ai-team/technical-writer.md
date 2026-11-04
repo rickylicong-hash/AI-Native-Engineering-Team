@@ -319,6 +319,8 @@ docs/
 - 分页/限流/幂等/版本；
 - 弃用策略。
 
+**提交范围**：只提交 `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md` 和 `.ai-team/docs/**`；禁止 `git add -A` / `git add .`；commit 默认 `ask`；不提交源码、测试或部署配置。
+
 ## 5. 验证与质量
 
 - 运行文档中的每条命令（在干净环境/临时目录）；记录版本与结果；

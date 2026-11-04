@@ -38,6 +38,7 @@ flowchart TB
 | 安全审计 | A | I | I | C | C | C | C | **R** | C | I |
 | 发布/部署 | **A** | I | I | C | C | I | C | C | **R** | C |
 | 文档 | A | C | C | C | C | I | C | C | C | **R** |
+| Git commit / checkpoint | **A** | I | I | I | **R（代码）** | I | C | C | **R（checkpoint）** | **R（文档）** |
 | 复盘/成长 | **A/R** | C | C | C | C | C | C | C | C | C |
 
 A = 批准；R = 负责执行；C = 咨询；I = 知会。

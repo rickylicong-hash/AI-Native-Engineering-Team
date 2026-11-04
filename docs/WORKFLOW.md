@@ -286,6 +286,28 @@ Track / 阶段：T3 / G4
 
 用户最新指令 > 当前门禁 > `DECISIONS.md` > 旧聊天记录。冲突要记录。
 
+### 7.1 提交归属
+
+- **作者负责内容**：每个角色只写自己的 owned paths。
+- **DevOps 统一 checkpoint commit**：`.ai-team` 的精选快照由 DevOps 提交；Chief 只提供路径/TASK/角色/message。
+- **代码作者提交代码**：Engineer 提交代码 + 单测 + `.ai-team/work/TASK-*` 证据；commit 默认 `ask`。
+- **文档作者提交文档**：Writer 提交 `docs/**`、README、CHANGELOG、`.ai-team/docs`；commit 默认 `ask`。
+- **只读角色不 commit**：Chief/PM/UX/Architect/Reviewer/Security 不拿 raw git。
+- **禁止 `git add -A` / `git add .`**；只 stage 明确路径。
+- **提交前扫描密钥/凭据/客户数据**；安全报告脱敏。
+- **push 需用户批准**（L3）。
+
+Commit message：
+
+```text
+chore(ai-team): checkpoint <G?> <date>
+
+Tasks: TASK-0012, TASK-0013
+Roles: product-manager, ux-designer, qa-engineer
+Co-authored-by: ai-team/product-manager <ai-team@local>
+Co-authored-by: ai-team/qa-engineer <ai-team@local>
+```
+
 ## 8. 并行规则
 
 - 契约冻结前不并行实现；

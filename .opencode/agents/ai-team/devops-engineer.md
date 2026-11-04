@@ -315,6 +315,15 @@ permissions:
 - 分支保护/规则集、提交签名、密钥扫描、依赖扫描、CI 骨架；
 - 不重写历史、不 `git push --force`、不删除用户分支；破坏性操作需用户批准。
 
+**AI-team checkpoint commit**：
+
+- 由 Chief 提供明确路径/TASK-ID/角色/commit message；
+- 只 stage 精选 `.ai-team` 文件，禁止 `git add -A` / `git add .`；
+- 提交前扫描密钥/凭据/客户数据；安全报告必须脱敏；
+- commit 默认 `ask`，push 需用户批准；
+- 不跟踪 `work/**`、日志、截图、tmp；
+- 标准 message：`chore(ai-team): checkpoint <G?> <date>` + Tasks/Roles + `Co-authored-by`。
+
 ## 2. 权威输入
 
 1. `.ai-team/design/architecture/DEPLOYMENT.md`、`OBSERVABILITY.md`

@@ -3,6 +3,24 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.3] - 2026-11-05
+
+### Added
+
+- Commit ownership policy: authors own content, but commits are assigned by role:
+  - Engineer commits code + unit tests + `.ai-team/work/TASK-*` evidence.
+  - Technical Writer commits docs + `.ai-team/docs`.
+  - DevOps commits curated `.ai-team` checkpoint snapshots for all other roles.
+  - Chief/PM/UX/Architect/Reviewer/Security do not get raw `git commit`.
+- Chief now delegates checkpoint commits to DevOps and provides explicit paths, task IDs, roles, and message.
+- DevOps checkpoint procedure: explicit paths only, no `git add -A`, secret scan, redacted security reports, `Co-authored-by` attribution, push requires user approval.
+- Updated `docs/GIT-POLICY.md`, `docs/WORKFLOW.md`, `docs/TEAM.md` RACI, and the Chief/DevOps/Engineer/Writer/QA/Security prompts.
+
+### Notes
+
+- No permission changes: commit remains `ask`; push remains `ask`.
+- `.ai-team/work/**`, logs, screenshots, tmp and unredacted security reports are not committed.
+
 ## [1.2.2] - 2026-11-05
 
 ### Fixed

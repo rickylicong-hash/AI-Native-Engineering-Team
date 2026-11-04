@@ -57,6 +57,50 @@
 
 **Chief** 建任务/验收；**Engineer** 提供代码结构建议；**Security** 审查密钥/权限；**用户** 批准远程仓库/首次 push。
 
+## 3.1 提交归属（Commit Ownership）
+
+**默认原则：作者负责内容，DevOps 负责 `.ai-team` checkpoint 提交；代码/文档作者可以提交自己的代码/文档。**
+
+| 内容 | 作者 | 提交者 | 说明 |
+|---|---|---|---|
+| 代码 + 单元测试 + `.ai-team/work/TASK-*` 证据 | Engineer | **Engineer** | commit 默认 `ask`；只 stage 任务范围 |
+| 文档 + `CHANGELOG` + `.ai-team/docs` | Technical Writer | **Technical Writer** | commit 默认 `ask`；不碰源码 |
+| PRD / 用户故事 / 验收 | Product Manager | **DevOps** | PM 只写，不 commit |
+| UX / UI 规格 / 设计系统 | UX Designer | **DevOps** | UX 只写，不 commit |
+| 架构 / ADR / 契约 | System Architect | **DevOps** | Architect 只写，不 commit |
+| QA 报告 / 缺陷 | QA Engineer | **DevOps** | QA 只写，不 commit |
+| 安全报告 / 威胁模型 | Security Auditor | **DevOps** | 脱敏后提交；Security 只写，不 commit |
+| 状态 / 任务 / 决策 / 风险 / HANDOFF | Chief | **DevOps** | Chief 只写，不 commit |
+| 发布 / 回滚 / runbook | DevOps | **DevOps** | 自己提交 |
+
+规则：
+
+1. **禁止 `git add -A` / `git add .`**；只 stage 明确路径。
+2. 只读角色（Chief/PM/UX/Architect/Reviewer/Security）不拿 raw `git commit`。
+3. 提交前扫描密钥/凭据/客户数据；安全报告必须脱敏。
+4. `git push` 仍需用户批准（L3）。
+5. 不跟踪 `work/**`、日志、截图、tmp；只跟踪精选记忆文件。
+6. 若项目选择 `.ai-team` 完全本地，则不做 checkpoint commit。
+
+Commit message 模板：
+
+```text
+chore(ai-team): checkpoint <G?> <date>
+
+Tasks: TASK-0012, TASK-0013
+Roles: product-manager, ux-designer, qa-engineer
+Co-authored-by: ai-team/product-manager <ai-team@local>
+Co-authored-by: ai-team/qa-engineer <ai-team@local>
+```
+
+Checkpoint 触发：
+
+- 阶段门禁切换；
+- 里程碑/发布；
+- 每 10 个任务；
+- Chief 写 HANDOFF 时；
+- 用户要求。
+
 ## 4. 只读角色红线
 
 只读角色不得：
