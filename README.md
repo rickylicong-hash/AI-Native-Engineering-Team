@@ -39,7 +39,7 @@ Chief 会自动：
 | **代码审查员** | `ai-team/code-reviewer` | 正确性、契约、测试质量、可维护性、越权 | 不改代码，只出报告 |
 | **测试工程师** | `ai-team/qa-engineer` | 测试策略、自动化、E2E、性能、缺陷、回归 | 不修生产代码 |
 | **安全审计员** | `ai-team/security-auditor` | 威胁建模、设计/代码/依赖/密钥/IaC/发布安全 | 不修代码，只出报告 |
-| **DevOps/交付** | `ai-team/devops-engineer` | CI/CD、容器、IaC、一键部署、可观测性、回滚 | 不写业务代码 |
+| **DevOps/交付** | `ai-team/devops-engineer` | 仓库基线、CI/CD、容器、IaC、一键部署、可观测性、回滚 | 不写业务代码 |
 | **技术文档** | `ai-team/technical-writer` | README、API、运维手册、CHANGELOG、发布说明 | 不写生产代码 |
 
 每个角色都有独立的文件所有权和权限边界；审查者不能改代码，工程师不能改需求/设计，Chief 不能替成员干活。

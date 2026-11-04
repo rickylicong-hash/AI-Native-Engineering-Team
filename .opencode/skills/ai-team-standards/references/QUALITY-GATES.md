@@ -14,6 +14,17 @@
 - [ ] 需要用户决定的 L3 项已识别；
 - [ ] `.ai-team/state/PROJECT.md` 已写。
 
+### G0.1 仓库基线（新项目或基线缺失时）
+
+- [ ] `git init` / 默认分支（通常 `main`）；
+- [ ] `.gitignore` 覆盖依赖、构建产物、缓存、`.env`/密钥、日志、临时文件；
+- [ ] `.gitattributes` 统一换行符/二进制/语言统计；
+- [ ] `.editorconfig`、`.gitmodules`、`.git-blame-ignore-revs`（如适用）；
+- [ ] 初始提交；
+- [ ] remote/分支保护/规则集（首次 push 需用户批准）；
+- [ ] 密钥扫描、依赖扫描、CI 骨架；
+- [ ] 仓库内无真实密钥/凭据/大文件。
+
 ## G1 Product
 
 - [ ] 问题陈述不是功能清单；

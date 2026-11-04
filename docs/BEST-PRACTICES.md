@@ -92,6 +92,7 @@
 
 | 实践 | 来源 | 团队落地 |
 |---|---|---|
+| 仓库基线 | Git / GitHub Flow | `git init`、默认分支、`.gitignore`/`.gitattributes`、初始提交、分支保护、密钥扫描 |
 | SRE | Google SRE | SLO/错误预算/告警/runbook |
 | 交付指标 | DORA | 部署频率/变更失败率/MTTR/Lead time |
 | 可观测性 | OpenTelemetry | 日志/指标/trace；RED/USE |

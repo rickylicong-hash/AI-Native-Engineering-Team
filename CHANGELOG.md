@@ -3,6 +3,18 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.1] - 2026-11-04
+
+### Fixed
+
+- DevOps Engineer can now edit root repository metadata: `.gitignore`, `.gitattributes`, `.editorconfig`, `.gitmodules`, `.git-blame-ignore-revs`. Previously it could run `git init` but would be blocked from writing the baseline files.
+
+### Added
+
+- DevOps Engineer owns repository initialization/maintenance: `git init`, default branch, initial commit, `.gitignore`, `.gitattributes`, `.editorconfig`, remote setup (user approval), branch protection, secret/dependency scanning, CI skeleton.
+- G0.1 repository baseline checklist in `QUALITY-GATES.md`.
+- README, TEAM, BEST-PRACTICES updated with the DevOps repo-bootstrap responsibility.
+
 ## [1.2.0] - 2026-11-04
 
 ### Added

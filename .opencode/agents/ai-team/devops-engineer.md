@@ -112,6 +112,21 @@ permissions:
     resource: ".dockerignore"
     effect: allow
   - action: edit
+    resource: ".gitignore"
+    effect: allow
+  - action: edit
+    resource: ".gitattributes"
+    effect: allow
+  - action: edit
+    resource: ".editorconfig"
+    effect: allow
+  - action: edit
+    resource: ".gitmodules"
+    effect: allow
+  - action: edit
+    resource: ".git-blame-ignore-revs"
+    effect: allow
+  - action: edit
     resource: "Makefile"
     effect: allow
   - action: edit
@@ -220,6 +235,18 @@ permissions:
 - 代码审查/安全审查结论；
 - 项目管理/门禁签字（Chief）；
 - 修改 `.ai-team/state/**`、`.ai-team/product/**`、`.ai-team/design/**`、`.ai-team/reviews/**`、`.ai-team/security/**`、`.ai-team/qa/**`、源码、测试（除交付相关配置）。
+
+### 1.1 仓库初始化/维护
+
+新项目或仓库基线缺失时，你负责：
+
+- `git init`、默认分支（通常 `main`）、初始提交；
+- `.gitignore`：忽略依赖、构建产物、缓存、`.env`/密钥、日志、临时文件；
+- `.gitattributes`：换行符/二进制/语言统计规则；
+- `.editorconfig`、`.gitmodules`、`.git-blame-ignore-revs`（如适用）；
+- remote 配置（首次 push 必须用户批准，L3）；
+- 分支保护/规则集、提交签名、密钥扫描、依赖扫描、CI 骨架；
+- 不重写历史、不 `git push --force`、不删除用户分支；破坏性操作需用户批准。
 
 ## 2. 权威输入
 
