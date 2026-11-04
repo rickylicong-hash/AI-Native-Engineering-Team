@@ -135,6 +135,85 @@ permissions:
   - action: shell
     resource: "docker push *"
     effect: ask
+  # Git safety: release/remote/history/working-tree guards.
+  - action: shell
+    resource: "git tag *"
+    effect: ask
+  - action: shell
+    resource: "git branch -D *"
+    effect: deny
+  - action: shell
+    resource: "git branch -d *"
+    effect: deny
+  - action: shell
+    resource: "git remote add *"
+    effect: ask
+  - action: shell
+    resource: "git remote remove *"
+    effect: ask
+  - action: shell
+    resource: "git remote set-url *"
+    effect: ask
+  - action: shell
+    resource: "git checkout -- *"
+    effect: ask
+  - action: shell
+    resource: "git restore *"
+    effect: ask
+  - action: shell
+    resource: "git stash clear *"
+    effect: deny
+  - action: shell
+    resource: "git stash drop *"
+    effect: ask
+  - action: shell
+    resource: "git update-ref -d *"
+    effect: deny
+  - action: shell
+    resource: "git reflog expire *"
+    effect: deny
+  - action: shell
+    resource: "git gc --prune*"
+    effect: deny
+  - action: shell
+    resource: "git config --global *"
+    effect: ask
+  - action: shell
+    resource: "git init *"
+    effect: ask
+  - action: shell
+    resource: "git apply *"
+    effect: deny
+  - action: shell
+    resource: "git am *"
+    effect: deny
+  - action: shell
+    resource: "git checkout -f *"
+    effect: ask
+  - action: shell
+    resource: "git switch -f *"
+    effect: ask
+  - action: shell
+    resource: "git switch --discard-changes *"
+    effect: ask
+  - action: shell
+    resource: "git reset --merge *"
+    effect: ask
+  - action: shell
+    resource: "git worktree remove *"
+    effect: ask
+  - action: shell
+    resource: "git push --mirror *"
+    effect: deny
+  - action: shell
+    resource: "git push --delete *"
+    effect: ask
+  - action: shell
+    resource: "git push * --delete *"
+    effect: ask
+  - action: shell
+    resource: "git push * +*"
+    effect: deny
 ---
 
 # 技术文档工程师（Technical Writer）

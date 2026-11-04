@@ -385,6 +385,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 - **Chief 只读诊断**：`java -version`、`mvn -version`、`node -v`、`npm -v`、`docker --version`、`git --version` 等只读版本检查可直接运行；`Select-Object`、`Sort-Object`、`Measure-Object`、`Format-Table`、`Format-List`、`Out-String` 等只读管道可用；列项目外目录（如 `D:\Development`）只读可见，但文件内容和编辑不在默认授权内。构建、测试、安装、部署仍交给 engineer/QA/DevOps。
 - **Architect/Security 只读诊断**：同样的工具链版本检查 + `Get-Command` + `Select-Object -ExpandProperty`；不开放 `Sort-Object`/`Measure-Object`、外部目录读写、构建/部署。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
+- **Git 权限**：只读角色不 commit/push/tag；实现角色 commit/push/tag 默认 `ask`，force push/mirror、branch delete、history rewrite 默认 deny。矩阵见 [docs/GIT-POLICY.md](docs/GIT-POLICY.md)，审计：`node scripts/audit-git-permissions.mjs`。
 
 ---
 
@@ -485,4 +486,4 @@ node scripts/version.mjs --update # 更新到源版本
 **Q：团队会自己改自己吗？**  
 不会。改进只写 `.ai-team/team/GROWTH.md` 提案，由你批准后由授权方修改 `.opencode/**`。
 
-更多见 [docs/TEAM.md](docs/TEAM.md)、[docs/WORKFLOW.md](docs/WORKFLOW.md)、[docs/BEST-PRACTICES.md](docs/BEST-PRACTICES.md)、[docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md)、[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)、[docs/VERIFICATION.md](docs/VERIFICATION.md)、[docs/LARGE-PROJECTS.md](docs/LARGE-PROJECTS.md)。
+更多见 [docs/TEAM.md](docs/TEAM.md)、[docs/WORKFLOW.md](docs/WORKFLOW.md)、[docs/BEST-PRACTICES.md](docs/BEST-PRACTICES.md)、[docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md)、[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)、[docs/VERIFICATION.md](docs/VERIFICATION.md)、[docs/LARGE-PROJECTS.md](docs/LARGE-PROJECTS.md)、[docs/GIT-POLICY.md](docs/GIT-POLICY.md)。

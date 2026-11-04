@@ -3,6 +3,34 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.2] - 2026-11-05
+
+### Fixed
+
+- Audited git permissions across all 10 agents and closed the gaps:
+  - `git tag` is now `ask` for Engineer, QA, and Technical Writer (DevOps already had it).
+  - `git branch -D` / `git branch -d` are `deny` for all write roles.
+  - remote changes (`add`/`remove`/`set-url`) are `ask`.
+  - `git init` is `ask` for Engineer/QA/Writer; DevOps remains the repository-bootstrap owner.
+  - `git checkout --`, `git restore`, `checkout -f`, `switch -f`, `switch --discard-changes`, `reset --merge`, and `worktree remove` are `ask`.
+  - `git stash clear`, `update-ref -d`, `reflog expire`, and `gc --prune` are `deny`; `stash drop` is `ask`.
+  - `git config --global` is `ask`.
+  - force push via `--force`/`-f`/refspec `+`, and `--mirror`, are `deny`; `--delete` is `ask`.
+  - `git apply`/`git am` are `deny` for QA and Technical Writer to prevent bypassing edit ownership.
+- Read-only roles remain read-only: no commit/push/tag/branch/remote/reset/clean.
+
+### Added
+
+- `scripts/audit-git-permissions.mjs`: checks all 10 agents against the expected git policy and exits non-zero on gaps.
+- `docs/GIT-POLICY.md`: role matrix, command policy, repo-bootstrap ownership, break-glass and residual risks.
+- README links to the git policy and audit command.
+
+### Verified
+
+- `node scripts/audit-git-permissions.mjs` → 10 agents checked, 0 failed.
+- `node scripts/verify.mjs` → 179/179.
+- Version check → up to date after publish.
+
 ## [1.2.1] - 2026-11-04
 
 ### Fixed
