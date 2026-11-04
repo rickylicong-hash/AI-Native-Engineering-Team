@@ -3,6 +3,18 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.1.2] - 2026-11-04
+
+### Fixed
+
+- Chief now allows read-only pipeline cmdlets used for listing/inspection: `Select-Object`, `Sort-Object`, `Measure-Object`, `Format-Table`, `Format-List`, `Out-String`.
+- `Get-ChildItem 'D:\Development' -Directory | Select-Object -ExpandProperty Name` now works under Chief; the actual blocker was `Select-Object`, not `Get-ChildItem` or external directory access.
+
+### Notes
+
+- No broad `external_directory` grant was added. Listing `D:\Development` was already permitted by the existing `Get-ChildItem *` shell rule; only the pipeline stage was denied.
+- PowerShell `try { ... } catch { ... }` wrappers are still rejected because `try` is a compound keyword, not an allowlisted command. Run the command directly or put it in a script.
+
 ## [1.1.1] - 2026-11-04
 
 ### Fixed

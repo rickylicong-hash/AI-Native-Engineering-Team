@@ -115,6 +115,14 @@ node scripts/version.mjs --update
 cmd /c "java -version 2>&1"
 ```
 
+**管道命令被拒**：`Get-ChildItem ... | Select-Object ...` 会逐段检查，`Select-Object` 也需要白名单。1.1.2 起 Chief 允许：
+
+`Select-Object`、`Sort-Object`、`Measure-Object`、`Format-Table`、`Format-List`、`Out-String`。
+
+**`try { ... } catch { ... }` 被拒**：`try` 是 PowerShell 复合关键字，不是普通命令；不要用它包裹允许的命令。直接运行，或把逻辑写进 `.ps1` 脚本再执行。
+
+**项目外目录**：`D:\Development` 这类目录默认只保证“列目录”可用；读取文件内容、编辑、写入仍不在默认授权内。需要读取时，单独申请只读、限定目录的权限，并保留 `.env`/密钥/`.git` 的 deny。
+
 ## 4. 一直弹权限确认
 
 原因：规则没匹配到，默认 `ask`。

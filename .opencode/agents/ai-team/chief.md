@@ -220,6 +220,25 @@ permissions:
   - action: shell
     resource: "where *"
     effect: allow
+  # Read-only pipeline cmdlets for listing/inspection.
+  - action: shell
+    resource: "Select-Object *"
+    effect: allow
+  - action: shell
+    resource: "Sort-Object *"
+    effect: allow
+  - action: shell
+    resource: "Measure-Object *"
+    effect: allow
+  - action: shell
+    resource: "Format-Table *"
+    effect: allow
+  - action: shell
+    resource: "Format-List *"
+    effect: allow
+  - action: shell
+    resource: "Out-String *"
+    effect: allow
 ---
 
 # AI Native 工程团队总负责人（Chief / Delivery Lead）
