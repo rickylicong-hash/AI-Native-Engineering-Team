@@ -12,7 +12,7 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 174, passed: 174, failed: 0, warnings: 0
+checks: 179, passed: 179, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -81,7 +81,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 结果：
 
 ```text
-Installed: 10 agents, 11 commands, 4 skills.
+Installed: 10 agents, 12 commands, 4 skills.
 ```
 
 同时写入 `ai-team-install.json`（版本、安装时间、源/目标路径、`sourceHash`、`installedHash`、`manifestHash`、数量）。干净安装时 `sourceHash === installedHash`。
@@ -95,7 +95,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 结果：
 
 ```text
-checks: 184, passed: 184, failed: 0, warnings: 0
+checks: 189, passed: 189, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -195,8 +195,8 @@ node scripts/version.mjs --update
 结果：
 
 ```text
-源验证 174/174 → 安装 10 agents / 11 commands / 4 skills
-→ 安装后验证 184/184（含 OpenCode 10 个 agent）
+源验证 179/179 → 安装 10 agents / 12 commands / 4 skills
+→ 安装后验证 189/189（含 OpenCode 10 个 agent）
 → 写 marker
 → status: up-to-date
 ```

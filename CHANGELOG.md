@@ -3,6 +3,27 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.0] - 2026-11-04
+
+### Added
+
+- `/ai-handoff` command: writes `.ai-team/state/HANDOFF.md` and prints a ready-to-paste next-session prompt. It does **not** create a new primary session.
+- Automatic checkpoint triggers for Chief:
+  - context near 70% or after compaction;
+  - stage-gate transitions;
+  - every 10 tasks or at the end of a workstream;
+  - long tasks that exceed the current session;
+  - user pause/continue-later;
+  - state-file/chat drift.
+- HANDOFF template now includes a "新会话首条消息" block.
+- `/ai-resume` remains the receiving side: a new session reads HANDOFF and continues.
+
+### Notes
+
+- No automatic primary-session creation was added. Main-session creation stays with the user or an external orchestrator/plugin, with explicit opt-in, a session ledger, and a max-one-active-session rule.
+- Subagent sessions remain automatic for task-scoped work.
+- Verifier now expects 12 commands: 179 structural checks / 189 installed checks with `--opencode`.
+
 ## [1.1.4] - 2026-11-04
 
 ### Added

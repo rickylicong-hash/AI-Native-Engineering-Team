@@ -1,7 +1,7 @@
 {
   "name": "AI Native Engineering Team",
   "id": "ai-team",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "A stack-agnostic, globally installable AI engineering team for OpenCode V2. One instruction drives product, UX, architecture, implementation, review, testing, security, deployment and documentation.",
   "default_agent": "ai-team/chief",
   "entry_command": "/ai <goal>",
@@ -86,6 +86,7 @@
     { "id": "ai-deploy", "file": "commands/ai-deploy.md", "description": "Release preflight, deploy, smoke and rollback" },
     { "id": "ai-status", "file": "commands/ai-status.md", "description": "Read-only project status" },
     { "id": "ai-resume", "file": "commands/ai-resume.md", "description": "Resume from HANDOFF" },
+    { "id": "ai-handoff", "file": "commands/ai-handoff.md", "description": "Write HANDOFF and print the next-session prompt" },
     { "id": "ai-hotfix", "file": "commands/ai-hotfix.md", "description": "T1 fast fix with regression" },
     { "id": "ai-retro", "file": "commands/ai-retro.md", "description": "Retrospective and growth proposals" },
     { "id": "ai-docs", "file": "commands/ai-docs.md", "description": "README, API, runbooks and changelog" }

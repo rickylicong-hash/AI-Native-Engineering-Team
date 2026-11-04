@@ -104,6 +104,7 @@ flowchart LR
 | `/ai-deploy [环境]` | 发布预检、部署、冒烟、回滚（生产需批准） |
 | `/ai-status` | 查看阶段、任务、风险、下一步 |
 | `/ai-resume` | 从 `HANDOFF.md` 恢复并继续 |
+| `/ai-handoff` | 写入 HANDOFF，生成新会话首条指令（不自动开会话） |
 | `/ai-hotfix <问题>` | T1 快速修复 + 回归 + 复盘 |
 | `/ai-retro [范围]` | 复盘与团队改进提案 |
 | `/ai-docs [范围]` | README/API/运维/CHANGELOG，并验证命令 |
@@ -215,13 +216,13 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 174, passed: 174, failed: 0
+# 期望：checks: 179, passed: 179, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 184, passed: 184, failed: 0
+# 期望：checks: 189, passed: 189, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。
@@ -442,7 +443,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 .
 ├─ .opencode/
 │  ├─ agents/ai-team/          # 10 个角色
-│  ├─ commands/                # /ai 等 11 个命令
+│  ├─ commands/                # /ai 等 12 个命令
 │  └─ skills/
 │     ├─ ai-team-workflow/     # 流程、状态、证据、模板
 │     ├─ ai-team-standards/    # 工程标准、质量门禁、栈 playbook

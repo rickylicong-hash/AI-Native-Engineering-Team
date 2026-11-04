@@ -56,7 +56,15 @@
 
 预期：读 `.ai-team/state/HANDOFF.md`，从上次中断处继续。
 
-## 8. 产物在哪
+## 8. 交接
+
+```text
+/ai-handoff
+```
+
+预期：更新 STATUS/TASKS/RUN_LOG，重写 HANDOFF，并输出一段可直接粘贴到新会话的首条消息。**不会自动创建新会话。**
+
+## 9. 产物在哪
 
 ```text
 .ai-team/state/       # 目标、状态、任务、决策、风险、交接
@@ -71,7 +79,7 @@
 
 先看 `.ai-team/state/STATUS.md` 和 `.ai-team/state/HANDOFF.md`。
 
-## 9. 真实输出样例
+## 10. 真实输出样例
 
 `examples/smoke/SPIKE-0001.md` 是一次受控端到端测试中 Technical Writer 产出的 T0 评审报告（192 行，含文件:行号证据）。它展示了：
 

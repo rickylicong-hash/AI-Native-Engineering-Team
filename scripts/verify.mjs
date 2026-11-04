@@ -241,7 +241,7 @@ for (const reviewer of ["code-reviewer", "security-auditor"]) {
 // Commands
 // ---------------------------------------------------------------------------
 const commandFiles = listMarkdown(paths.commands).filter((f) => path.basename(f).startsWith("ai"));
-addCheck("command count", commandFiles.length === 11, `expected 11, found ${commandFiles.length}`);
+addCheck("command count", commandFiles.length === 12, `expected 12, found ${commandFiles.length}`);
 
 const commandIds = new Set();
 for (const file of commandFiles) {
@@ -252,7 +252,7 @@ for (const file of commandFiles) {
   addCheck(`${label} description`, typeof data.description === "string" && data.description.length >= 5);
   addCheck(`${label} agent exists`, typeof data.agent === "string" && agentIds.has(data.agent), String(data.agent));
   addCheck(`${label} body`, body.trim().length > 40);
-  addCheck(`${label} passes arguments or is a read-only command`, body.includes("$ARGUMENTS") || id === "ai-status" || id === "ai-resume");
+  addCheck(`${label} passes arguments or is a read-only command`, body.includes("$ARGUMENTS") || id === "ai-status" || id === "ai-resume" || id === "ai-handoff");
   if (manifestCommands.size > 0) addCheck(`${label} in manifest`, manifestCommands.has(id));
 }
 
