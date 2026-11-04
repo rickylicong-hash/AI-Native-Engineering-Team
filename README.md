@@ -396,6 +396,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 - **跨平台**：安装脚本支持 Windows PowerShell 与 Linux/macOS；命令以项目为准。
 - **模型无关**：subagent 默认继承当前会话模型；也可在 agent frontmatter 里覆盖。
 
+### 编码约定
+
+- **代码注释默认中文**：行内、块、doc comment、`TODO`/`FIXME`、迁移/SQL/配置注释。
+- **标识符保持英文**：变量、函数、类、API、文件名、分支名、提交信息。
+- 注释解释“为什么、假设、边界”，不复述代码。
+- 项目明确要求英文注释时，由 Chief 在任务 brief 记录 `DEC-*` 覆盖，不改全局规则。
+
 ### 大型项目能力
 
 - **已具备**：T4 Critical 轨道、workstream 拆分、G0–G8 门禁、任务 DAG、文件所有权、跨会话 HANDOFF、独立审查/测试/安全、发布/回滚模板。

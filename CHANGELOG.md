@@ -3,6 +3,22 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.1.4] - 2026-11-04
+
+### Added
+
+- Team coding convention: new or modified code comments must be written in Chinese.
+  - Applies to inline comments, block comments, doc comments (JSDoc/Javadoc/docstring/Rustdoc), `TODO`/`FIXME`/`XXX`, SQL/migration comments, and config-file comments.
+  - Does not apply to identifiers, API names, file names, branch names, commit messages, logs, error codes, or user-facing copy; those remain English or follow project convention.
+  - Comments should explain why/assumptions/edge cases, not restate code.
+- Engineer prompt, Code Reviewer checklist, `ai-team-standards`, README, and BEST-PRACTICES now document and enforce the rule.
+- Project-level override: if a project explicitly requires English comments, the Chief records a `DEC-*` in the task brief; otherwise Chinese is the default.
+
+### Notes
+
+- Existing English comments are not mass-translated; translate only comments in the changed scope to avoid unrelated churn.
+- Generated/vendor code comments are not manually translated.
+
 ## [1.1.3] - 2026-11-04
 
 ### Added
