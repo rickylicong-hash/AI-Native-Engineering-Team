@@ -187,6 +187,18 @@ permissions:
   - action: shell
     resource: "dir *"
     effect: allow
+  - action: shell
+    resource: "Get-ChildItem *"
+    effect: allow
+  - action: shell
+    resource: "Select-String *"
+    effect: allow
+  - action: shell
+    resource: "rg *"
+    effect: allow
+  - action: shell
+    resource: "Test-Path *"
+    effect: allow
   # Read-only toolchain diagnostics. No build/test/install/deploy.
   - action: shell
     resource: "Write-Output *"

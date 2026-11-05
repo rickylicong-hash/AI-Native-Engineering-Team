@@ -1,7 +1,7 @@
 {
   "name": "AI Native Engineering Team",
   "id": "ai-team",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "A stack-agnostic, globally installable AI engineering team for OpenCode V2. One instruction drives product, UX, architecture, implementation, review, testing, security, deployment and documentation.",
   "default_agent": "ai-team/chief",
   "entry_command": "/ai <goal>",

@@ -3,6 +3,20 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.12] - 2026-11-05
+
+### Fixed
+
+- `REV-0010` showed the reviewer tried `mvn -v`, `java -version`, and `Get-ChildItem/Select-String`, then concluded it could not run `mvn -B clean test` or `mvn -B -DskipTests package` — even though those actual test/package commands were allowed. The blocker was the toolchain/search commands, plus a behavioral stop.
+- Added `Select-String`, `rg`, and `Test-Path` to code-reviewer/security-auditor read-only search rules.
+- Reviewer prompt now says: **`mvn -v`/`java -version` being denied does not mean `mvn test` is denied**; try `mvn -B test`/`verify`/`package` before declaring BLOCKED.
+- `audit-team-consistency` now checks `Select-String` too (96 checks).
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 96 checks, 0 failed.
+
 ## [1.2.11] - 2026-11-05
 
 ### Fixed

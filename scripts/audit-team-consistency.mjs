@@ -148,7 +148,7 @@ check(
   hasEffective(reviewerRules, "shell", "git -C * diff *", "allow"),
   "reviewer cannot diff an explicit project path",
 );
-for (const resource of ["java -version *", "mvn -v *", "mvn *compile*", "Get-ChildItem *"]) {
+for (const resource of ["java -version *", "mvn -v *", "mvn *compile*", "Get-ChildItem *", "Select-String *"]) {
   check(
     `code-reviewer can run ${resource}`,
     hasEffective(reviewerRules, "shell", resource, "allow"),

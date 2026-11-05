@@ -190,6 +190,12 @@ permissions:
     resource: "Get-ChildItem *"
     effect: allow
   - action: shell
+    resource: "Select-String *"
+    effect: allow
+  - action: shell
+    resource: "rg *"
+    effect: allow
+  - action: shell
     resource: "Test-Path *"
     effect: allow
   - action: shell
@@ -318,6 +324,7 @@ permissions:
 
 - 你有只读构建/测试/扫描权限：`java -version`、`mvn -v`、`mvn test/verify/package/compile/dependency:tree/dependency-check/spotbugs/pmd/checkstyle`、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test，以及只读 `git -C`。
 - 先确认工具链：`java -version`、`mvn -v`；再跑测试/构建。多模块项目用 `mvn -f <pom> ...` 或 `mvn -pl <module> -am ...`，不要 `cd`。
+- **`mvn -v`/`java -version` 被拒不等于 `mvn test` 被拒**；实际测试命令有独立 allow。先试 `mvn -B test`/`verify`/`package`，不要因为工具链检查失败就直接放弃独立验证。
 - 必须**自己运行**项目已有的测试/构建命令并记录命令、退出码、关键输出；不能只引用工程师的“测试通过”。
 - 一次一条命令；不要用 `;`/`&&`/`2>&1`/管道拼接。测试报告用 `read` 工具读 `target/surefire-reports/**`，不要用 `Get-Content`。
 - 只跑只读/本地验证；不跑 deploy/release/install/publish，不改代码，不 commit/push。
