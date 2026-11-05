@@ -3,6 +3,25 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.9] - 2026-11-05
+
+### Fixed
+
+- **RISK-0040: reviewers could not independently verify.** `code-reviewer` and `security-auditor` are read-only for edits, but their shell allowlist had no build/test/scan commands, so `mvn` was denied and they could only rely on engineer self-reports.
+- Added a read-only verification allowlist to both reviewers:
+  - `git -C` status/diff/log/show/rev-parse/blame/ls-files;
+  - Maven (`test`/`verify`/`package`/`dependency:tree`/`dependency-check`/`spotbugs`/`pmd`/`checkstyle`), Maven Wrapper, Gradle;
+  - npm/pnpm/yarn test/lint/typecheck, pytest, go test/vet, cargo test/clippy, dotnet test/build.
+- Security additionally gets Maven CycloneDX/versions/dependency-analyze and Gradle dependency reports.
+- Reviewer/security prompts now require independent reproduction (command + exit code + output), forbid relying solely on engineer evidence, forbid deploy/release/install/publish/commit, and require `BLOCKED` on permission denial instead of shell bypass.
+- `audit-team-consistency.mjs` now checks reviewer/security Maven and `git -C` capabilities (91 checks).
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 91 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+
 ## [1.2.8] - 2026-11-05
 
 ### Fixed

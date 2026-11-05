@@ -281,6 +281,139 @@ permissions:
   - action: shell
     resource: "Select-Object -ExpandProperty *"
     effect: allow
+  # 独立验证：只读构建/测试/扫描；禁止 deploy/release/install/publish/写远端。
+  - action: shell
+    resource: "git -C * status *"
+    effect: allow
+  - action: shell
+    resource: "git -C * diff *"
+    effect: allow
+  - action: shell
+    resource: "git -C * log *"
+    effect: allow
+  - action: shell
+    resource: "git -C * show *"
+    effect: allow
+  - action: shell
+    resource: "git -C * rev-parse *"
+    effect: allow
+  - action: shell
+    resource: "git -C * blame *"
+    effect: allow
+  - action: shell
+    resource: "git -C * ls-files *"
+    effect: allow
+  - action: shell
+    resource: "mvn * test*"
+    effect: allow
+  - action: shell
+    resource: "mvn * verify*"
+    effect: allow
+  - action: shell
+    resource: "mvn * package*"
+    effect: allow
+  - action: shell
+    resource: "mvn * dependency:tree*"
+    effect: allow
+  - action: shell
+    resource: "mvn * dependency-check*"
+    effect: allow
+  - action: shell
+    resource: "mvn * spotbugs*"
+    effect: allow
+  - action: shell
+    resource: "mvn * pmd*"
+    effect: allow
+  - action: shell
+    resource: "mvn * checkstyle*"
+    effect: allow
+  - action: shell
+    resource: "*mvnw* test*"
+    effect: allow
+  - action: shell
+    resource: "*mvnw* verify*"
+    effect: allow
+  - action: shell
+    resource: "*gradlew* test*"
+    effect: allow
+  - action: shell
+    resource: "*gradle* test*"
+    effect: allow
+  - action: shell
+    resource: "npm test *"
+    effect: allow
+  - action: shell
+    resource: "npm run test *"
+    effect: allow
+  - action: shell
+    resource: "npm run lint *"
+    effect: allow
+  - action: shell
+    resource: "npm run typecheck *"
+    effect: allow
+  - action: shell
+    resource: "npx tsc --noEmit *"
+    effect: allow
+  - action: shell
+    resource: "pnpm test *"
+    effect: allow
+  - action: shell
+    resource: "pnpm run test *"
+    effect: allow
+  - action: shell
+    resource: "yarn test *"
+    effect: allow
+  - action: shell
+    resource: "yarn run test *"
+    effect: allow
+  - action: shell
+    resource: "pytest *"
+    effect: allow
+  - action: shell
+    resource: "python -m pytest *"
+    effect: allow
+  - action: shell
+    resource: "python3 -m pytest *"
+    effect: allow
+  - action: shell
+    resource: "go test *"
+    effect: allow
+  - action: shell
+    resource: "go vet *"
+    effect: allow
+  - action: shell
+    resource: "cargo test *"
+    effect: allow
+  - action: shell
+    resource: "cargo clippy *"
+    effect: allow
+  - action: shell
+    resource: "dotnet test *"
+    effect: allow
+  - action: shell
+    resource: "dotnet build *"
+    effect: allow
+  - action: shell
+    resource: "mvn * cyclonedx*"
+    effect: allow
+  - action: shell
+    resource: "mvn * versions:display-dependency-updates*"
+    effect: allow
+  - action: shell
+    resource: "mvn * dependency:analyze*"
+    effect: allow
+  - action: shell
+    resource: "*gradlew* dependencies*"
+    effect: allow
+  - action: shell
+    resource: "*gradle* dependencies*"
+    effect: allow
+  - action: shell
+    resource: "npm ls *"
+    effect: allow
+  - action: shell
+    resource: "pnpm list *"
+    effect: allow
 ---
 
 # 安全审计员（Security Auditor）
@@ -381,9 +514,20 @@ gitleaks detect --no-git
 trivy fs .
 trivy image <image>
 checkov -d .
+mvn -B test
+mvn -B verify
+mvn -B dependency:tree
+mvn -B org.owasp:dependency-check-maven:check
 ```
 
 扫描结果必须附：命令、退出码、关键输出/报告路径、误报判断。不要只贴工具名。
+
+**独立验证要求：**
+
+- 自己运行测试/构建/扫描，不能只引用工程师的“测试通过”；
+- 只跑只读/本地命令；不跑 deploy/release/install/publish，不改代码，不 commit/push；
+- 需要生产数据/外部服务才能验证的项，记录环境限制，不伪造；
+- 命令被 `permission.rejected` 时返回 BLOCKED，要求 Chief 补精确 allow；不要用 shell 重定向/脚本绕过。
 
 ## 6. 严重级别与结论
 

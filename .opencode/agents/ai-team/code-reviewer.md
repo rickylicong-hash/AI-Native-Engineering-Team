@@ -118,6 +118,118 @@ permissions:
   - action: shell
     resource: "dir *"
     effect: allow
+  # 独立验证：只读构建/测试/扫描；禁止 deploy/release/install/publish/写远端。
+  - action: shell
+    resource: "git -C * status *"
+    effect: allow
+  - action: shell
+    resource: "git -C * diff *"
+    effect: allow
+  - action: shell
+    resource: "git -C * log *"
+    effect: allow
+  - action: shell
+    resource: "git -C * show *"
+    effect: allow
+  - action: shell
+    resource: "git -C * rev-parse *"
+    effect: allow
+  - action: shell
+    resource: "git -C * blame *"
+    effect: allow
+  - action: shell
+    resource: "git -C * ls-files *"
+    effect: allow
+  - action: shell
+    resource: "mvn * test*"
+    effect: allow
+  - action: shell
+    resource: "mvn * verify*"
+    effect: allow
+  - action: shell
+    resource: "mvn * package*"
+    effect: allow
+  - action: shell
+    resource: "mvn * dependency:tree*"
+    effect: allow
+  - action: shell
+    resource: "mvn * dependency-check*"
+    effect: allow
+  - action: shell
+    resource: "mvn * spotbugs*"
+    effect: allow
+  - action: shell
+    resource: "mvn * pmd*"
+    effect: allow
+  - action: shell
+    resource: "mvn * checkstyle*"
+    effect: allow
+  - action: shell
+    resource: "*mvnw* test*"
+    effect: allow
+  - action: shell
+    resource: "*mvnw* verify*"
+    effect: allow
+  - action: shell
+    resource: "*gradlew* test*"
+    effect: allow
+  - action: shell
+    resource: "*gradle* test*"
+    effect: allow
+  - action: shell
+    resource: "npm test *"
+    effect: allow
+  - action: shell
+    resource: "npm run test *"
+    effect: allow
+  - action: shell
+    resource: "npm run lint *"
+    effect: allow
+  - action: shell
+    resource: "npm run typecheck *"
+    effect: allow
+  - action: shell
+    resource: "npx tsc --noEmit *"
+    effect: allow
+  - action: shell
+    resource: "pnpm test *"
+    effect: allow
+  - action: shell
+    resource: "pnpm run test *"
+    effect: allow
+  - action: shell
+    resource: "yarn test *"
+    effect: allow
+  - action: shell
+    resource: "yarn run test *"
+    effect: allow
+  - action: shell
+    resource: "pytest *"
+    effect: allow
+  - action: shell
+    resource: "python -m pytest *"
+    effect: allow
+  - action: shell
+    resource: "python3 -m pytest *"
+    effect: allow
+  - action: shell
+    resource: "go test *"
+    effect: allow
+  - action: shell
+    resource: "go vet *"
+    effect: allow
+  - action: shell
+    resource: "cargo test *"
+    effect: allow
+  - action: shell
+    resource: "cargo clippy *"
+    effect: allow
+  - action: shell
+    resource: "dotnet test *"
+    effect: allow
+  - action: shell
+    resource: "dotnet build *"
+    effect: allow
 ---
 
 # 代码审查员（Code Reviewer）
@@ -158,6 +270,14 @@ permissions:
 5. **再看安全。** 鉴权是否服务端执行、输入是否校验、输出是否编码、日志是否脱敏。
 6. **再看测试。** 断言是否有效、是否覆盖异常/权限/边界、是否可重复。修复/回归任务必须有 P1 closure 表（原 P1、修复点、复现命令、回归结果）。
 7. **最后看可维护性。** 只在有实际影响时提；格式偏好不标阻断。
+
+### 3.1 独立验证
+
+- 你有只读构建/测试/扫描权限：`mvn test/verify/package`、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test，以及只读 `git -C`。
+- 必须**自己运行**项目已有的测试/构建命令并记录命令、退出码、关键输出；不能只引用工程师的“测试通过”。
+- 只跑只读/本地验证；不跑 deploy/release/install/publish，不改代码，不 commit/push。
+- 需要外部服务/生产数据才能跑的测试，记录环境限制和未验证范围，不要伪造。
+- 命令被 `permission.rejected` 时返回 BLOCKED，要求 Chief 补精确 allow；不要用 shell 重定向/脚本绕过。
 
 ## 4. 严重级别
 

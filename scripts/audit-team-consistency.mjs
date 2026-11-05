@@ -137,6 +137,30 @@ check(
   "DevOps must be able to write work/TASK-*-EVIDENCE.md without shell bypass",
 );
 
+const reviewerRules = parseRules(read(path.join(agentsDir, "code-reviewer.md")));
+check(
+  "code-reviewer can run maven tests",
+  hasEffective(reviewerRules, "shell", "mvn * test*", "allow"),
+  "reviewer cannot independently reproduce Maven tests",
+);
+check(
+  "code-reviewer can use git -C",
+  hasEffective(reviewerRules, "shell", "git -C * diff *", "allow"),
+  "reviewer cannot diff an explicit project path",
+);
+
+const securityRules = parseRules(read(path.join(agentsDir, "security-auditor.md")));
+check(
+  "security-auditor can run maven tests",
+  hasEffective(securityRules, "shell", "mvn * test*", "allow"),
+  "security cannot independently reproduce Maven tests",
+);
+check(
+  "security-auditor can run dependency-check",
+  hasEffective(securityRules, "shell", "mvn * dependency-check*", "allow"),
+  "security cannot run Maven OWASP dependency-check",
+);
+
 // 命令里引用但团队不存在的脚本路径。
 for (const file of commandFiles) {
   const text = read(path.join(commandsDir, file));

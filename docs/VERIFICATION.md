@@ -354,6 +354,17 @@ Write to .ai-team/work/TASK-GIT-011-EVIDENCE.md   Permission denied: edit
 - `GIT-POLICY` 记录 shell 写绕过为残余风险；
 - `install.ps1` 改为“备份复制 + 文件级同步”，不再移动 `agents/ai-team` 目录；修复 OpenCode 运行中 `publish` 报 `MoveDirectoryItemIOError` 的问题。
 
+### 5.11 审查员独立验证权限（1.2.9）
+
+`RISK-0040`：`code-reviewer`/`security-auditor` 的 `mvn`/`git` 被 `permission.rejected`，只能依赖工程师自报。
+
+修复：
+
+- 两个审查员增加只读验证 allowlist：`git -C` 只读、Maven test/verify/package、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test；
+- Security 额外获得 `dependency-check`/CycloneDX/`dependency:tree`/`versions`/`dependency:analyze`；
+- prompt 要求自己运行并记录命令/退出码/输出，不能只引用工程师证据；被拒时 BLOCKED，禁止 shell 绕过；
+- `audit-team-consistency` 增加 4 项审查员能力检查（91 项）。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -383,12 +394,13 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.8 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.9 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（87 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口）。
+- 一致性审计：通过（91 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口）。
 - 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
 - DevOps 证据写入：通过（1.2.8 允许 `work/*EVIDENCE.md` 并禁止 shell 绕过）。
+- 审查员独立验证：通过（1.2.9 增加只读构建/测试/扫描 allowlist）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。
