@@ -90,8 +90,13 @@ const roleExtraRules = {
 };
 
 const readOnlyForbidden = [
+  "git add",
+  "git add *",
+  "git commit",
   "git commit *",
+  "git push",
   "git push *",
+  "git tag",
   "git tag *",
   "git branch -D *",
   "git reset --hard *",
@@ -120,15 +125,15 @@ let failures = 0;
 for (const file of files) {
   const allRules = parseShellRules(path.join(agentsDir, file));
   const rules = allRules.filter((r) => r.resource.includes("git"));
-  const shellDeny = hasRule(allRules, "*", "deny");
+  const shellAllow = hasRule(allRules, "*", "allow");
   const missing = [];
 
   if (readOnlyRoles.has(file)) {
-    if (!shellDeny) missing.push("missing shell * deny");
+    if (!shellAllow) missing.push("missing shell * allow");
     for (const forbidden of readOnlyForbidden) {
       const effect = lastEffect(rules, forbidden);
-      if (effect && effect !== "deny") {
-        missing.push(`read-only role has ${forbidden} -> ${effect}`);
+      if (effect !== "deny") {
+        missing.push(`read-only role ${forbidden} -> ${effect ?? "none"}`);
       }
     }
   } else if (writeRoles.has(file)) {

@@ -387,7 +387,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
 - **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
 
-### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-35）
+### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-36）
 
 - **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
@@ -403,11 +403,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/落地/证据/日期；`growth-check` 检查；已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
 - **T-30 brief 预检**：派发 subagent 前写 `.ai-team/tasks/TASK-*-BRIEF.md` 并运行 `brief-lint.mjs --agent`；缺 `独立验证`/`证据位置`/QA `测试路径`/Reviewer-Security `P2 处置`/`构建隔离` 时不得派发。
-- **T-31 shell 单命令**：禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；`git add -A`/`git add .` 权限 deny；被拒后拆分或改用 `read`，不换写法硬试。
+- **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；`git add -A`/`git add .` 仍 deny。
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
 - **T-34 权限矩阵与预检**：`permissions.json` 是 required/forbidden 单一事实源；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝；新增脚本先改矩阵再改权限。
 - **T-35 统一命令网关**：`team-shell.mjs --role <role> --action <action>` 执行 git 读取、构建/测试、扫描和团队脚本；动作由 `permissions.json.gateway` 授权；不经过 shell；写操作仍直接走角色权限。
+- **T-36 Shell-first**：所有角色 shell 默认 allow；允许管道/复合命令；只保留破坏性命令、发布/部署、`.env`/密钥、只读角色 git 写操作和 `git add -A`/`git add .` 的 deny；ownership 由 brief + diff + checkpoint + 会话审计约束。
 
 ## 8. 并行规则
 

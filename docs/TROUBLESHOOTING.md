@@ -84,7 +84,7 @@ Subagent depth limit reached (1). Increase "experimental.subagent_depth" to allo
 
 不要用“代写专家报告”绕过限制；深度不足时应报 `BLOCKED`。
 
-### 3.2 常用版本命令被拒绝（Permission denied: shell）
+### 3.2 常用命令被拒绝（Permission denied: shell）
 
 **现象**：
 
@@ -93,23 +93,30 @@ Write-Output "--- java ---"; java -version 2>&1; mvn -version 2>&1; ...
 Permission denied: shell
 ```
 
-**原因**：当前 agent 是只读角色（Chief/PM/UX/Architect/Reviewer/Security），shell 默认拒绝。  
-Chief 从 `1.1.1` 起允许一组只读工具链版本检查；PM/UX/Architect 仍按设计不跑 shell。
+**原因（1.4.1 及以前）**：只读角色 shell 默认 deny；复合命令、管道和 `2>&1` 会被直接拒绝。1.4.2 起改为 Shell-first：所有角色 shell 默认 allow，复合命令不再默认拒绝。
+
+**1.4.2 仍会被拒的常见情况**：
+
+- `git add -A` / `git add .`；
+- `git reset --hard`、`git clean`、`rm -rf`、`Remove-Item -Recurse`；
+- `npm publish`、`docker push`、`kubectl apply`、`helm upgrade`、`terraform apply`（非 DevOps）；
+- `Get-Content/cat/type .env` 等常见密钥读取；
+- 只读角色执行 `git add`/`commit`/`push`/`tag`。
 
 **处理**：
 
-1. 确认版本 ≥ `1.1.1`：
+1. 先确认版本 ≥ `1.4.2`：
 
 ```bash
 node scripts/version.mjs --update
 ```
 
-2. 如果仍在只读角色里被拒：
-   - `1.1.3` 起 Architect、Security 也允许只读工具链诊断；
-   - PM、UX、Code Reviewer 仍按设计不开放；
-   - 切到 `ai-team/engineer` 或 `ai-team/devops-engineer` 执行；
-   - 或让 Chief 调度 engineer 做工具链诊断；
-   - 或在源 agent 的 `permissions` 里加精确 allow，然后 `publish`。
+2. 用 `permission-doctor` 看最终匹配规则；不要为了绕过安全边界扩大 `node *`/`git *`：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.mjs" `
+  --agent ai-team/engineer --command "<完整命令>"
+```
 
 3. `java -version` 输出到 stderr，PowerShell 可能显示 `NativeCommandError`；这不是权限失败。需要干净输出时：
 
@@ -117,13 +124,7 @@ node scripts/version.mjs --update
 cmd /c "java -version 2>&1"
 ```
 
-**管道命令被拒**：`Get-ChildItem ... | Select-Object ...` 会逐段检查，`Select-Object` 也需要白名单。1.1.2 起 Chief 允许：
-
-`Select-Object`、`Sort-Object`、`Measure-Object`、`Format-Table`、`Format-List`、`Out-String`。
-
-**`try { ... } catch { ... }` 被拒**：`try` 是 PowerShell 复合关键字，不是普通命令；不要用它包裹允许的命令。直接运行，或把逻辑写进 `.ps1` 脚本再执行。
-
-**项目外目录**：`D:\Development` 这类目录现在默认触发 `external_directory` 批准；读取文件内容、编辑、写入都需要确认。需要长期读取时，单独申请只读、限定目录的权限，并保留 `.env`/密钥/`.git` 的 deny。
+**项目外目录**：`read`/`edit` 仍受 `external_directory` 约束；shell 不受该规则保护，Shell-first 下由 OS 权限和人工审查约束。不要用 shell 读取 `.env`/密钥。
 
 ### 3.3 `git add 权限受限` / 有未提交改动但没人提交
 
@@ -152,7 +153,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 
 **处理**：在 `.ai-team/team/GROWTH.md` 的“提案处置索引”为每条提案补一行：`ID / RETRO / 提案 / 状态 / 落地版本或任务 / 证据 / 更新日期`。处置完的提案用 `done/rejected/superseded`，未处置用 `proposed/accepted/in_progress/deferred/partial`。全部处置且不是最近一轮的 RETRO，可用 `growth-check --archive --yes` 归档到 `team/archive/`。
 
-### 3.4 `/ai-resume` 大量 Permission denied
+### 3.4 `/ai-resume` 大量 Permission denied（历史）
 
 **现象**：
 
@@ -163,22 +164,19 @@ Shell Get-Content .ai-team\state\RUN_LOG.md -Tail 40          Permission denied
 Shell mvn -v                                                  Permission denied
 ```
 
-**原因**：
+**原因（1.4.1 及以前）**：
 
-- Chief 是只读角色，shell 是 allowlist；
-- `;`/`&&`/`2>&1` 会把命令拆成多段，`echo`、重定向段不在白名单；
-- `git -C ...` 不是 `git status *`，旧版没匹配；
-- `Get-Content` 不在白名单（应该用 `read` 工具）；
-- `mvn -v` 旧版只允许 `mvn -version`/`mvn --version`。
+- Chief/Reviewer 等角色 shell 是 allowlist；
+- `;`/`&&`/`2>&1` 被当作复合命令直接 deny；
+- `git -C ...`、`Get-Content`、`mvn -v` 等旧版未匹配；
+- 模型被拒后反复换写法重试，放大成“大量 Permission denied”。
 
-**处理（1.2.7 已优化）**：
+**1.4.2 Shell-first 处理**：
 
-- 一次一条命令；不要用 `;`/`&&`/`2>&1`/`echo` 拼接；
-- 读文件用 `read` 工具；只有 `.ai-team/state|tasks|team` 可用 `Get-Content`；
-- 不要用 `git -C`；cwd 就是项目根；
-- 不要扫描 `~/.config/opencode`；直接运行已知脚本路径；
-- 1.2.7 增加 `mvn -v`、`git -C * status/diff/log`、`Get-Content .ai-team/state|tasks|team`、`echo`；
-- 如果仍被拒，不要换写法硬试：改用 `read`/脚本，或派对应 owner。
+- 所有角色 shell 默认 allow；以上命令现在都应直接通过；
+- 只有破坏性命令、发布/部署、`.env`/密钥、只读角色 `git add/commit/push/tag`、`git add -A`/`git add .` 仍会被拒；
+- 仍被拒时用 `permission-doctor` 看最终规则，不要为了绕过安全边界扩大 `node *`/`git *`；
+- `read`/`glob`/`grep` 仍是读文件的首选，但不是权限强制要求。
 
 ## 4. 一直弹权限确认
 
@@ -187,15 +185,8 @@ Shell mvn -v                                                  Permission denied
 处理：
 
 1. 看提示里的 action/resource；
-2. 在对应 agent 加精确 allow（放在 deny 之后）：
-
-```yaml
-- action: shell
-  resource: "pnpm test *"
-  effect: allow
-```
-
-3. 不要用 `action: "*" / resource: "*" / effect: allow` 解决所有问题；
+2. Shell-first 下 shell 默认 allow；如果仍弹确认，通常是 `git commit`/`git push`/发布/部署等 `ask` 规则，确认即可；
+3. 如果是 `deny`，先看是否命中破坏性命令、只读角色 `git add/commit/push/tag`、`git add -A` 或密钥读取；不要为了消除提示而扩大 `node *`/`git *`；
 4. 检查是否有前面的 deny 覆盖了后面的 allow（最后匹配生效，allow 要放后面）；
 5. 项目级可覆盖：项目 `.opencode/opencode.jsonc` 的 `agents`。
 

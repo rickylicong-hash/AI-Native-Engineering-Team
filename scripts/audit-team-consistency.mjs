@@ -333,15 +333,19 @@ check(
   briefLintText.includes("skill") && briefLintText.includes("independent") && briefLintText.includes("test_path"),
   "brief-lint does not validate the required contract fields",
 );
+for (const file of agentFiles) {
+  const role = file.replace(/\.md$/, "");
+  const rules = parseRules(read(path.join(agentsDir, file)));
+  const shellMatches = rules.filter((r) => (r.action === "shell" || r.action === "*") && r.resource === "*");
+  const shellEffect = shellMatches.length ? shellMatches[shellMatches.length - 1].effect : "none";
+  check(
+    `${role} shell default allow`,
+    shellEffect === "allow",
+    `Shell-first requires shell * -> allow (effective=${shellEffect})`,
+  );
+}
 for (const role of ["engineer.md", "qa-engineer.md", "devops-engineer.md", "code-reviewer.md", "security-auditor.md", "technical-writer.md"]) {
   const rules = parseRules(read(path.join(agentsDir, role)));
-  for (const resource of ["*;*", "*&&*", "*||*", "*2>&1*"]) {
-    check(
-      `${role} denies compound shell ${resource}`,
-      hasEffective(rules, "shell", resource, "deny"),
-      "compound shell can bypass one-command rule",
-    );
-  }
   for (const resource of ["git add -A", "git add -A *", "git add --all *", "git add .", "git add . *"]) {
     check(
       `${role} denies ${resource}`,
@@ -368,15 +372,15 @@ check(
 );
 
 const releaseResources = [
-  "npm publish *",
-  "pnpm publish *",
-  "yarn publish *",
-  "cargo publish *",
-  "twine upload *",
-  "docker push *",
-  "kubectl apply *",
-  "helm upgrade *",
-  "terraform apply *",
+  "npm publish*",
+  "pnpm publish*",
+  "yarn publish*",
+  "cargo publish*",
+  "twine upload*",
+  "docker push*",
+  "kubectl apply*",
+  "helm upgrade*",
+  "terraform apply*",
 ];
 for (const role of ["engineer.md", "qa-engineer.md", "technical-writer.md"]) {
   const rules = parseRules(read(path.join(agentsDir, role)));
@@ -450,9 +454,9 @@ check(
 );
 const teamDoc = read(path.resolve("docs", "TEAM.md"));
 check(
-  "TEAM doc reflects reviewer verification shell",
-  teamDoc.includes("Reviewer：只读 git + 项目已有测试/构建/扫描"),
-  "TEAM doc still says reviewer is git-only",
+  "TEAM doc reflects shell-first",
+  teamDoc.includes("所有角色 shell 默认 `allow`") && teamDoc.includes("只读角色"),
+  "TEAM doc still describes a shell allowlist",
 );
 check(
   "TEAM doc has QA Java E2E ownership",

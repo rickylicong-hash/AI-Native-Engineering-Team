@@ -72,7 +72,7 @@ permissions:
 
 - `*` 必须加引号（YAML alias）；
 - 路径匹配是整路径，`*` 可跨 `/`；Windows 反斜杠会归一化；
-- shell 规则匹配原始命令文本，复合命令会被拆开检查；
+- shell 规则匹配原始命令文本；1.4.2 Shell-first 下不再按 `;`/`&&`/`2>&1` 拆分拒绝；
 - `deny` 永远优先于 `ask`/`allow`（同一操作多资源时任一 deny 即拒绝）；
 - 不要给审查者 `edit` 源码权限；
 - 不要把 `.env`/密钥 allow 给任何角色。
@@ -87,14 +87,14 @@ permissions:
   "agents": {
     "ai-team/engineer": {
       "permissions": [
-        { "action": "shell", "resource": "make *", "effect": "allow" }
+        { "action": "shell", "resource": "docker compose down -v *", "effect": "deny" }
       ]
     }
   }
 }
 ```
 
-项目规则会追加在全局/agent 规则之后，可覆盖为更具体的行为。不要用项目配置放宽安全红线（`.env`、生产发布）。
+Shell-first 下 shell 已默认 allow；项目级通常用于**收紧**（新增破坏性命令 deny、限制发布），而不是补 allow。项目规则会追加在全局/agent 规则之后，可覆盖为更具体的行为。不要用项目配置放宽安全红线（`.env`、生产发布）。
 
 ## 6. 修改流程/门禁
 

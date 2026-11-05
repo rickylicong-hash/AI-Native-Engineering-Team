@@ -32,14 +32,9 @@
       },
       "forbidden": {
         "shell": [
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*",
           "git add -A *",
           "git add .",
-          "git add . *",
-          "mvn *test*"
+          "git add . *"
         ]
       },
       "gateway": [
@@ -75,11 +70,7 @@
       "forbidden": {
         "shell": [
           "git add *",
-          "git commit *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git commit *"
         ]
       },
       "gateway": [
@@ -109,11 +100,7 @@
       "forbidden": {
         "shell": [
           "git add *",
-          "git commit *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git commit *"
         ]
       },
       "gateway": [
@@ -141,11 +128,7 @@
       "forbidden": {
         "shell": [
           "git add *",
-          "git commit *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git commit *"
         ]
       },
       "gateway": [
@@ -172,11 +155,7 @@
           "git add -A *",
           "git add --all *",
           "git add .",
-          "git add . *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git add . *"
         ]
       },
       "gateway": [
@@ -213,11 +192,7 @@
         "shell": [
           "git add *",
           "git commit *",
-          "git push *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git push *"
         ]
       },
       "gateway": [
@@ -257,11 +232,7 @@
         "shell": [
           "git add *",
           "git commit *",
-          "git push *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git push *"
         ]
       },
       "gateway": [
@@ -297,11 +268,7 @@
         "shell": [
           "git add *",
           "git commit *",
-          "git push *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git push *"
         ]
       },
       "gateway": [
@@ -342,11 +309,7 @@
           "git add -A *",
           "git add --all *",
           "git add .",
-          "git add . *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git add . *"
         ]
       },
       "gateway": [
@@ -385,11 +348,7 @@
           "git add -A *",
           "git add --all *",
           "git add .",
-          "git add . *",
-          "*;*",
-          "*&&*",
-          "*||*",
-          "*2>&1*"
+          "git add . *"
         ]
       },
       "gateway": [

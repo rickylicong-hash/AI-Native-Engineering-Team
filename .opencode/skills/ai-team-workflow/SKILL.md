@@ -281,14 +281,16 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" -
 - 归档后主文件保留索引与归档导航，不删除历史；
 - 复盘、交接、门禁前运行 `growth-check`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
 
-### 3.5 Shell 与 brief 预检（1.3.1）
+### 3.5 Shell 与 brief 预检（1.3.1；1.4.2 Shell-first）
 
-**Shell 单命令：**
+**Shell 策略：**
 
-- 一次只跑一条命令；禁止 `;`、`&&`、`||`、`2>&1` 和管道拼接；
-- 被 `permission.rejected` 后不要换写法硬试：拆成单条命令、改用 `read` 工具，或派对应 owner；
-- `git add` 只允许显式路径；`git add -A` / `git add .` 被权限 deny；
-- 日志用 `Out-File -Encoding utf8` 或工具重定向，不用复合 shell。
+- 所有角色 shell 默认允许常用命令、管道、`;`、`&&`、`||`、`2>&1` 和多行命令；
+- 读单个文件优先用 `read`，列目录优先用 `glob`，搜内容优先用 `grep`；shell 用于构建、测试、运行、版本控制和批量检查；
+- 破坏性命令（`git reset --hard`、`git clean`、`rm -rf` 等）、发布/部署、`.env`/密钥常见读取仍 deny；
+- `git commit`/`git push` 仍为 ask；`git add -A`/`git add .` 仍 deny；
+- 只读角色（Chief/PM/UX/Architect/Reviewer/Security）不得通过 shell 执行 `git add`/`commit`/`push`/`tag`；
+- 被 `permission.rejected` 时先看是否命中上述保护，不要靠换写法绕过。
 
 **Brief 预检：**
 
@@ -331,9 +333,9 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" `
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --project . --status
 ```
 
-### 3.7 权限矩阵与诊断（1.3.3）
+### 3.7 权限矩阵与诊断（1.4.2）
 
-权限的单一事实源是 `skills/ai-team-workflow/permissions.json`，不要再逐条猜 allow。
+权限的单一事实源是 `skills/ai-team-workflow/permissions.json`；shell 默认 allow，新增安全边界时优先加到矩阵/agent 的 deny，而不是逐条补 allow。
 
 ```powershell
 # 全量校验
@@ -349,10 +351,10 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.m
 
 规则：
 
-- 新增脚本/命令时，先在 `permissions.json` 声明 required/forbidden，再改 agent frontmatter；
+- 新脚本/命令默认已由 shell-first 覆盖；只有破坏性/发布/密钥/只读角色写操作需要 deny；
 - `permission-lint` 必须 PASS，才允许安装或开始 `/ai` / `/ai-resume`；
-- `ask` 视为可用（需要确认），`deny`/`none` 才是缺口；
-- 仍然禁止用扩大 `node *`/`git *` 的方式绕过；复合 shell 应先拆分。
+- `ask` 视为可用（需要确认），`deny`/`none` 才是安全边界；
+- 不要为了绕过安全 deny 扩大 `node *`/`git *`；复合命令不再默认拒绝。
 
 ### 3.8 统一命令网关（1.4.0）
 

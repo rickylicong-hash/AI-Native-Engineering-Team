@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 权限诊断（1.3.3）。
+ * 权限诊断（1.4.2）。
  *
  * 给定角色和命令，列出所有匹配规则、最终效果，并给出最小修复建议。
  *
@@ -30,6 +30,15 @@ const action = getArg("--action", "shell");
 const dash = args.indexOf("--");
 const command = getArg("--command", dash >= 0 ? args.slice(dash + 1).join(" ") : "");
 
+const READ_ONLY_ROLES = new Set([
+  "chief",
+  "code-reviewer",
+  "product-manager",
+  "ux-designer",
+  "system-architect",
+  "security-auditor",
+]);
+
 if (!command) {
   console.error('usage: node permission-doctor.mjs --agent <role> --command "<command>"');
   process.exit(2);
@@ -40,10 +49,19 @@ const matches = matchingRules(rules, action, command);
 const final = effectiveRule(rules, action, command);
 const effect = effectiveEffect(rules, action, command);
 
-function suggest(command) {
+function suggest(command, role) {
   const cmd = command.trim();
+  if (/^git\s+(add|commit|push|tag)\b/i.test(cmd) && READ_ONLY_ROLES.has(role)) {
+    return "read-only role: staging/commit/push is denied by design; route it to DevOps";
+  }
+  if (/^git\s+(reset\s+--hard|clean|push\s+--force|push\s+-f|filter-branch|filter-repo)\b/i.test(cmd)) {
+    return "destructive history command is denied by design; do not widen permissions";
+  }
+  if (/^(Get-Content|cat|type)\b.*\.env/i.test(cmd)) {
+    return "secret read is denied by design; use the read tool only for non-secret files";
+  }
   if (/[;]|&&|\|\||2>&1|\|/.test(cmd)) {
-    return "compound shell detected: split into one command per shell call; then re-run doctor";
+    return "compound shell is allowed by Shell-first; inspect the matching safety/read-only rule above";
   }
   const script = cmd.match(/([^\\/]+\.mjs)/i)?.[1];
   if (script) return `node *${script}*`;
@@ -76,13 +94,13 @@ if (effect === "allow" || effect === "ask") {
 }
 
 console.log("result:  FAIL");
-const suggestion = suggest(command);
-if (suggestion.startsWith("compound shell detected")) {
+const suggestion = suggest(command, role);
+if (/^(compound|read-only|destructive|secret)/.test(suggestion)) {
   console.log(`suggest: ${suggestion}`);
 } else {
   console.log(`suggest: allow ${action} resource "${suggestion}" for ${role}`);
 }
 if (/[;]|&&|\|\||2>&1|\|/.test(command)) {
-  console.log("note:    compound shell is denied by design; split the command instead of widening permissions");
+  console.log("note:    compound shell is allowed by Shell-first; final deny is usually a safety/read-only/secret rule");
 }
 process.exit(1);

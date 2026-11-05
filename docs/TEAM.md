@@ -175,14 +175,14 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 
 ### 5.2 Shell
 
-- Chief/PM/UX/Architect：只读 git 与列目录；
-- Reviewer：只读 git + 项目已有测试/构建/扫描（`mvn test/verify/package/compile`、Gradle/npm/pytest/go/cargo/dotnet test 等）；
-- Security：只读 git + 安全扫描器 + 项目测试/构建；
-- Engineer/QA/DevOps/Writer：允许构建/测试；同一工作区同一时刻只有一个构建；发布/部署命令只允许 DevOps（`ask`），其他角色 `deny`；
-- Shell 一次一条命令：禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；`git add -A`/`git add .` 权限 deny；
+- 所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1` 和多行命令；
+- 读单个文件优先用 `read`，列目录优先用 `glob`，搜内容优先用 `grep`；shell 用于构建/测试/运行/版本控制/批量检查；
+- 破坏性命令（`git reset --hard`、`git clean`、`rm -rf` 等）、发布/部署、`.env`/密钥常见读取仍 `deny`；
+- 只读角色（Chief/PM/UX/Architect/Reviewer/Security）不得通过 shell 执行 `git add`/`commit`/`push`/`tag`；
+- `git add -A`/`git add .` 仍 `deny`；`git commit`/`git push` 仍 `ask`（Engineer/DevOps/Writer）；
 - 权限矩阵：`permissions.json` 是 required/forbidden 单一事实源；`/ai` 与 `/ai-resume` 先跑 `permission-lint --role`；拒绝用 `permission-doctor` 定位；
 - 统一网关：读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs --role <role> --action <action>`；写操作/commit 仍按角色权限直接执行；
-- 所有角色：`.env`/密钥读取 deny；外部目录 ask/deny。
+- 所有角色：`.env`/密钥读取 `deny`；shell 侧只做常见命令模式防护，不替代 OS ACL；外部目录由人工/OS 约束。
 
 ### 5.3 生产发布
 

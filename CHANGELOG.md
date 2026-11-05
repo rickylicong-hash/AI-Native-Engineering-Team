@@ -3,6 +3,26 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.4.2] - 2026-11-06
+
+### Changed
+
+- **Shell-first permissions**: every role now defaults to `shell: allow`; compound commands (`;`, `&&`, `||`, `2>&1`), pipelines, and multi-line commands are no longer denied by policy. This removes the 60 compound-command rejections and the 26 `Get-ChildItem` rejections observed in recent riccon-ai sessions.
+- **Safety boundary kept**: destructive history/workspace commands, publish/deploy actions, common `.env`/secret reads, and `git add -A`/`git add .` remain denied. `git commit`/`git push` remain `ask` for Engineer/DevOps/Writer and `deny` for read-only roles.
+- **Read-only role guards**: Chief, PM, UX, Architect, Reviewer, and Security cannot use shell to `git add`/`commit`/`push`/`tag`.
+- **`permission-lint`**: now checks default shell allow, the safety deny set, read-only git guards, bulk-add protection, and the Shell-first guidance block; 398 checks.
+- **`permission-doctor`**: compound-command advice replaced with Shell-first diagnostics that distinguish safety, read-only, and secret denials.
+
+### Verified
+
+- `node scripts/verify.mjs` → 201/201.
+- installed verify → 193/193; installed + OpenCode → 203/203.
+- `node scripts/audit-team-consistency.mjs` → 250 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 398 checks, 0 failed; `--role chief` → 52 checks, 0 failed.
+- `permission-doctor` matrix → 24/24 cases (compound/npm/Get-ChildItem allow; secret/destructive/bulk-add deny; publish deploy ask for DevOps).
+- `sourceHash === installedHash` (`a0c1dca3...`), version `1.4.2`.
+
 ## [1.4.1] - 2026-11-06
 
 ### Fixed
