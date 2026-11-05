@@ -3,6 +3,33 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.3.0] - 2026-11-06
+
+### Added
+
+- **T-20 build mutex**: only one subagent may run a command that writes `target/`, `build/`, or `coverage/` in a workspace at a time; parallel tasks must be read-only or use a separate worktree. Briefs now carry `构建隔离`.
+- **T-21 independent verification enforcement**: reviewer/security briefs must contain an executable verification command. “No shell” is no longer a default; it requires a `RISK-*` and Chief approval, and cannot close a P1/security item.
+- **T-22 defect lifecycle**: new `templates/DEFECTS.md`; owners may only set `fixed`, and only QA may set `verified`/`closed` after independent regression. TASK-0035's project practice is now reusable.
+- **T-23 state self-check**: `state-check` rejects duplicate TASK-IDs; Chief must run it after every batch of `state/**` edits and before handoff.
+- **T-24 P2 debt**: every P2 with real risk in a “changes requested / approved with P2” review needs a `TASK-*`, `RISK-*`, or written acceptance before the gate can pass.
+- **T-25 permission/audit hardening**: engineer is explicitly denied QA-owned Java E2E paths; DevOps may only write `TASK-GIT-*EVIDENCE.md`; consistency audit covers both boundaries.
+- **T-26 growth disposition and archive**: `GROWTH.md` now has a single `提案处置索引` with `proposed/accepted/in_progress/deferred/partial/done/rejected/superseded`; `growth-check.mjs` validates it and can archive fully closed old retrospectives to `team/archive/`.
+- **T-27 review/evidence closeout**: third-round review deadlock requires a Chief decision (split/downgrade/accept risk); R rounds must update affected evidence in the same batch; security-semantic changes need a fail-open counterexample; large slices use `checkpoint-check --max-files`.
+
+### Changed
+
+- Documentation and command preflight now include `growth-check`; `docs/WORKFLOW.md` and `docs/TEAM.md` match the current reviewer shell, QA Java E2E paths, build mutex, and brief fields.
+- Team proposal IDs from 1.3.0 onward use `T-*` to avoid collision with project GROWTH `P-*` IDs.
+
+### Verified
+
+- `node scripts/verify.mjs` → 194/194.
+- installed verify → 186/186; installed + OpenCode → 196/196.
+- `node scripts/audit-team-consistency.mjs` → 168 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `state-check` fixture: duplicate TASK-ID fails with exit 1.
+- `growth-check` fixture: 22 proposals, done 22, open 0, strict PASS; fully closed RETRO-0001..0004 archived to `team/archive/GROWTH-2026.md`.
+
 ## [1.2.19] - 2026-11-05
 
 ### Added

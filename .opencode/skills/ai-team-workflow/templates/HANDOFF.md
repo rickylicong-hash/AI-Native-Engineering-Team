@@ -9,6 +9,7 @@
 - 阻塞/风险：
 - Retro：not due / done YYYY-MM-DD / DUE — 先补
 - Checkpoint：clean / done <commit> / DUE — 先派 DevOps / WAIVED
+- Growth：open N / done M / 最近处置 YYYY-MM-DD（`growth-check`）
 - Git：<last code checkpoint SHA>
 - Baseline：<last code checkpoint SHA；默认同 Git；用于区分后续纯文档提交>
 - 下一条指令：

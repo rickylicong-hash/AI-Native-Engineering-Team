@@ -347,6 +347,19 @@ permissions:
   - action: edit
     resource: "e2e/*"
     effect: deny
+  # QA-owned Java E2E：实现者不得修改验收测试（T-25）。
+  - action: edit
+    resource: "**/src/test/java/**/e2e/**"
+    effect: deny
+  - action: edit
+    resource: "**/src/test/java/**/qa/**"
+    effect: deny
+  - action: edit
+    resource: "**/src/test/resources/**/e2e/**"
+    effect: deny
+  - action: edit
+    resource: "**/src/test/resources/**/qa/**"
+    effect: deny
 
   # 发布/部署命令只由 DevOps 执行；其他角色不得直接发布。
   - action: shell
@@ -445,6 +458,7 @@ permissions:
 13. **提交范围。** 只提交任务范围内的代码、单元测试和对应 `.ai-team/work/TASK-*` 证据；禁止 `git add -A` / `git add .`；commit 默认 `ask`；commit message 必须含 `TASK-*`。
 14. **装配与契约。** 开工前确认 Bean 注册点、持久化仓储、外部依赖/制品、配置键、迁移；新增/修改错误码、端点、事件字段时，同一提交更新 `API-CONTRACTS` 和契约测试。缺装配或契约未更新时回报 BLOCKED，不要“先写完再说”。
 15. **证据/产物卫生。** 测试日志写 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，不写仓库根目录；统一 UTF-8；失败日志用 `.failed.log` 并在 EVIDENCE 说明；T0/spike 的 `target/` 收口清理；不用 `gitignore` 掩盖根目录产物。
+16. **构建互斥。** 开始会写 `target/`、`build/`、`coverage/` 的命令前，确认同一工作区没有其他构建；发现冲突时等待或回报 BLOCKED，不得并行 `mvn clean/test` 互相删目录。
 
 ## 5. 测试与验证
 

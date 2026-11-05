@@ -21,7 +21,7 @@ flowchart TB
 - **Chief** 是唯一对用户负责、唯一能调度 subagent 的人。
 - 专家之间不互相调度；跨角色问题交 Chief。
 - 审查者独立于实现者；审查者不修代码。
-- 同一角色可以并行多个实例（例如多个 engineer），但文件所有权必须切分。
+- 同一角色可以并行多个实例（例如多个 engineer），但文件所有权必须切分；同一工作区同一时刻只允许一个实例执行会写 `target/`/`build/`/`coverage/` 的构建，其他实例只读或使用独立 worktree。
 
 ## 2. RACI
 
@@ -164,21 +164,21 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 | PM | `.ai-team/product/**` | 其他一切 |
 | UX | `.ai-team/design/ux/**`、`design/**`、`mockups/**`、`prototypes/**` | 源码、需求、架构、测试、部署 |
 | Architect | `.ai-team/design/architecture/**`、`adr/**`、`docs/adr/**` | 源码、需求、UX、测试、部署 |
-| Engineer | 源码、单元测试、`.ai-team/work/**` | 产品/设计/审查/安全/QA/发布/状态 |
+| Engineer | 源码、单元测试、`.ai-team/work/**` | 产品/设计/审查/安全/QA/发布/状态；QA-owned `**/src/test/java/**/e2e/**`、`qa/**` |
 | Reviewer | `.ai-team/reviews/**` | 其他一切（尤其源码） |
-| QA | `tests/**`、`e2e/**`、`qa/**`、测试文件、`.ai-team/qa/**` | 生产代码、需求/设计/部署 |
+| QA | `tests/**`、`e2e/**`、`qa/**`、`**/src/test/java/**/e2e/**`、`**/src/test/java/**/qa/**`、测试文件、`.ai-team/qa/**` | 生产代码、需求/设计/部署 |
 | Security | `.ai-team/security/**` | 其他一切 |
 | DevOps | `deploy/**`、`ops/**`、`infra/**`、`terraform/**`、`k8s/**`、`helm/**`、`docker/**`、`.github/**`、CI/Docker/Makefile、`.ai-team/release/**`、`.ai-team/work/TASK-GIT-*EVIDENCE.md` | 业务代码、需求/设计/测试 |
 | Writer | `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.ai-team/docs/**` | 源码、需求/设计/测试/部署 |
 
-权限是“默认拒绝 + 最小允许”；如项目目录结构与约定不同，Chief 可通过项目级 `.opencode/opencode.jsonc` 覆盖，而不是让成员越权。
+权限模型采用“基础 allow + 显式 deny/allow 覆盖”；高风险跨角色路径（QA E2E、发布、状态、密钥）必须显式 deny。项目级 `.opencode/opencode.jsonc` 只能收紧本角色边界，不能放宽到其他角色的 owned paths。
 
 ### 5.2 Shell
 
 - Chief/PM/UX/Architect：只读 git 与列目录；
-- Reviewer：只读 git；
-- Security：只读 git + 安全扫描器；
-- Engineer/QA/DevOps/Writer：允许构建/测试；发布/部署命令只允许 DevOps（`ask`），其他角色 `deny`；
+- Reviewer：只读 git + 项目已有测试/构建/扫描（`mvn test/verify/package/compile`、Gradle/npm/pytest/go/cargo/dotnet test 等）；
+- Security：只读 git + 安全扫描器 + 项目测试/构建；
+- Engineer/QA/DevOps/Writer：允许构建/测试；同一工作区同一时刻只有一个构建；发布/部署命令只允许 DevOps（`ask`），其他角色 `deny`；
 - 所有角色：`.env`/密钥读取 deny；外部目录 ask/deny。
 
 ### 5.3 生产发布
@@ -196,6 +196,8 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - 触发：T3/T4 阶段结束、每 10 个任务、重复返工/漏检/交接失败。
 - 评估：一次验收通过率、返工原因、审查发现、交接缺失、跨职责事件。
 - 提案标准：≥2 次证据、不重复现有能力、最小改动、可验收。
+- 处置回传：每条提案必须进入 `GROWTH.md` 的“提案处置索引”；处置后同一轮回填状态、落地版本/任务、证据、日期。
+- 检查：复盘/交接/门禁前运行 `growth-check`；全部处置且非最近一轮的 RETRO 可归档到 `team/archive/`。
 - 批准：Chief 提案 → 安全/架构审计 → 用户批准 → 授权方修改 `.opencode/**`。
 - **团队不能自己改自己。**
 
@@ -211,4 +213,6 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - DevOps 无回滚发布；
 - Writer 复制未验证命令；
 - 所有角色都改 `.ai-team/state/**`；
-- 多个 agent 同时改同一文件。
+- 多个 agent 同时改同一文件；
+- 多个 agent 在同一工作区并行构建；
+- 成长提案处置后不回填 GROWTH。

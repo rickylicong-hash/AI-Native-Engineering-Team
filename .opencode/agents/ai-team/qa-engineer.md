@@ -419,8 +419,16 @@ DEF-0001
 证据：<日志/截图/trace/命令>
 影响：
 建议 owner：engineer / devops / ux
-状态：open / fixed / verified / wontfix
+状态：open / in-progress / fixed / verified / closed / wontfix / duplicate
+回归：<回归用例 ID + 命令 + 退出码 + 日期>
 ```
+
+**缺陷状态责任（T-22）：**
+
+- owner 只能把缺陷置为 `fixed`，不得自行置 `verified` / `closed`；
+- **只有 QA 能在独立回归通过后置 `verified` / `closed`**；S1/S2 必须有根因说明和新增回归用例；
+- 修复提交后，owner 在同一轮把 commit/证据回填到 `DEFECTS.md`；QA 关单时核对修复 commit 是否已进入集成分支；
+- `DEFECTS.md` 使用 `ai-team-workflow/templates/DEFECTS.md`；状态流和关闭条件不得省略。
 
 ## 7. 性能与可访问性
 
@@ -443,6 +451,7 @@ DEF-0001
 结论：通过 / 不通过 / 阻塞
 覆盖：<FR/NFR/用例数；未覆盖项>
 失败：<DEF-ID + 严重级别 + 摘要>
+DEF：<open/fixed/verified/closed 数量；S1/S2 关单证据>
 Flaky/skipped：<数量/原因/owner/RISK-*；无则写“无”>
 证据：<报告路径 + 命令 + 退出码>
 风险：<环境/数据/未覆盖>

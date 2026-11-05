@@ -214,15 +214,25 @@ try {
   if (fs.existsSync(tasksFile)) {
     const tasksText = read(tasksFile);
     const legacy = [];
+    const seenIds = new Set();
+    const duplicateIds = new Set();
     for (const line of tasksText.split(/\r?\n/)) {
       if (!/^\|\s*TASK-/.test(line)) continue;
       const cells = line.split("|").map((cell) => cell.trim());
       const id = cells[1];
       const status = cells[5] || "";
+      // T-23：重复 TASK-ID 会让复盘/checkpoint 计数和交接失真，必须阻断。
+      if (id) {
+        if (seenIds.has(id)) duplicateIds.add(id);
+        else seenIds.add(id);
+      }
       if (/^done（/.test(status) || /^done\(/.test(status)) legacy.push(`${id}=${status}`);
     }
     if (legacy.length > 0) {
       warnings.push(`${legacy.length} task(s) use non-standard done(...) status: ${legacy.join(", ")}`);
+    }
+    if (duplicateIds.size > 0) {
+      errors.push(`duplicate TASK-ID: ${[...duplicateIds].join(", ")}`);
     }
   }
 

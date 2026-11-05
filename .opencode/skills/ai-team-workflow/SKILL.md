@@ -181,6 +181,9 @@ Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定�
 4. 改进提案必须有 ≥2 次证据；一次性问题写 `RISKS.md`，不写 GROWTH。
 5. 只写提案，不改 `.opencode/**`；团队变更需用户批准。
 6. 轻量复盘三段：保留什么 / 哪里疼（证据）/ 一个最小改动。完整复盘（G8）另加指标与 per-role 评估。
+7. **每条提案必须登记到“提案处置索引”**：新增为 `proposed`；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。未处置项保持 `proposed/accepted/in_progress/deferred/partial`。
+8. 复盘、交接、门禁前运行 `growth-check`；有缺失状态不得交接。全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/`。
+9. 归档不删除历史：主文件保留索引和归档导航，完整原文进 `team/archive/GROWTH-<year>.md`。
 
 **检查命令（随本 skill 安装）：**
 
@@ -224,7 +227,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
 5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
 6. `checkpoint-check` 同时扫描根目录产物（`*.log`、`target-*`、`*.class` 等）和证据编码；有 error 时 `--mark` 拒绝。先把日志移到 `logs/` 或 `.ai-team/work/<TASK>-logs/`，不要用 `.gitignore` 掩盖。
-7. **checkpoint 收口（P-18）**：`--mark` 只更新 `CHECKPOINT.json`；Chief 必须在同一轮把 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit，提交纯文档同步后运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。
+7. **checkpoint 收口（P-18）**：`--mark` 只更新 `CHECKPOINT.json`；Chief 必须在同一轮把 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit，提交纯文档同步后运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。若本次包含 `GROWTH.md` 变更，先运行 `growth-check`，有缺失处置状态时退回 Chief。
 
 ### 3.3 状态一致性检查
 
@@ -250,6 +253,33 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\artifact-check.mjs"
 ```
 
 有 error（stage/track 不一致、根目录产物、不可读证据等）时，**不得交接、不得把门禁标为通过**；先修正状态文件或清理产物。`--strict` 会把 warning 也变成失败。
+
+### 3.4 成长档案处置与归档（1.3.0）
+
+`team/GROWTH.md` 的“提案处置索引”是**唯一状态源**，每条提案必须有一行：
+
+| 字段 | 说明 |
+|---|---|
+| `ID` | 项目提案 `P-*`；团队变更建议用 `T-*`，避免与历史编号冲突 |
+| `RETRO` | 来源复盘 |
+| `状态` | `proposed` / `accepted` / `in_progress` / `deferred` / `partial` / `done` / `rejected` / `superseded` |
+| `落地版本/任务` | `done` 必填，如 `1.3.0` 或 `TASK-0048` |
+| `证据` | `done`/`rejected` 必填，如 `CHANGELOG.md#130`、`TASK-*-EVIDENCE.md` |
+| `更新日期` | `done`/`rejected` 必填 |
+
+检查命令：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" --project .
+```
+
+规则：
+
+- 默认只把“索引缺失/状态非法/终端缺证据”视为 error；未处置提案只报 open；
+- `--strict` 把未处置提案也算失败，可用于 G8 或用户要求；
+- `--archive` 只输出归档计划；`--archive --yes` 才移动“全部提案已处置且非最近一轮”的 RETRO 到 `team/archive/GROWTH-<year>.md`；
+- 归档后主文件保留索引与归档导航，不删除历史；
+- 复盘、交接、门禁前运行 `growth-check`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
 
 ## 4. 目录与产物
 
@@ -317,6 +347,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\artifact-check.mjs"
     DOCS-REVIEW.md
   team/
     GROWTH.md
+    archive/
+      GROWTH-<year>.md
 ```
 
 项目根目录的原始日志统一放 `logs/<date>/TASK-<id>-<step>-<timestamp>.log`；该目录加入项目 `.gitignore`，不要写仓库根目录。
@@ -454,6 +486,8 @@ Track / 阶段：
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；统一 UTF-8；失败日志 .failed.log>
 测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
+构建隔离：<共享工作区串行 / 独立 worktree <path>；并行构建或审查必填>
+P2 处置：<修改后通过时必填；每个有实际风险的 P2 → TASK-* / RISK-* / 明确接受>
 证据要求：
 禁止：
 回报格式：
@@ -499,6 +533,8 @@ Track / 阶段：
 - T0/spike 的 `target/` 构建产物在任务收口清理；根目录 `io/org/com` 等只有 `.class` 的目录视为误落盘；
 - 非确定性测试失败（deadlock/timeout/网络/顺序）先登记 `RISK-*`/`DEF-*`，写明 owner 与关闭条件；重跑通过不能单独关闭 P1/安全项；
 - QA 的 Java/Maven/Gradle E2E 放在 `**/src/test/java/**/e2e/**`，资源放 `**/src/test/resources/**/e2e/**`；必须用标准构建命令从干净 checkout 执行，禁止手工 `javac`/复制 class 作为最终证据；
+- 同一工作区同一时刻只允许一个会写 `target/`/`build/`/`coverage/` 的构建；并行审查/实现必须串行构建或使用独立 worktree；
+- 审查“修改后通过”的 P2 必须有 `TASK-*`/`RISK-*`/书面接受；S1/S2 缺陷只能由 QA 在独立回归后关单；
 - 审查员必须能解析证据；UTF-16/二进制日志不能作为 P1/安全项的唯一依据，需提供 UTF-8 副本或文本摘要。
 
 ## 8. 角色交接契约
@@ -534,7 +570,11 @@ Track / 阶段：
 - 把“没有报错”当“通过”；
 - 把日志/临时文件写在仓库根目录；
 - 用 UTF-16 或不可解析日志作为唯一证据；
-- 用“重跑通过”关闭 flake。
+- 用“重跑通过”关闭 flake；
+- 多个 agent 在同一工作区并行 `mvn clean/test`；
+- P2 只写报告不建单；
+- 成长提案没有处置状态，或处置后不回填 GROWTH；
+- 归档时删除历史而不是移动到 `team/archive/`。
 
 ## 10. 模板
 
@@ -549,6 +589,7 @@ Track / 阶段：
 - `ADR.md`
 - `REVIEW.md`
 - `TEST-REPORT.md`
+- `DEFECTS.md`
 - `SECURITY-REPORT.md`
 - `RELEASE-PLAN.md`
 

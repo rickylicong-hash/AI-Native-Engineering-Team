@@ -146,6 +146,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 - 提交后 DevOps 运行 `checkpoint-check --mark`；若 HEAD 含原始日志/密钥/构建产物，`--mark` 会拒绝，先修正再标记。
 - 用户明确要求暂不提交 → 在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
+### 3.3.1 `growth-check` 报提案缺少处置状态
+
+**现象**：`growth-check` 报 `missing row in 提案处置索引`，或 `done requires 落地版本/任务`。
+
+**处理**：在 `.ai-team/team/GROWTH.md` 的“提案处置索引”为每条提案补一行：`ID / RETRO / 提案 / 状态 / 落地版本或任务 / 证据 / 更新日期`。处置完的提案用 `done/rejected/superseded`，未处置用 `proposed/accepted/in_progress/deferred/partial`。全部处置且不是最近一轮的 RETRO，可用 `growth-check --archive --yes` 归档到 `team/archive/`。
+
 ### 3.4 `/ai-resume` 大量 Permission denied
 
 **现象**：

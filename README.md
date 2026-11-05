@@ -393,6 +393,14 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\retro-check.mjs" --
 
 到期未复盘，团队不得开始新的功能任务，也不得把门禁标为通过。轻量复盘 10–20 行即可；G8 做完整复盘。
 
+每条提案还要写入 `GROWTH.md` 的“提案处置索引”；处置后回填状态/落地版本/证据/日期。检查命令：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" --project .
+```
+
+已全部处置且不是最近一轮的 RETRO，可用 `--archive --yes` 归档到 `team/archive/`，主文件保留索引和最近复盘。
+
 #### 8. 为什么有未提交改动却没提交
 
 Chief 是只读角色，**不能执行 `git add`/`git commit`**。如果它尝试提交，会被权限拒绝；正确动作是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队现在用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。

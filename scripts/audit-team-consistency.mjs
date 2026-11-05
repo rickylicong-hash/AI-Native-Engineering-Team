@@ -168,9 +168,9 @@ for (const resource of [
 
 const devopsRules = parseRules(read(path.join(agentsDir, "devops-engineer.md")));
 check(
-  "devops can write work evidence",
-  hasEffective(devopsRules, "edit", ".ai-team/work/*EVIDENCE.md", "allow"),
-  "DevOps must be able to write work/TASK-*-EVIDENCE.md without shell bypass",
+  "devops can write TASK-GIT evidence",
+  hasEffective(devopsRules, "edit", ".ai-team/work/TASK-GIT-*EVIDENCE.md", "allow"),
+  "DevOps must be able to write TASK-GIT-*EVIDENCE.md without shell bypass",
 );
 
 const reviewerRules = parseRules(read(path.join(agentsDir, "code-reviewer.md")));
@@ -220,6 +220,50 @@ check(
   "qa prompt requires build-integrated E2E",
   qaText.includes("src/test/java/**/e2e") && qaText.includes("禁止用手工 `javac`"),
   "QA prompt does not enforce build-integrated E2E tests",
+);
+check(
+  "qa owns defect closure",
+  qaText.includes("只有 QA 能在独立回归通过后置") && qaText.includes("owner 只能把缺陷置为 `fixed`"),
+  "QA prompt does not enforce QA-only defect closure",
+);
+
+for (const resource of [
+  "**/src/test/java/**/e2e/**",
+  "**/src/test/java/**/qa/**",
+  "**/src/test/resources/**/e2e/**",
+  "**/src/test/resources/**/qa/**",
+]) {
+  check(
+    `engineer denied QA Java test ${resource}`,
+    hasEffective(parseRules(read(path.join(agentsDir, "engineer.md"))), "edit", resource, "deny"),
+    "Engineer can edit QA-owned build-integrated tests",
+  );
+}
+check(
+  "devops can write TASK-GIT evidence",
+  hasEffective(parseRules(read(path.join(agentsDir, "devops-engineer.md"))), "edit", ".ai-team/work/TASK-GIT-*EVIDENCE.md", "allow"),
+  "DevOps cannot write checkpoint evidence",
+);
+check(
+  "DEFECTS template exists",
+  fs.existsSync(path.join(skillsDir, "ai-team-workflow", "templates", "DEFECTS.md")),
+  "missing QA defect lifecycle template",
+);
+check(
+  "growth-check script exists",
+  fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "growth-check.mjs")),
+  "missing GROWTH disposition checker",
+);
+const growthTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "GROWTH.md"));
+check(
+  "growth template has disposition index",
+  growthTemplate.includes("提案处置索引") && growthTemplate.includes("proposed") && growthTemplate.includes("superseded"),
+  "GROWTH template does not track per-proposal disposition",
+);
+check(
+  "state-check detects duplicate TASK-ID",
+  read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
+  "state-check cannot detect duplicate task rows",
 );
 
 const engineerRules = parseRules(read(path.join(agentsDir, "engineer.md")));
@@ -272,7 +316,7 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "构建互斥", "状态自检", "growth-check", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
 const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));
@@ -285,6 +329,53 @@ check(
   "review template checks independent verification",
   reviewTemplate.includes("## 独立验证") && reviewTemplate.includes("证据可读性"),
   "missing reviewer independent verification/evidence readability section",
+);
+check(
+  "review template tracks P2 disposition",
+  reviewTemplate.includes("## P2 处置") && reviewTemplate.includes("TASK-____ / RISK-____"),
+  "missing P2 debt disposition",
+);
+check(
+  "review template handles third review round",
+  reviewTemplate.includes("第 3 轮"),
+  "missing third-round escalation rule",
+);
+const workflowDoc = read(path.resolve("docs", "WORKFLOW.md"));
+check(
+  "workflow doc has current brief fields",
+  workflowDoc.includes("构建隔离：") && workflowDoc.includes("独立验证：") && workflowDoc.includes("测试路径："),
+  "WORKFLOW brief template is missing new fields",
+);
+check(
+  "workflow doc has build mutex",
+  workflowDoc.includes("T-20 构建互斥") && workflowDoc.includes("同一工作区同一时间只有一个"),
+  "WORKFLOW parallel rules do not serialize builds",
+);
+check(
+  "workflow doc has growth disposition",
+  workflowDoc.includes("提案处置索引") && workflowDoc.includes("growth-check"),
+  "WORKFLOW does not track GROWTH dispositions",
+);
+const teamDoc = read(path.resolve("docs", "TEAM.md"));
+check(
+  "TEAM doc reflects reviewer verification shell",
+  teamDoc.includes("Reviewer：只读 git + 项目已有测试/构建/扫描"),
+  "TEAM doc still says reviewer is git-only",
+);
+check(
+  "TEAM doc has QA Java E2E ownership",
+  teamDoc.includes("**/src/test/java/**/e2e/**"),
+  "TEAM doc QA write table is stale",
+);
+check(
+  "handoff command runs growth-check",
+  read(path.join(commandsDir, "ai-handoff.md")).includes("growth-check"),
+  "handoff does not check GROWTH dispositions",
+);
+check(
+  "retro command runs growth-check",
+  read(path.join(commandsDir, "ai-retro.md")).includes("growth-check"),
+  "retro does not check GROWTH dispositions",
 );
 const testReportTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "TEST-REPORT.md"));
 check(

@@ -499,6 +499,32 @@ audit-team-consistency:    144 checks, 0 failed
 audit-git-permissions:     10 agents, 0 failed
 ```
 
+### 5.18 团队全量审计与成长处置（1.3.0）
+
+- 全量审计覆盖 10 个角色、12 个命令、4 个技能、全部模板/脚本/文档；结论是“需要流程硬化，不需要新增角色”。
+- **T-20 构建互斥**：同一工作区只允许一个会写 `target/`/`build/`/`coverage/` 的构建；并行任务只读或独立 worktree；brief 增加 `构建隔离`。
+- **T-21 独立验证**：reviewer/security 的 `独立验证` 必须是可执行命令；禁止默认“无 shell”，无 shell 需 `RISK-*` + Chief 批准，不能关闭 P1/安全项。
+- **T-22 DEF 生命周期**：新增 `templates/DEFECTS.md`；owner 只能置 `fixed`，QA 独立回归后置 `verified/closed`；G5 检查。
+- **T-23 状态自检**：`state-check` 检测重复 TASK-ID；每批 `state/**` 编辑后运行，交接前 0 error/0 重复。
+- **T-24 P2 债**：有实际风险的 P2 必须有 `TASK-*`/`RISK-*`/书面接受，否则不能“修改后通过”。
+- **T-25 权限/审计加固**：Engineer 显式 deny QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计增加对应检查。
+- **T-26 成长处置**：`GROWTH.md` 增加“提案处置索引”（唯一状态源）；`growth-check.mjs` 校验状态/落地/证据/日期；`--archive --yes` 将全部处置且非最近一轮的 RETRO 移入 `team/archive/`。
+- **T-27 审查/证据收口**：第 3 轮仍不通过由 Chief 裁决；R 轮同批更新证据；安全语义改动要求 fail-open 反例；大切片用 `--max-files` 提前 checkpoint。
+- riccon-ai 回填 22 条提案（P-01..P-22）为 `done`；`RETRO-0001..0004` 已归档到 `.ai-team/team/archive/GROWTH-2026.md`，主文件只保留索引 + `RETRO-0005`；`growth-check --strict` PASS。
+- `state-check` 重复 TASK-ID fixture 正确报错并 exit 1。
+
+验证：
+
+```text
+source verify:             194/194
+installed verify:          186/186
+installed + OpenCode:      196/196
+audit-team-consistency:    168 checks, 0 failed
+audit-git-permissions:     10 agents, 0 failed
+growth-check (riccon-ai):  22 proposals, done 22, open 0, strict PASS
+version:                   1.3.0, sourceHash === installedHash
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -528,11 +554,11 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.19 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.0 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（124 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用）。
-- 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14）。
-- 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
+- 一致性审计：通过（168 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口）。
+- 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
+- 成长处置：通过（`GROWTH.md` 提案处置索引 22/22 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
 - DevOps 证据写入：通过（1.2.8 允许 `work/*EVIDENCE.md` 并禁止 shell 绕过）。
 - 审查员独立验证：通过（1.2.9 增加只读构建/测试/扫描 allowlist）。

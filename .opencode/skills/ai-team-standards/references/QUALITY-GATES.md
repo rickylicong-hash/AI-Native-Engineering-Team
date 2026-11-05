@@ -84,6 +84,7 @@
 - [ ] 装配清单完整（Bean/仓储/外部依赖/配置键/迁移）；
 - [ ] 同模块连续未审切片 ≤2；
 - [ ] 文件所有权切分，无并行冲突；
+- [ ] 并行任务写明构建隔离（共享工作区串行 / 独立 worktree）；
 - [ ] 关键路径/并行路径清楚；
 - [ ] 风险/阻塞/回退计划；
 - [ ] DoR 满足；
@@ -93,6 +94,7 @@
 
 - [ ] 只改任务范围；
 - [ ] 启动实现任务前 `checkpoint-check` 未到期；
+- [ ] 同一工作区无并行构建；并行实现/审查使用 worktree 或串行；
 - [ ] 代码符合设计/契约；
 - [ ] 契约变更与实现同一提交，并更新 `API-CONTRACTS`/ADR + 契约测试；
 - [ ] 装配点/仓储/外部依赖/配置键已接，不是“写完未接线”；
@@ -113,6 +115,8 @@
 
 - [ ] `retro-check` 未到期，或已补 `team/GROWTH.md`；
 - [ ] `tasks_at_last_retro` 与 `TASKS.md` 的 `done` 数一致；
+- [ ] 每条提案已在“提案处置索引”登记，状态/落地/证据/日期完整；`growth-check` 无 error；
+- [ ] 已处置且非最近一轮的 RETRO 已归档或列入归档计划；
 - [ ] 问题有 ≥2 次证据；一次性问题在 `RISKS.md`；
 - [ ] 提案不直接改 `.opencode/**`；
 - [ ] `STATUS.md` 的 `Retro:` 行已更新。
@@ -122,7 +126,8 @@
 ## 提交检查（G5/G7/G8 前，或交接前）
 
 - [ ] `checkpoint-check` 未到期，或已由 DevOps 完成 checkpoint；
-- [ ] `artifact-check` 无 error（根目录产物/误落盘编译目录）；T3/T4 用 `--strict` 无 warning；
+- [ ] `artifact-check` 无 error（根目录产物/误落盘编译目录）；T3/T4 用 `--strict` 无 warning；历史 `.ai-team/work/**` UTF-16 用 `--fix-all` 迁移，未迁移须 `RISK-*` + 迁移计划；
+- [ ] 若 `GROWTH.md` 有新增/处置，`growth-check` 无 error；
 - [ ] checkpoint 有 `TASK-GIT-*`、brief 明确路径、`work/TASK-GIT-*EVIDENCE.md`；
 - [ ] 工作区未提交文件 < 20，或已提交精选路径；
 - [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark` 更新；
@@ -153,8 +158,11 @@
 - [ ] 契约 diff 已审查，G4 期间的变更走 ADR/DEC；
 - [ ] `API-CONTRACTS` 与错误码/事件枚举恒等，无未登记差异；
 - [ ] 修复/回归任务有 P1 closure 表（原 P1、修复点、复现、回归）；
-- [ ] reviewer brief 允许独立执行测试/扫描；无 shell 有 `RISK-*` + 补偿证据；
-- [ ] reviewer 报告记录实际执行/未能执行的命令；
+- [ ] reviewer brief 允许独立执行测试/扫描；无 shell 有 `RISK-*` + Chief 批准；不接受默认“无 shell”；
+- [ ] reviewer/security 报告记录实际执行/未能执行的命令；
+- [ ] 同一任务第 3 轮仍不通过时有 Chief 裁决（拆分/降级/接受风险）；
+- [ ] P2 有 `TASK-*`/`RISK-*` 或书面接受；
+- [ ] S1/S2 DEF 由 QA 独立回归关单，owner 未自关；
 - [ ] 证据日志可读（UTF-8 或文本摘要）；UTF-16/二进制不能作为 P1/安全项唯一依据；
 - [ ] 安全基础；
 - [ ] 测试有效（断言/确定性/异常覆盖）；
@@ -218,6 +226,8 @@
 - [ ] 用户反馈/支持；
 - [ ] 完整复盘：做得好/问题/改进/指标；
 - [ ] `team/GROWTH.md` 已追加并更新 frontmatter；
+- [ ] 每条提案已回填处置状态；`growth-check` 无 error；
+- [ ] 已处置旧 RETRO 已归档或列入归档计划；
 - [ ] 遗留项进入 backlog/风险；
 - [ ] `HANDOFF.md` 更新。
 

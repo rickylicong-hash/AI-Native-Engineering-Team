@@ -231,6 +231,11 @@ Track / 阶段：T3 / G4
   1. ...
   2. ...
 必须执行：<命令/测试/扫描>
+独立验证：<reviewer/QA 必须实际执行的命令；无 shell 写 RISK-* + 补偿证据>
+证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8>
+测试路径：<owner=qa-engineer 时必填；QA-owned + 构建 test source root>
+构建隔离：<共享工作区串行 / 独立 worktree>
+P2 处置：<修改后通过时必填；TASK-* / RISK-* / 明确接受>
 证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径
 禁止：不得启动 subagent；不得跨职责；不得改 state；不得伪造证据
 回报格式：结论/改动/证据/风险/下一步/TASKS.md 建议更新
@@ -343,6 +348,8 @@ Co-authored-by: ai-team/qa-engineer <ai-team@local>
 
 硬规则：到期未复盘，不开始新的功能任务，不把门禁标为通过。轻量复盘 10–20 行即可；G8 做完整复盘。检查命令见 `ai-team-workflow` 3.1。
 
+**处置回传（1.3.0）**：每条提案必须登记到 `GROWTH.md` 的“提案处置索引”。新增为 `proposed`；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。复盘、交接、门禁前运行 `growth-check`；全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/GROWTH-<year>.md`，主文件保留索引与导航。
+
 ### 7.3 Checkpoint 提交
 
 Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message。触发条件：
@@ -359,7 +366,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。`checkpoint-check` 会同时扫描根目录产物和证据编码；有 artifact error 时 `--mark` 拒绝。**`--mark` 后必须由 Chief 同步 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；未同步不算 checkpoint 完成。** Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。`checkpoint-check` 会同时扫描根目录产物和证据编码；有 artifact error 时 `--mark` 拒绝。**`--mark` 后必须由 Chief 同步 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -379,20 +386,29 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
 - **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
 
-### 7.6 证据与 flake 治理（P-15..P-18）
+### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-27）
 
 - **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
 - **P-17 审查独立复现**：reviewer brief 默认授予测试/扫描 shell；无 shell 必须写 `RISK-*` + 补偿证据。证据必须可读（UTF-8 或文本摘要），UTF-16/二进制日志不能作为 P1/安全项唯一依据。reviewer 报告必须写“实际执行/未能执行”的命令。
 - **P-18 checkpoint 收口**：`--mark` 后 Chief 同步 `HANDOFF Git/Baseline` 与 `STATUS Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；`TASK-GIT-*` 证据包含 `state-check` PASS。
 - **P-19 QA 测试路径**：Java/Maven/Gradle 的 E2E 放在 `**/src/test/java/**/e2e/**`（资源放 `**/src/test/resources/**/e2e/**`）；brief 的 `测试路径` 必须 QA-owned 且在构建 test source root；E2E 必须用标准构建命令从干净 checkout 执行，禁止手工 `javac`/复制 class 作为最终证据。
+- **T-20 构建互斥**：同一工作区同一时刻只允许一个 subagent 执行会写 `target/`/`build/`/`coverage/` 的命令；并行任务默认只读或独立 worktree；brief 写 `构建隔离`。
+- **T-21 独立验证强制**：reviewer/security 的 brief 必须给可执行测试/扫描命令；禁止默认写“无 shell”；无 shell 需 `RISK-*` + Chief 批准，且不得据此关闭 P1/安全项。
+- **T-22 DEF 生命周期**：owner 只能置 `fixed`；只有 QA 能在独立回归后置 `verified/closed`；S1/S2 必须有关闭证据；使用 `templates/DEFECTS.md`。
+- **T-23 状态自检**：`state-check` 检查重复 TASK-ID；每批 `state/**` 编辑后运行；交接前 0 error、0 重复。
+- **T-24 P2 债**：审查“修改后通过”的每个有实际风险 P2 必须有 `TASK-*`/`RISK-*` 或书面接受；只在报告里记录不算处置。
+- **T-25 权限/审计加固**：Engineer 不得编辑 QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计覆盖上述边界。
+- **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/落地/证据/日期；`growth-check` 检查；已处置旧 RETRO 可归档到 `team/archive/`。
+- **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
 
 ## 8. 并行规则
 
 - 契约冻结前不并行实现；
 - 按文件/模块切分 engineer 实例；
 - 同一文件同一时间只有一个 writer；
-- 审查与安全可并行；
+- 同一工作区同一时间只有一个会写 `target/`/`build/`/`coverage/` 的构建；
+- 审查与安全可并行，但构建/扫描必须串行或使用独立 worktree；
 - QA 可在实现后先写用例，但结论基于最终代码；
 - 文档可与 QA 并行，但命令必须验证；
 - 上游 BLOCKED 不启动下游。
@@ -403,6 +419,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 |---|---|
 | Subagent BLOCKED | 判断输入/权限/环境/歧义；补输入/换 owner/重试一次 |
 | 审查不通过 | findings 转 owner；修复后回归审查 |
+| 第 3 轮仍不通过 | Chief 裁决：拆分任务 / 降级 / 接受风险；不得无限返工 |
+| 成长提案未回填 | `growth-check` 阻断交接；先补处置索引 |
 | 测试失败 | 区分环境/数据/真实缺陷；真实缺陷转 owner；QA 回归 |
 | 安全 Critical/High | 阻断发布；修复或书面接受风险 |
 | 上下文不足 | 写 HANDOFF；建议新会话 |
