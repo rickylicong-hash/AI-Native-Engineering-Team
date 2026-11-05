@@ -426,6 +426,7 @@ Track / 阶段：T? / G?
 必须执行：<命令/测试/扫描；若环境不允许，明确记录 BLOCKED + 原始错误>
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；失败日志 .failed.log>
+测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
 证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径 + 未决问题
 禁止：不得启动 subagent；不得跨职责；不得改 `.ai-team/state/**`；不得伪造证据
 回报格式：结论（完成/部分完成/阻塞）/ 改动 / 证据 / 风险 / 下一步 / `TASKS.md` 建议更新（状态+证据路径）
@@ -446,6 +447,7 @@ Brief 不合格的表现：没有验收标准、没有所有权、没有证据�
 9. **状态回填**：每个任务回报后立即更新 `TASKS.md`/`STATUS.md`/`RUN_LOG.md`；不要等会话结束才补。
 10. **证据/产物卫生**：`state-check`/`artifact-check` 报根目录日志、`target-*`、`*.class` 或 UTF-16 证据时，先清理/转换再进 G4/G5；日志放 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`。
 11. **flake 治理**：非确定性失败必须登记 `RISK-*`/`DEF-*` 并指定 owner；不能用“重跑通过”单独关闭 P1/安全项。
+12. **QA 测试路径预检**：owner 是 `qa-engineer` 时，brief 的 `测试路径` 必须在 QA owned paths 内，且在构建的 test source root（如 `server/src/test/java/**/e2e/`）；不满足时先改路径/授权，不得派发。
 
 ## 7. 记忆与状态协议（防遗忘）
 

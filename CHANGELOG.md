@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.19] - 2026-11-05
+
+### Added
+
+- **Java/Maven QA test ownership**: QA can now edit `**/src/test/java/**/e2e/**` and `**/src/test/java/**/qa/**` (plus `src/test/resources` equivalents), while the broad deny keeps engineer unit tests out of QA scope.
+- **QA test path preflight**: task briefs now have a `测试路径` field; for QA tasks it must be QA-owned and inside a build-recognized test source root.
+- **Build-integrated E2E rule**: E2E/integration tests must run from a clean checkout via the project’s standard build command. Manual `javac`, `Copy-Item` into `target/test-classes`, or a temporary classpath cannot be final evidence.
+- **QA permission-denial rule**: denied edit/write returns BLOCKED with the full path; QA must not probe alternate paths or overwrite `TASK-*-EVIDENCE.md` with probe content.
+
+### Verified
+
+- `node scripts/verify.mjs` → 193/193.
+- installed verify → 185/185; installed + OpenCode → 195/195.
+- `node scripts/audit-team-consistency.mjs` → 144 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- riccon-ai TASK-0035 E2E moved to `server/src/test/java/io/riccon/e2e/M1HappyPathE2ETest.java`; `mvn -B -o -pl server -Dtest=M1HappyPathE2ETest test` → 5/5, BUILD SUCCESS.
+
 ## [1.2.18] - 2026-11-05
 
 ### Added

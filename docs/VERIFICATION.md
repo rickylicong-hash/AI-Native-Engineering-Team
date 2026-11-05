@@ -477,6 +477,28 @@ audit-team-consistency:       140 checks, 0 failed
 audit-git-permissions:        10 agents, 0 failed
 ```
 
+### 5.17 QA Java/Maven E2E 路径（1.2.19）
+
+- QA 增加 `**/src/test/java/**/e2e/**`、`**/src/test/java/**/qa/**`、`**/src/test/resources/**/e2e/**`、`**/src/test/resources/**/qa/**` 的 `edit` allow；仍不放开整个 `src/test`。
+- `team-manifest.json` 的 QA `owns` 同步增加上述路径。
+- Chief brief 增加 `测试路径` 字段和派发前校验：owner=QA 时路径必须 QA-owned 且在构建 test source root。
+- QA 规则新增：E2E 必须能从干净 checkout 用标准构建命令执行；禁止手工 `javac`、复制 class 到 `target/test-classes`、临时 classpath 作为最终证据；权限被拒时回报 BLOCKED，不探测替代路径、不覆盖 evidence。
+- riccon-ai TASK-0035：测试从 `tests/e2e/M1HappyPathE2ETest.java` 移到 `server/src/test/java/io/riccon/e2e/M1HappyPathE2ETest.java`，删除 `tests/e2e/test-classpath.txt`、`tests/e2e/target/`、`tests/qa-probe.txt`。
+
+验证：
+
+```text
+mvn -B -o -pl server -DskipTests compile                 -> BUILD SUCCESS
+mvn -B -o -pl server -Dtest=M1HappyPathE2ETest test     -> 5/5, BUILD SUCCESS (38.642 s)
+日志: logs/2026-11-05/TASK-0035-e2e-standard-20261105-2322.log（UTF-8）
+
+source verify:             193/193
+installed verify:          185/185
+installed + OpenCode:      195/195
+audit-team-consistency:    144 checks, 0 failed
+audit-git-permissions:     10 agents, 0 failed
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -506,7 +528,7 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.18 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.19 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 一致性审计：通过（124 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14）。

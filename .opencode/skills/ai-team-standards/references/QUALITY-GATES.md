@@ -168,6 +168,8 @@
 - [ ] 覆盖矩阵完整；
 - [ ] 全量基线唯一（命令/总数/skipped/commit），排除项有批准；
 - [ ] skipped/flaky 有原因、owner、`RISK-*`/`DEF-*`；重跑通过不能单独关闭 P1/安全项；
+- [ ] E2E/集成测试位于构建可识别的 test source root（如 `server/src/test/java/**/e2e/`），可从干净 checkout 用标准命令执行；
+- [ ] 没有用手工 `javac`、`Copy-Item` 到 `target/test-classes`、临时 classpath 作为最终 E2E 证据；
 - [ ] 单元/集成/契约/E2E 按 Track 执行；
 - [ ] 性能/可访问性按 Track；
 - [ ] 缺陷有复现/级别/证据；

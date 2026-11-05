@@ -385,6 +385,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
 - **P-17 审查独立复现**：reviewer brief 默认授予测试/扫描 shell；无 shell 必须写 `RISK-*` + 补偿证据。证据必须可读（UTF-8 或文本摘要），UTF-16/二进制日志不能作为 P1/安全项唯一依据。reviewer 报告必须写“实际执行/未能执行”的命令。
 - **P-18 checkpoint 收口**：`--mark` 后 Chief 同步 `HANDOFF Git/Baseline` 与 `STATUS Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；`TASK-GIT-*` 证据包含 `state-check` PASS。
+- **P-19 QA 测试路径**：Java/Maven/Gradle 的 E2E 放在 `**/src/test/java/**/e2e/**`（资源放 `**/src/test/resources/**/e2e/**`）；brief 的 `测试路径` 必须 QA-owned 且在构建 test source root；E2E 必须用标准构建命令从干净 checkout 执行，禁止手工 `javac`/复制 class 作为最终证据。
 
 ## 8. 并行规则
 

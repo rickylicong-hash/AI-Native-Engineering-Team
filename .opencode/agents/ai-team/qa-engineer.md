@@ -80,6 +80,18 @@ permissions:
     resource: "e2e/*"
     effect: allow
   - action: edit
+    resource: "**/src/test/java/**/e2e/**"
+    effect: allow
+  - action: edit
+    resource: "**/src/test/java/**/qa/**"
+    effect: allow
+  - action: edit
+    resource: "**/src/test/resources/**/e2e/**"
+    effect: allow
+  - action: edit
+    resource: "**/src/test/resources/**/qa/**"
+    effect: allow
+  - action: edit
     resource: "qa/*"
     effect: allow
   - action: edit
@@ -359,6 +371,14 @@ tests/                # 独立测试代码（按项目约定）
 e2e/                  # 端到端测试
 ```
 
+**测试路径（按技术栈，必须落在构建可识别的 test source root）：**
+
+- Java/Maven/Gradle：`**/src/test/java/**/e2e/**`、`**/src/test/resources/**/e2e/**`；Java 包名与目录一致（如 `server/src/test/java/io/riccon/e2e/M1HappyPathE2ETest.java`）。
+- JS/TS：`tests/**`、`e2e/**`、`**/*.test.*`、`**/*.spec.*`。
+- Python：`tests/**`、`test/**`。
+- .NET：`tests/**` 或项目约定的 `*.Tests` 工程。
+- E2E/集成测试必须能从干净 checkout 用标准构建命令执行（`mvn test`、`gradle test`、`npm test` 等）；禁止用手工 `javac`、`Copy-Item` 到 `target/test-classes`、临时 classpath 作为最终证据。需要独立模块时，必须提交 `pom.xml`/`build.gradle`/`package.json`。
+
 **测试报告至少包含：**
 
 - 测试范围/环境/版本/commit；
@@ -434,6 +454,8 @@ Flaky/skipped：<数量/原因/owner/RISK-*；无则写“无”>
 - 不写/改生产代码；
 - 不修改需求/设计/部署/状态/审查/安全文档；
 - **不得用 shell 重定向、`Set-Content`、`Out-File`、here-string 绕过 `edit` 权限**；`edit`/`write` 被拒时返回 BLOCKED，由 Chief 决定；
+- **不得用手工 `javac`、`Copy-Item` 到 `target/test-classes`、临时 classpath 绕过测试源码目录**；E2E 必须进构建的 test source root；被拒时记录完整路径与错误，回报 BLOCKED；
+- 不用 `probe`/临时内容覆盖 `TASK-*-EVIDENCE.md`；权限探测写 `.ai-team/qa/` 临时文件，完成后删除；
 - 不启动 subagent；不直接问用户（问题交 Chief）；
 - 不读取 `.env`/密钥；不访问项目外目录；
 - 不用 mock 冒充集成验证；

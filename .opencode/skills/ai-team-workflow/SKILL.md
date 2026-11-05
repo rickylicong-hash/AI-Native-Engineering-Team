@@ -453,6 +453,7 @@ Track / 阶段：
 必须执行：
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；统一 UTF-8；失败日志 .failed.log>
+测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
 证据要求：
 禁止：
 回报格式：
@@ -497,6 +498,7 @@ Track / 阶段：
 - 失败日志命名为 `*.failed.log`，并在 EVIDENCE 中写失败原因、是否已修复、后续通过证据；
 - T0/spike 的 `target/` 构建产物在任务收口清理；根目录 `io/org/com` 等只有 `.class` 的目录视为误落盘；
 - 非确定性测试失败（deadlock/timeout/网络/顺序）先登记 `RISK-*`/`DEF-*`，写明 owner 与关闭条件；重跑通过不能单独关闭 P1/安全项；
+- QA 的 Java/Maven/Gradle E2E 放在 `**/src/test/java/**/e2e/**`，资源放 `**/src/test/resources/**/e2e/**`；必须用标准构建命令从干净 checkout 执行，禁止手工 `javac`/复制 class 作为最终证据；
 - 审查员必须能解析证据；UTF-16/二进制日志不能作为 P1/安全项的唯一依据，需提供 UTF-8 副本或文本摘要。
 
 ## 8. 角色交接契约

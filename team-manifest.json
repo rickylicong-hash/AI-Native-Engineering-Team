@@ -1,7 +1,7 @@
 {
   "name": "AI Native Engineering Team",
   "id": "ai-team",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "description": "A stack-agnostic, globally installable AI engineering team for OpenCode V2. One instruction drives product, UX, architecture, implementation, review, testing, security, deployment and documentation.",
   "default_agent": "ai-team/chief",
   "entry_command": "/ai <goal>",
@@ -53,7 +53,7 @@
       "file": "agents/ai-team/qa-engineer.md",
       "mode": "subagent",
       "role": "QA Engineer",
-      "owns": ["tests/**", "test/**", "e2e/**", "qa/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", ".ai-team/qa/**"]
+      "owns": ["tests/**", "test/**", "e2e/**", "qa/**", "**/src/test/java/**/e2e/**", "**/src/test/java/**/qa/**", "**/src/test/resources/**/e2e/**", "**/src/test/resources/**/qa/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", ".ai-team/qa/**"]
     },
     {
       "id": "ai-team/security-auditor",

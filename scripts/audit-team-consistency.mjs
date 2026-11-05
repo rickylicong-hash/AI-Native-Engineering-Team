@@ -204,6 +204,24 @@ check(
   "security cannot run Maven OWASP dependency-check",
 );
 
+const qaText = read(path.join(agentsDir, "qa-engineer.md"));
+const qaRules = parseRules(qaText);
+check(
+  "qa can edit Java/Maven e2e tests",
+  qaRules.some((rule) => rule.action === "edit" && rule.resource === "**/src/test/java/**/e2e/**" && rule.effect === "allow"),
+  "QA cannot write server/src/test/java/**/e2e tests",
+);
+check(
+  "qa manifest owns Java/Maven e2e tests",
+  (manifest.agents.find((agent) => agent.id === "ai-team/qa-engineer")?.owns ?? []).includes("**/src/test/java/**/e2e/**"),
+  "manifest QA owns does not include src/test/java e2e",
+);
+check(
+  "qa prompt requires build-integrated E2E",
+  qaText.includes("src/test/java/**/e2e") && qaText.includes("禁止用手工 `javac`"),
+  "QA prompt does not enforce build-integrated E2E tests",
+);
+
 const engineerRules = parseRules(read(path.join(agentsDir, "engineer.md")));
 for (const resource of ["docs/*", "deploy/*", "qa/*", ".ai-team/tasks/*", "AGENTS.md"]) {
   check(
@@ -254,7 +272,7 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
 const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));
