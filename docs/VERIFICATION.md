@@ -454,6 +454,29 @@ checkpoint-check --mark fixture:
 audit-team-consistency: 138 checks, 0 failed
 ```
 
+### 5.16 UTF-16 证据硬约束（1.2.18）
+
+- `logs/**` 的 UTF-16 `.log`/`.txt` 从 warning 改为 **error**；`.ai-team/work/**` 历史证据仍为 warning；
+- 新增 `artifact-check --fix`（只转 `logs/**`）和 `--fix-all`（含 `.ai-team/work/**`），转换 UTF-16LE/BE 为 UTF-8；
+- `code-reviewer` 增加 `Cannot read binary file` 处理规则：标“不可读/未验证”，要求 UTF-8 副本/摘要，不能关闭 P1/安全项；
+- riccon-ai 已将 `logs/2026-11-05/` 下 25 个日志转为 UTF-8，包含全部 8 个 TASK-0039 日志；`artifact-check` 从 25 error / 55 warning 变为 0 error / 55 历史 warning。
+
+验证：
+
+```text
+fixture:
+  logs/** UTF-16              -> error
+  --fix                       -> converted, errors 0
+  .ai-team/work UTF-16        -> warning
+  --fix-all                   -> converted, warnings 0
+
+source verify:                193/193
+installed verify:             185/185
+installed + OpenCode:         195/195
+audit-team-consistency:       140 checks, 0 failed
+audit-git-permissions:        10 agents, 0 failed
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -483,7 +506,7 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.17 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.18 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 一致性审计：通过（124 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14）。

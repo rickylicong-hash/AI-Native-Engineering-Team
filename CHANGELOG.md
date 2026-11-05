@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.18] - 2026-11-05
+
+### Added
+
+- **UTF-16 evidence is now blocking for new logs**: `artifact-check` treats UTF-16 `.log`/`.txt` under `logs/**` as an error (reviewers cannot read it); historical `.ai-team/work/**` evidence remains a warning.
+- **`artifact-check --fix` / `--fix-all`**: converts UTF-16LE/BE evidence to UTF-8 while preserving text; `--fix` handles `logs/**`, `--fix-all` also migrates `.ai-team/work/**`.
+- **Reviewer binary handling**: `code-reviewer` now maps `Cannot read binary file` to “unreadable/unverified”; it must request a UTF-8 copy/summary and cannot close P1/security items on unreadable evidence.
+
+### Verified
+
+- `node scripts/verify.mjs` → 193/193.
+- installed verify → 185/185; installed + OpenCode → 195/195.
+- `node scripts/audit-team-consistency.mjs` → 140 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- fixture: `logs/**` UTF-16 fails; `--fix` converts and passes; `.ai-team/work` UTF-16 warns; `--fix-all` converts history.
+- riccon-ai: 25 logs under `logs/2026-11-05/` converted to UTF-8, including all 8 TASK-0039 logs; `artifact-check` reports 0 errors and 55 historical `.ai-team/work` warnings; TASK-0039 logs are now readable.
+
 ## [1.2.17] - 2026-11-05
 
 ### Added

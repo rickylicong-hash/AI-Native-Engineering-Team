@@ -493,6 +493,7 @@ Track / 阶段：
 - 环境不允许时写 `BLOCKED` + 原始错误 + 影响 + 建议；
 - 原始日志写到 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，禁止写仓库根目录；
 - 证据日志统一 UTF-8；PowerShell 5.1 用 `Out-File -Encoding utf8`，不要用 `*>` 默认生成 UTF-16；
+- `logs/**` 下的 UTF-16 是 error（审查工具会拒绝读取）；用 `artifact-check --fix` 转换；`.ai-team/work/**` 的历史 UTF-16 是 warning，可用 `--fix-all` 批量迁移；
 - 失败日志命名为 `*.failed.log`，并在 EVIDENCE 中写失败原因、是否已修复、后续通过证据；
 - T0/spike 的 `target/` 构建产物在任务收口清理；根目录 `io/org/com` 等只有 `.class` 的目录视为误落盘；
 - 非确定性测试失败（deadlock/timeout/网络/顺序）先登记 `RISK-*`/`DEF-*`，写明 owner 与关闭条件；重跑通过不能单独关闭 P1/安全项；

@@ -343,6 +343,7 @@ permissions:
 - 必须**自己运行**项目已有的测试/构建命令并记录命令、退出码、关键输出；不能只引用工程师的“测试通过”。
 - 一次一条命令；不要用 `;`/`&&`/`2>&1`/管道拼接。测试报告用 `read` 工具读 `target/surefire-reports/**`，不要用 `Get-Content`。
 - 证据必须可读：UTF-8 日志或文本摘要；UTF-16/二进制日志不能作为 P1/安全项的唯一计数依据。遇到不可读证据，要求工程师提供 UTF-8 副本/摘要，或标为“未验证”，不能凭印象通过。
+- `read` 返回 `Cannot read binary file` 时：不要用 `grep` 猜测内容；把该证据标为“不可读/未验证”，要求 engineer 用 `Out-File -Encoding utf8` 重新生成或提供文本摘要；不能据此关闭 P1/安全项。
 - 只跑只读/本地验证；不跑 deploy/release/install/publish，不改代码，不 commit/push。
 - 需要外部服务/生产数据才能跑的测试，记录环境限制和未验证范围，不要伪造。
 - 命令被 `permission.rejected` 时返回 BLOCKED，要求 Chief 补精确 allow；不要用 shell 重定向/脚本绕过。

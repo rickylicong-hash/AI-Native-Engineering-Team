@@ -105,7 +105,7 @@
 - [ ] 无越权修改；
 - [ ] 证据写入 `work/TASK-*-EVIDENCE.md`；
 - [ ] 根目录无 `*.log`、`target-*`、`*.tmp`、`*.class`；日志在 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；
-- [ ] 证据日志 UTF-8；失败日志用 `.failed.log` 且有原因/后续通过证据；
+- [ ] 证据日志 UTF-8；`logs/**` 的 UTF-16 会让 `artifact-check` error；失败日志用 `.failed.log` 且有原因/后续通过证据；
 - [ ] T0/spike 的 `target/` 已清理，无误落盘 `io/org/com` 编译目录；
 - [ ] 代码审查请求已提交。
 

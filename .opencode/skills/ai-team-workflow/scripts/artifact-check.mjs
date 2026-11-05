@@ -7,18 +7,20 @@
  *     hs_err_pid*、replay_pid*、*.pid；这些产物应放到 logs/ 或
  *     .ai-team/work/<TASK>-logs/；
  *   - 根目录下只有 .class 的 io/org/com 包目录视为误落盘；
- *   - .ai-team/work/** 与 logs/** 下的 .log/.txt 建议使用 UTF-8；
- *     UTF-16 BOM 日志会产生 warning，--strict 时失败；
+ *   - logs/** 下的 .log/.txt 必须是 UTF-8；UTF-16 是 error，审查工具会拒绝读取；
+ *   - .ai-team/work/** 下的历史 UTF-16 是 warning，可用 --fix-all 批量迁移；
  *   - logs/** 文件名建议包含 TASK- 前缀，便于追溯。
  *
  * 用法：
  *   node artifact-check.mjs [--project <dir>] [--json] [--strict] [--quiet]
+ *   node artifact-check.mjs --fix        # 只把 logs/** 的 UTF-16 转为 UTF-8
+ *   node artifact-check.mjs --fix-all    # 同时迁移 .ai-team/work/** 的历史证据
  *
  * 退出码：
  *   0 = 无 error（warning 不阻断；--strict 下 warning 也阻断）
  *   1 = 有 error，或 --strict 下有 warning
  *   2 = 项目目录不存在
- *   3 = 读取失败
+ *   3 = 读取/转换失败
  */
 
 import fs from "node:fs";
@@ -141,12 +143,16 @@ function checkEvidence(project, errors, warnings, maxFiles) {
         continue;
       }
       if (isUtf16Bom(head)) {
-        warnings.push({
+        const issue = {
           code: "evidence-encoding",
           path: relative,
-          message: "证据文件使用 UTF-16 编码，部分审查工具会视为二进制",
-          suggestion: "转换为 UTF-8；或提供 UTF-8 文本摘要，避免审查员无法独立核对",
-        });
+          message: "证据文件使用 UTF-16 编码，审查工具会拒绝读取",
+          suggestion: relativeRoot === "logs"
+            ? "运行 artifact-check --fix，或重新用 Out-File -Encoding utf8 生成日志"
+            : "用 artifact-check --fix-all 迁移历史证据；或提供 UTF-8 文本摘要",
+        };
+        if (relativeRoot === "logs") errors.push(issue);
+        else warnings.push(issue);
       }
       if (relativeRoot === "logs" && !/TASK-[A-Za-z0-9-]+/i.test(path.basename(file))) {
         warnings.push({
@@ -181,6 +187,62 @@ function checkEvidence(project, errors, warnings, maxFiles) {
   return { scanned, truncated };
 }
 
+function decodeUtf16(buffer) {
+  if (buffer.length < 2) return null;
+  const littleEndian = buffer[0] === 0xFF && buffer[1] === 0xFE;
+  const bigEndian = buffer[0] === 0xFE && buffer[1] === 0xFF;
+  if (!littleEndian && !bigEndian) return null;
+  let body = buffer.subarray(2);
+  if (bigEndian) {
+    const swapped = Buffer.alloc(body.length - (body.length % 2));
+    for (let i = 0; i + 1 < body.length; i += 2) {
+      swapped[i] = body[i + 1];
+      swapped[i + 1] = body[i];
+    }
+    body = swapped;
+  }
+  return body.toString("utf16le");
+}
+
+/**
+ * 把 UTF-16 证据转换为 UTF-8；默认只处理 logs/，includeWork 时处理 .ai-team/work/。
+ * @param {string} project
+ * @param {{includeWork?: boolean, maxFiles?: number}} [options]
+ */
+export function fixEvidence(project, options = {}) {
+  const root = path.resolve(project);
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+    throw new Error(`project directory does not exist: ${root}`);
+  }
+  const maxFiles = Number.parseInt(options.maxFiles ?? DEFAULT_MAX_EVIDENCE_FILES, 10) || DEFAULT_MAX_EVIDENCE_FILES;
+  const roots = ["logs", ...(options.includeWork ? [".ai-team/work"] : [])];
+  const fixed = [];
+  let scanned = 0;
+
+  for (const relativeRoot of roots) {
+    const absoluteRoot = path.join(root, relativeRoot);
+    if (!fs.existsSync(absoluteRoot) || !fs.statSync(absoluteRoot).isDirectory()) continue;
+    const files = walkFiles(absoluteRoot, maxFiles);
+    for (const file of files) {
+      if (scanned >= maxFiles) break;
+      if (!/\.(log|txt)$/i.test(file)) continue;
+      scanned++;
+      let buffer;
+      try {
+        buffer = fs.readFileSync(file);
+      } catch {
+        continue;
+      }
+      const text = decodeUtf16(buffer);
+      if (text === null) continue;
+      fs.writeFileSync(file, text, "utf8");
+      fixed.push(normalize(path.relative(root, file)));
+    }
+  }
+
+  return { fixed, scanned };
+}
+
 /**
  * 运行检查并返回结构化结果。
  * @param {string} project 项目根目录
@@ -210,7 +272,20 @@ function runCli() {
   const json = hasFlag("--json");
   const strict = hasFlag("--strict");
   const quiet = hasFlag("--quiet");
+  const fixAll = hasFlag("--fix-all");
+  const fix = fixAll || hasFlag("--fix");
   const maxFiles = Number.parseInt(getArg("--max-files", String(DEFAULT_MAX_EVIDENCE_FILES)), 10) || DEFAULT_MAX_EVIDENCE_FILES;
+
+  let fixResult = { fixed: [], scanned: 0 };
+  if (fix) {
+    try {
+      fixResult = fixEvidence(project, { includeWork: fixAll, maxFiles });
+    } catch (error) {
+      if (json) console.log(JSON.stringify({ ok: false, error: error.message }, null, 2));
+      else console.log(`ERROR  ${error.message}`);
+      process.exit(3);
+    }
+  }
 
   let result;
   try {
@@ -223,10 +298,15 @@ function runCli() {
 
   const failed = result.errors.length > 0 || (strict && result.warnings.length > 0);
   if (json) {
-    console.log(JSON.stringify({ ok: !failed, strict, ...result }, null, 2));
+    console.log(JSON.stringify({ ok: !failed, strict, fixed: fixResult.fixed, ...result }, null, 2));
   } else if (!quiet) {
     console.log("AI Team artifact check");
     console.log(`project:  ${project}`);
+    if (fixResult.fixed.length > 0) {
+      console.log(`fixed:    ${fixResult.fixed.length} UTF-16 file(s) -> UTF-8`);
+      for (const file of fixResult.fixed.slice(0, 10)) console.log(`  FIXED ${file}`);
+      if (fixResult.fixed.length > 10) console.log(`  ... and ${fixResult.fixed.length - 10} more file(s)`);
+    }
     console.log(`errors:   ${result.errors.length}`);
     for (const issue of result.errors.slice(0, 10)) {
       console.log(`  ERROR [${issue.code}] ${issue.path}: ${issue.message}; ${issue.suggestion}`);

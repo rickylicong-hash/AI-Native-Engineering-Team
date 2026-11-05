@@ -105,7 +105,7 @@ Checkpoint 触发：
 
 项目跟踪 `.ai-team` 时，先把 `ai-team-workflow/templates/AI-TEAM-GITIGNORE` 复制为 `.ai-team/.gitignore`，忽略 `work/**/*.txt`、`*-logs/`、截图、tmp 等原始产物；只保留 `work/*EVIDENCE.md`。
 
-项目根 `.gitignore` 增加 `logs/`；原始日志写 `logs/<date>/TASK-<id>-<step>-<timestamp>.log`，不写仓库根目录。`.gitignore` 只防提交，不代替清理；`checkpoint-check`/`state-check` 会扫描根目录产物和证据编码，artifact error 会阻断 checkpoint。
+项目根 `.gitignore` 增加 `logs/`；原始日志写 `logs/<date>/TASK-<id>-<step>-<timestamp>.log`，不写仓库根目录。`.gitignore` 只防提交，不代替清理；`checkpoint-check`/`state-check` 会扫描根目录产物和证据编码，artifact error 会阻断 checkpoint。`logs/**` 的 UTF-16 日志用 `artifact-check --fix` 转成 UTF-8；历史 `.ai-team/work` 用 `--fix-all`。
 
 在门禁、交接、或工作区文件数达到阈值时运行：
 

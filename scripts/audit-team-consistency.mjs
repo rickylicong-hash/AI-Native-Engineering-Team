@@ -110,6 +110,18 @@ check(
   checkpointCheckText.includes("NEXT:") && checkpointCheckText.includes("HANDOFF Git/Baseline"),
   "missing --mark closeout instructions",
 );
+const artifactCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "artifact-check.mjs"));
+check(
+  "artifact-check can fix UTF-16 evidence",
+  artifactCheckText.includes("--fix") && artifactCheckText.includes("fixEvidence"),
+  "missing UTF-16 conversion path",
+);
+const reviewerText = read(path.join(agentsDir, "code-reviewer.md"));
+check(
+  "code-reviewer handles binary evidence",
+  reviewerText.includes("Cannot read binary file"),
+  "missing reviewer rule for unreadable evidence",
+);
 
 for (const file of agentFiles) {
   const text = read(path.join(agentsDir, file));
