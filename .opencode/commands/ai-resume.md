@@ -6,6 +6,7 @@ agent: ai-team/chief
 恢复项目：
 
 1. 读取 `.ai-team/state/HANDOFF.md`、`STATUS.md`、`TASKS.md`、`DECISIONS.md`、`RISKS.md`。
+1.1 **先跑权限预检**：`node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-lint.mjs" --role ai-team/chief`。失败时不要继续恢复；用 `permission-doctor.mjs` 定位缺失规则并报告 BLOCKED。
 2. 核对工作区 `git status --short` 与文件现状；发现与记忆不一致时，以文件和 git 证据为准并记录差异。
    - 预检只跑：`git status --short`、`git log --oneline -8`、`state-check`、`retro-check`、`checkpoint-check`、`growth-check`。
    - 不要用 `;`/`&&`/`2>&1`/`echo` 拼接；不要 `git -C`；不要扫描 `~/.config/opencode`；不要跑 `mvn`；读文件用 `read` 工具。

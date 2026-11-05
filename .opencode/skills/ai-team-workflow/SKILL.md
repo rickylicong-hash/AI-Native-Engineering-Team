@@ -331,6 +331,29 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" `
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --project . --status
 ```
 
+### 3.7 权限矩阵与诊断（1.3.3）
+
+权限的单一事实源是 `skills/ai-team-workflow/permissions.json`，不要再逐条猜 allow。
+
+```powershell
+# 全量校验
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-lint.mjs"
+
+# 启动/恢复前只校验当前角色
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-lint.mjs" --role ai-team/chief
+
+# 遇到 permission.rejected 时定位
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.mjs" `
+  --agent ai-team/chief --command "<完整命令>"
+```
+
+规则：
+
+- 新增脚本/命令时，先在 `permissions.json` 声明 required/forbidden，再改 agent frontmatter；
+- `permission-lint` 必须 PASS，才允许安装或开始 `/ai` / `/ai-resume`；
+- `ask` 视为可用（需要确认），`deny`/`none` 才是缺口；
+- 仍然禁止用扩大 `node *`/`git *` 的方式绕过；复合 shell 应先拆分。
+
 ## 4. 目录与产物
 
 ```text

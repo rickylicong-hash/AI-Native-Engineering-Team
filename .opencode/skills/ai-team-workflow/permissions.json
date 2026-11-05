@@ -1,0 +1,206 @@
+{
+  "schema": 1,
+  "description": "AI Team role permission matrix. permission-lint validates these required/forbidden actions against each agent's frontmatter.",
+  "roles": {
+    "chief": {
+      "required": {
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "git show *",
+          "git rev-parse *",
+          "node *state-check.mjs*",
+          "node *retro-check.mjs*",
+          "node *checkpoint-check.mjs*",
+          "node *artifact-check.mjs*",
+          "node *growth-check.mjs*",
+          "node *brief-lint.mjs*",
+          "node *review-check.mjs*",
+          "node *audit-state.mjs*",
+          "node *permission-lint.mjs*",
+          "node *permission-doctor.mjs*",
+          "Get-Content */.ai-team/state/*"
+        ],
+        "edit": [
+          ".ai-team/state/*",
+          ".ai-team/tasks/*",
+          ".ai-team/team/*",
+          ".ai-team/README.md"
+        ]
+      },
+      "forbidden": {
+        "shell": [
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*",
+          "git add -A *",
+          "git add .",
+          "git add . *",
+          "mvn *test*"
+        ]
+      }
+    },
+    "product-manager": {
+      "required": {
+        "shell": ["git status *", "git diff *", "git log *", "pwd", "ls *", "dir *"],
+        "edit": [".ai-team/product/*"]
+      },
+      "forbidden": {
+        "shell": ["git add *", "git commit *", "*;*", "*&&*", "*||*", "*2>&1*"]
+      }
+    },
+    "ux-designer": {
+      "required": {
+        "shell": ["git status *", "git diff *", "git log *", "pwd", "ls *", "dir *"],
+        "edit": [".ai-team/design/ux/*", "design/*", "mockups/*", "prototypes/*"]
+      },
+      "forbidden": {
+        "shell": ["git add *", "git commit *", "*;*", "*&&*", "*||*", "*2>&1*"]
+      }
+    },
+    "system-architect": {
+      "required": {
+        "shell": ["git status *", "git diff *", "git log *", "java -version *", "mvn -v *"],
+        "edit": [".ai-team/design/architecture/*", ".ai-team/design/adr/*", "docs/adr/*"]
+      },
+      "forbidden": {
+        "shell": ["git add *", "git commit *", "*;*", "*&&*", "*||*", "*2>&1*"]
+      }
+    },
+    "engineer": {
+      "required": {
+        "shell": ["git status *", "git diff *", "mvn *test*"],
+        "edit": [".ai-team/work/*"]
+      },
+      "forbidden": {
+        "shell": [
+          "git add -A",
+          "git add -A *",
+          "git add --all *",
+          "git add .",
+          "git add . *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      }
+    },
+    "code-reviewer": {
+      "required": {
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "git show *",
+          "git rev-parse *",
+          "mvn *test*",
+          "mvn *verify*",
+          "mvn *package*",
+          "mvn *compile*",
+          "mvn *dependency-check*",
+          "rg *",
+          "node *review-check.mjs*"
+        ],
+        "edit": [".ai-team/reviews/*"]
+      },
+      "forbidden": {
+        "shell": ["git add *", "git commit *", "git push *", "*;*", "*&&*", "*||*", "*2>&1*"]
+      }
+    },
+    "qa-engineer": {
+      "required": {
+        "shell": ["git status *", "mvn *test*", "mvn *package*", "mvn *compile*"],
+        "edit": [
+          "tests/*",
+          "test/*",
+          "e2e/*",
+          "**/src/test/java/**/e2e/**",
+          "**/src/test/java/**/qa/**",
+          "**/src/test/resources/**/e2e/**",
+          "**/src/test/resources/**/qa/**",
+          ".ai-team/qa/*"
+        ]
+      },
+      "forbidden": {
+        "shell": ["git add *", "git commit *", "git push *", "*;*", "*&&*", "*||*", "*2>&1*"]
+      }
+    },
+    "security-auditor": {
+      "required": {
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "git show *",
+          "git grep *",
+          "mvn *test*",
+          "mvn *dependency-check*",
+          "npm audit *",
+          "semgrep *",
+          "trivy *",
+          "gitleaks *",
+          "node *review-check.mjs*"
+        ],
+        "edit": [".ai-team/security/*"]
+      },
+      "forbidden": {
+        "shell": ["git add *", "git commit *", "git push *", "*;*", "*&&*", "*||*", "*2>&1*"]
+      }
+    },
+    "devops-engineer": {
+      "required": {
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "git show *",
+          "git commit *",
+          "node *growth-check.mjs*",
+          "node *artifact-check.mjs*",
+          "node *checkpoint-check.mjs*"
+        ],
+        "edit": [
+          "deploy/*",
+          "ops/*",
+          ".ai-team/release/*",
+          ".ai-team/work/TASK-GIT-*EVIDENCE.md"
+        ]
+      },
+      "forbidden": {
+        "shell": [
+          "git add -A",
+          "git add -A *",
+          "git add --all *",
+          "git add .",
+          "git add . *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      }
+    },
+    "technical-writer": {
+      "required": {
+        "shell": ["git status *", "git diff *", "git log *"],
+        "edit": ["docs/*", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"]
+      },
+      "forbidden": {
+        "shell": [
+          "git add -A",
+          "git add -A *",
+          "git add --all *",
+          "git add .",
+          "git add . *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      }
+    }
+  }
+}

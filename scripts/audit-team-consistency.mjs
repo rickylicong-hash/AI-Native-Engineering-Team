@@ -277,13 +277,43 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
-for (const script of ["brief-lint.mjs", "review-check.mjs", "audit-state.mjs"]) {
+for (const script of ["brief-lint.mjs", "review-check.mjs", "audit-state.mjs", "permission-lint.mjs", "permission-doctor.mjs"]) {
   check(
     `workflow script ${script} exists`,
     fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),
     `missing ${script}`,
   );
 }
+check(
+  "permission matrix exists",
+  fs.existsSync(path.join(skillsDir, "ai-team-workflow", "permissions.json")),
+  "missing permissions.json",
+);
+let permissionMatrix = null;
+try {
+  permissionMatrix = JSON.parse(read(path.join(skillsDir, "ai-team-workflow", "permissions.json")));
+} catch {
+  // reported by the existence check
+}
+if (permissionMatrix) {
+  const matrixRoles = Object.keys(permissionMatrix.roles || {});
+  const manifestRoles = manifest.agents.map((agent) => agent.id.replace("ai-team/", ""));
+  check(
+    "permission matrix covers all manifest roles",
+    matrixRoles.length === manifestRoles.length && manifestRoles.every((role) => matrixRoles.includes(role)),
+    `matrix=${matrixRoles.join(",")} manifest=${manifestRoles.join(",")}`,
+  );
+}
+check(
+  "chief can run permission-lint",
+  hasEffective(chiefRules, "shell", "node *permission-lint.mjs*", "allow"),
+  "Chief cannot run the permission matrix preflight",
+);
+check(
+  "chief can run permission-doctor",
+  hasEffective(chiefRules, "shell", "node *permission-doctor.mjs*", "allow"),
+  "Chief cannot diagnose permission denials",
+);
 const briefLintText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs"));
 check(
   "brief-lint validates skill and independent verification",

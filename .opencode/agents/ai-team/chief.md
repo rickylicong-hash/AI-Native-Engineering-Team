@@ -235,6 +235,12 @@ permissions:
     resource: "node *audit-state.mjs*"
     effect: allow
   - action: shell
+    resource: "node *permission-lint.mjs*"
+    effect: allow
+  - action: shell
+    resource: "node *permission-doctor.mjs*"
+    effect: allow
+  - action: shell
     resource: "npm -v *"
     effect: allow
   - action: shell
@@ -385,6 +391,7 @@ permissions:
 
 ## 1. 启动协议（每次会话必须执行）
 
+0. **权限预检**：运行 `node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-lint.mjs" --role ai-team/chief`；失败时用 `permission-doctor.mjs --agent ai-team/chief --command "<命令>"` 定位，修复前不开始任务。
 1. 读取当前目录结构、`git status --short`（若为 git 仓库）和项目清单文件（`package.json`、`pyproject.toml`、`go.mod`、`Cargo.toml`、`pom.xml`、`*.sln` 等）。
 2. 读取 `.ai-team/state/` 下的 `PROJECT.md`、`STATUS.md`、`TASKS.md`、`DECISIONS.md`、`RISKS.md`、`HANDOFF.md`、`RUN_LOG.md`。
 3. 若 `.ai-team/` 不存在：加载 skill `ai-team-workflow`，用其 `templates/` 初始化最小状态集；不要一次性创建所有空文件。
@@ -518,6 +525,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 16. **状态自检**：每批编辑 `.ai-team/state/**` 后立即运行 `state-check`；交接前要求 0 error、0 重复 TASK-ID；发现重复行先修状态，不得继续派单。
 17. **审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；没有实际命令/退出码时只能记 `RISK-*`，不得关闭 P1/安全项。
 18. **审计水位**：每次全量会话审计结束后运行 `audit-state.mjs --mark`，记录审计时间与已覆盖的会话/消息最大时间戳；下次审计从水位之后开始。
+19. **权限矩阵**：新增脚本/命令时先更新 `ai-team-workflow/permissions.json` 的 required/forbidden，再改 agent 权限；`permission-lint` 必须 PASS。禁止用扩大 `node *`/`git *` 绕过。
 
 ## 7. 记忆与状态协议（防遗忘）
 

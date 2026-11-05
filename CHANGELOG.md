@@ -3,6 +3,30 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.3.3] - 2026-11-06
+
+### Added
+
+- **Permission matrix**: `.opencode/skills/ai-team-workflow/permissions.json` is now the single source of required/forbidden permissions for all 10 roles. New scripts and commands must be declared there before changing agent frontmatter.
+- **`permission-lint.mjs`**: validates every role's required permissions are `allow`/`ask` and forbidden ones are not `allow`. It covers 191 role/permission checks across Chief, PM, UX, Architect, Engineer, Reviewer, QA, Security, DevOps, and Writer.
+- **`permission-doctor.mjs`**: given an agent and a rejected command, lists matching rules, final effect, and the minimal missing allow (or tells the caller to split a compound shell command).
+- **Startup preflight**: `/ai` and `/ai-resume` now run `permission-lint --role ai-team/chief` before restoring state or dispatching work.
+- **Consistency checks**: `audit-team-consistency` now verifies the matrix exists, covers all manifest roles, and that Chief can run `permission-lint`/`permission-doctor`.
+
+### Changed
+
+- Documented the matrix as the single source of truth in `SKILL.md`, `WORKFLOW.md`, `TEAM.md`, and `QUALITY-GATES.md`.
+- Added `permission-lint` to G3 planning and checkpoint gates.
+
+### Verified
+
+- `node scripts/verify.mjs` → 200/200.
+- installed verify → 192/192; installed + OpenCode → 202/202.
+- `node scripts/audit-team-consistency.mjs` → 243 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 191 checks, 0 failed; `--role chief` → 29 checks, 0 failed.
+- `permission-doctor` fixture: `growth-check` → allow; compound shell → deny + split advice.
+
 ## [1.3.2] - 2026-11-06
 
 ### Fixed

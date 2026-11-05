@@ -89,6 +89,7 @@
 - [ ] 风险/阻塞/回退计划；
 - [ ] DoR 满足；
 - [ ] 每个 subagent brief 已通过 `brief-lint`（独立验证/证据位置/测试路径/P2 处置/构建隔离齐全）；
+- [ ] `permission-lint` 对当前角色 PASS；新增脚本/命令已进入 `permissions.json`；
 - [ ] `TASKS.md` 已写。
 
 ## G4 Build
@@ -129,6 +130,7 @@
 - [ ] `checkpoint-check` 未到期，或已由 DevOps 完成 checkpoint；
 - [ ] `artifact-check` 无 error（根目录产物/误落盘编译目录）；T3/T4 用 `--strict` 无 warning；历史 `.ai-team/work/**` UTF-16 用 `--fix-all` 迁移，未迁移须 `RISK-*` + 迁移计划；
 - [ ] 若 `GROWTH.md` 有新增/处置，`growth-check` 无 error；
+- [ ] `permission-lint` PASS；新增脚本/命令已进入 `permissions.json`；
 - [ ] checkpoint 有 `TASK-GIT-*`、brief 明确路径、`work/TASK-GIT-*EVIDENCE.md`；
 - [ ] 工作区未提交文件 < 20，或已提交精选路径；
 - [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark` 更新；

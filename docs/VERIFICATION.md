@@ -564,6 +564,28 @@ audit-team-consistency:    237 checks, 0 failed
 audit-git-permissions:     10 agents, 0 failed
 ```
 
+### 5.21 权限矩阵与预检（1.3.3）
+
+- 新增 `permissions.json`：10 个角色的 required/forbidden 单一事实源，共 191 项角色/权限检查。
+- 新增 `permission-lint.mjs`：校验 required 为 `allow`/`ask`、forbidden 不为 `allow`；`--role` 支持启动预检。
+- 新增 `permission-doctor.mjs`：给定角色和命令，输出匹配规则、最终效果和最小修复建议；复合 shell 直接提示拆分。
+- `/ai` 与 `/ai-resume` 启动前运行 `permission-lint --role ai-team/chief`；失败时用 doctor 定位，不继续带病恢复。
+- `audit-team-consistency` 增加矩阵覆盖、脚本存在、Chief 可运行 lint/doctor 的检查。
+- 本次修复的根因：1.3.1 新增脚本后只改了 skill/command，没有同步修改 Chief 的 shell allow；矩阵预检会在启动时直接发现这类接线缺口。
+
+验证：
+
+```text
+permission-lint:           191 checks, 0 failed
+permission-lint --role chief: 29 checks, 0 failed
+permission-doctor:         growth-check -> allow；compound shell -> deny + split advice
+source verify:             200/200
+installed verify:          192/192
+installed + OpenCode:      202/202
+audit-team-consistency:    243 checks, 0 failed
+audit-git-permissions:     10 agents, 0 failed
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -593,9 +615,9 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.2 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.3 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（237 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口）。
+- 一致性审计：通过（243 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口、权限矩阵缺口）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
 - 成长处置：通过（`GROWTH.md` 提案处置索引 22/22 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
