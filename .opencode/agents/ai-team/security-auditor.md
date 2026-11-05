@@ -304,28 +304,28 @@ permissions:
     resource: "git -C * ls-files *"
     effect: allow
   - action: shell
-    resource: "mvn * test*"
+    resource: "mvn *test*"
     effect: allow
   - action: shell
-    resource: "mvn * verify*"
+    resource: "mvn *verify*"
     effect: allow
   - action: shell
-    resource: "mvn * package*"
+    resource: "mvn *package*"
     effect: allow
   - action: shell
-    resource: "mvn * dependency:tree*"
+    resource: "mvn *dependency:tree*"
     effect: allow
   - action: shell
-    resource: "mvn * dependency-check*"
+    resource: "mvn *dependency-check*"
     effect: allow
   - action: shell
-    resource: "mvn * spotbugs*"
+    resource: "mvn *spotbugs*"
     effect: allow
   - action: shell
-    resource: "mvn * pmd*"
+    resource: "mvn *pmd*"
     effect: allow
   - action: shell
-    resource: "mvn * checkstyle*"
+    resource: "mvn *checkstyle*"
     effect: allow
   - action: shell
     resource: "*mvnw* test*"
@@ -394,13 +394,13 @@ permissions:
     resource: "dotnet build *"
     effect: allow
   - action: shell
-    resource: "mvn * cyclonedx*"
+    resource: "mvn *cyclonedx*"
     effect: allow
   - action: shell
-    resource: "mvn * versions:display-dependency-updates*"
+    resource: "mvn *versions:display-dependency-updates*"
     effect: allow
   - action: shell
-    resource: "mvn * dependency:analyze*"
+    resource: "mvn *dependency:analyze*"
     effect: allow
   - action: shell
     resource: "*gradlew* dependencies*"

@@ -363,7 +363,8 @@ Write to .ai-team/work/TASK-GIT-011-EVIDENCE.md   Permission denied: edit
 - 两个审查员增加只读验证 allowlist：`git -C` 只读、Maven test/verify/package、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test；
 - Security 额外获得 `dependency-check`/CycloneDX/`dependency:tree`/`versions`/`dependency:analyze`；
 - prompt 要求自己运行并记录命令/退出码/输出，不能只引用工程师证据；被拒时 BLOCKED，禁止 shell 绕过；
-- `audit-team-consistency` 增加 4 项审查员能力检查（91 项）。
+- `audit-team-consistency` 增加 4 项审查员能力检查（91 项）；
+- 1.2.10 修正 Maven 插件目标匹配：`mvn *dependency-check*` 等模式可匹配 `mvn org.owasp:dependency-check-maven:check`、SpotBugs/PMD/Checkstyle/CycloneDX 等全限定 goal。
 
 ## 6. 未执行项
 
@@ -394,7 +395,7 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.9 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.10 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 一致性审计：通过（91 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口）。
 - 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。

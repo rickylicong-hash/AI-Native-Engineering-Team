@@ -140,7 +140,7 @@ check(
 const reviewerRules = parseRules(read(path.join(agentsDir, "code-reviewer.md")));
 check(
   "code-reviewer can run maven tests",
-  hasEffective(reviewerRules, "shell", "mvn * test*", "allow"),
+  hasEffective(reviewerRules, "shell", "mvn *test*", "allow"),
   "reviewer cannot independently reproduce Maven tests",
 );
 check(
@@ -152,12 +152,12 @@ check(
 const securityRules = parseRules(read(path.join(agentsDir, "security-auditor.md")));
 check(
   "security-auditor can run maven tests",
-  hasEffective(securityRules, "shell", "mvn * test*", "allow"),
+  hasEffective(securityRules, "shell", "mvn *test*", "allow"),
   "security cannot independently reproduce Maven tests",
 );
 check(
   "security-auditor can run dependency-check",
-  hasEffective(securityRules, "shell", "mvn * dependency-check*", "allow"),
+  hasEffective(securityRules, "shell", "mvn *dependency-check*", "allow"),
   "security cannot run Maven OWASP dependency-check",
 );
 

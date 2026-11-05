@@ -3,6 +3,22 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.10] - 2026-11-05
+
+### Fixed
+
+- Broadened reviewer Maven permission patterns so fully qualified plugin goals match:
+  - `mvn *test*`, `mvn *verify*`, `mvn *package*`;
+  - `mvn *dependency:tree*`, `mvn *dependency-check*`;
+  - `mvn *spotbugs*`, `mvn *pmd*`, `mvn *checkstyle*`;
+  - `mvn *cyclonedx*`, `mvn *versions:display-dependency-updates*`, `mvn *dependency:analyze*`.
+- The previous `mvn * dependency-check*` pattern required a space before the plugin name, so `mvn org.owasp:dependency-check-maven:check` would still be denied. This release closes that gap.
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 91 checks, 0 failed.
+
 ## [1.2.9] - 2026-11-05
 
 ### Fixed
