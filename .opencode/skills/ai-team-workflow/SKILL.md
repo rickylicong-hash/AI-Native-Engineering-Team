@@ -194,6 +194,36 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/retro-check.mjs" --
 
 退出码：`0` 未到期，`1` 到期，`2` 没有 `.ai-team`，`3` 解析失败。路径不存在时，按上面的计数口径手工统计 `TASKS.md`；设置了 `XDG_CONFIG_HOME` 时，把 `~/.config/opencode` 换成 `$XDG_CONFIG_HOME/opencode`。
 
+### 3.2 Checkpoint 提交（强制委派）
+
+Checkpoint 由 `ai-team/devops-engineer` 执行；Chief 只提供明确路径、TASK-ID、角色和 message。满足任一条件即到期：
+
+| 触发 | 阈值 |
+|---|---|
+| 工作区未提交文件 | ≥20 个（默认，可用 `--max-files` 调整） |
+| 门禁 | 进入 G5/G7/G8 前 |
+| 交接 | 写 `HANDOFF.md` 前（`--handoff`） |
+| 任务节奏 | 已有 `CHECKPOINT.json` 基线后，每 10 个 `done` |
+| 用户 | 明确要求 |
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
+```
+
+提交成功后由 DevOps 运行：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project . --mark
+```
+
+规则：
+
+1. 到期未提交 → 不进入门禁，不交接；先派 DevOps。
+2. **Chief 不得自己 `git add`/`git commit`/`git push`**；`git add` 也是 DevOps 的职责。
+3. 只提交精选路径，禁止 `git add -A` / `git add .`；不提交 `work/**`、日志、截图、tmp、未脱敏安全报告。
+4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
+5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
+
 ## 4. 目录与产物
 
 ```text
@@ -207,6 +237,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/retro-check.mjs" --
     RISKS.md
     HANDOFF.md
     RUN_LOG.md
+    CHECKPOINT.json
   product/
     PRD.md
     USER-STORIES.md
@@ -333,6 +364,7 @@ owner: ai-team/chief
 - 关键决策：
 - 阻塞/风险：
 - Retro：not due / done YYYY-MM-DD / DUE — 先补
+- Checkpoint：clean / done <commit> / DUE — 先派 DevOps / WAIVED
 - 下一条指令：
 - 必读文件：
 

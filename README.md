@@ -127,6 +127,7 @@ flowchart LR
     RISKS.md        # 风险登记
     HANDOFF.md      # 跨会话交接
     RUN_LOG.md      # 时间线
+    CHECKPOINT.json # 最近 checkpoint 的 commit/任务数基线
   product/          # PRD、用户故事、验收、追踪矩阵
   design/ux/        # 流程、UI 规格、设计系统、可访问性
   design/architecture/  # 架构、数据、API、失败模式、部署、可观测性
@@ -391,6 +392,16 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\retro-check.mjs" --
 
 到期未复盘，团队不得开始新的功能任务，也不得把门禁标为通过。轻量复盘 10–20 行即可；G8 做完整复盘。
 
+#### 8. 为什么有未提交改动却没提交
+
+Chief 是只读角色，**不能执行 `git add`/`git commit`**。如果它尝试提交，会被权限拒绝；正确动作是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队现在用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
+```
+
+DevOps 提交后运行 `--mark` 记录 `state/CHECKPOINT.json`。
+
 ---
 
 ## 7. 安全与权限
@@ -401,10 +412,11 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\retro-check.mjs" --
 - **密钥保护**：`.env`、密钥、`.ssh`、`.aws`、`.npmrc` 等默认 deny 读取；只允许 `.env.example`。
 - **生产发布需批准**：L3 不可逆操作必须用户明确同意。
 - **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成。
-- **Chief 只读诊断**：`java -version`、`mvn -version`、`node -v`、`npm -v`、`docker --version`、`git --version` 等只读版本检查可直接运行；`Select-Object`、`Sort-Object`、`Measure-Object`、`Format-Table`、`Format-List`、`Out-String` 等只读管道可用；列项目外目录（如 `D:\Development`）只读可见，但文件内容和编辑不在默认授权内。构建、测试、安装、部署仍交给 engineer/QA/DevOps。
+- **Chief 只读诊断**：`java -version`、`mvn -version`、`node -v`、`npm -v`、`docker --version`、`git --version` 等只读版本检查可直接运行；`Select-Object`、`Sort-Object`、`Measure-Object`、`Format-Table`、`Format-List`、`Out-String` 等只读管道可用；**项目外路径（如 `D:\Development`）默认触发 `external_directory` 批准**，需要时逐次确认，或对可信目录单独加 allow；密钥路径仍 deny。构建、测试、安装、部署仍交给 engineer/QA/DevOps。
 - **Architect/Security 只读诊断**：同样的工具链版本检查 + `Get-Command` + `Select-Object -ExpandProperty`；不开放 `Sort-Object`/`Measure-Object`、外部目录读写、构建/部署。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
-- **Git 权限**：只读角色不 commit/push/tag；实现角色 commit/push/tag 默认 `ask`，force push/mirror、branch delete、history rewrite 默认 deny。矩阵见 [docs/GIT-POLICY.md](docs/GIT-POLICY.md)，审计：`node scripts/audit-git-permissions.mjs`。
+- **Git 权限**：只读角色不 commit/push/tag；Engineer/DevOps/Writer 的 commit/push/tag 默认 `ask`，QA 为 `deny`（测试产物由 DevOps 提交）；force push/mirror、branch delete、history rewrite 默认 deny。矩阵见 [docs/GIT-POLICY.md](docs/GIT-POLICY.md)，审计：`node scripts/audit-git-permissions.mjs`、`node scripts/audit-team-consistency.mjs`。
+- **Checkpoint 提交**：Chief 不执行 `git add`/`commit`；到期时派 DevOps。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark` 更新 `state/CHECKPOINT.json`。
 
 ---
 

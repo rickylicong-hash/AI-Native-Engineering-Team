@@ -12,6 +12,7 @@ agent: ai-team/chief
    - 正在做（owner + TASK-ID）；
    - 阻塞/风险（ID + owner）；
    - Retro：due / not due（done N，last N，next N）；到期时明确写“先补复盘”；
+   - Checkpoint：clean / dirty N files（modified/untracked）/ due；到期时写“先派 DevOps 提交”；
    - 下一步 3 项；
    - 证据路径。
 4. 不要修改文件，不要启动新工作。

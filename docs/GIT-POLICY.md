@@ -14,7 +14,7 @@
 | Code Reviewer | 只读：`status` / `diff` / `log` / `show` / `rev-parse` / `blame` / `ls-files` | 不 commit/push/tag |
 | Security Auditor | 只读：`status` / `diff` / `log` / `show` / `grep` / `ls-files` | 不 commit/push/tag |
 | Engineer | 读写：commit/push/tag 均 `ask`；危险历史/工作区操作 deny/ask | 可初始化普通仓库（`git init` ask） |
-| QA Engineer | 读写：commit/push/tag 均 `ask`；`apply`/`am` deny | 不直接改生产代码 |
+| QA Engineer | 读写：**不 commit/push/tag（`deny`）**；`apply`/`am`/`init` deny | 测试产物由 DevOps checkpoint 提交 |
 | DevOps Engineer | 读写：commit/push/tag 均 `ask`；仓库初始化 owner | `git init` 允许；remote 变更 ask |
 | Technical Writer | 读写：commit/push/tag 均 `ask`；`apply`/`am` deny | 只改文档 |
 
@@ -23,9 +23,9 @@
 | 命令 | 策略 | 理由 |
 |---|---|---|
 | `git status/diff/log/show/rev-parse/blame/ls-files/grep` | allow（只读角色按需） | 只读 |
-| `git commit` | ask（实现角色） | 需要用户批准 |
-| `git push` | ask（实现角色） | 外部副作用 |
-| `git tag` | ask（实现角色） | 发布动作 |
+| `git commit` | ask（Engineer/DevOps/Writer）；QA deny | 需要用户批准 |
+| `git push` | ask（Engineer/DevOps/Writer）；QA deny | 外部副作用 |
+| `git tag` | ask（Engineer/DevOps/Writer）；QA deny | 发布动作 |
 | `git push --force*` / `git push -f*` | deny | 覆盖远端历史 |
 | `git push * +*` | deny | refspec 强制推送 |
 | `git push --mirror` | deny | 镜像删除远端 refs |
@@ -43,7 +43,7 @@
 | `git reflog expire` | deny | 让提交不可恢复 |
 | `git gc --prune*` | deny | 清理不可达对象 |
 | `git config --global` | ask | 改全局配置 |
-| `git init` | DevOps allow；其他实现角色 ask | 仓库初始化 owner 是 DevOps |
+| `git init` | DevOps allow；Engineer/Writer ask；QA deny | 仓库初始化 owner 是 DevOps |
 | `git apply` / `git am` | Engineer/DevOps allow；QA/Writer deny | 防止绕过 edit 所有权 |
 
 ## 3. 仓库初始化 owner
@@ -63,7 +63,7 @@
 
 | 内容 | 作者 | 提交者 | 说明 |
 |---|---|---|---|
-| 代码 + 单元测试 + `.ai-team/work/TASK-*` 证据 | Engineer | **Engineer** | commit 默认 `ask`；只 stage 任务范围 |
+| 代码 + 单元测试 + `.ai-team/work/TASK-*EVIDENCE.md` 证据 | Engineer | **Engineer** | commit 默认 `ask`；只 stage 任务范围；不提交原始日志 |
 | 文档 + `CHANGELOG` + `.ai-team/docs` | Technical Writer | **Technical Writer** | commit 默认 `ask`；不碰源码 |
 | PRD / 用户故事 / 验收 | Product Manager | **DevOps** | PM 只写，不 commit |
 | UX / UI 规格 / 设计系统 | UX Designer | **DevOps** | UX 只写，不 commit |
@@ -79,7 +79,7 @@
 2. 只读角色（Chief/PM/UX/Architect/Reviewer/Security）不拿 raw `git commit`。
 3. 提交前扫描密钥/凭据/客户数据；安全报告必须脱敏。
 4. `git push` 仍需用户批准（L3）。
-5. 不跟踪 `work/**`、日志、截图、tmp；只跟踪精选记忆文件。
+5. 不提交 `work/**` 原始日志、截图、tmp；只提交精选 `work/*EVIDENCE.md` 和门禁需要的摘要。
 6. 若项目选择 `.ai-team` 完全本地，则不做 checkpoint commit。
 
 Commit message 模板：
@@ -100,6 +100,20 @@ Checkpoint 触发：
 - 每 10 个任务，或复盘写入 `team/GROWTH.md` 后；
 - Chief 写 HANDOFF 时；
 - 用户要求。
+
+### 3.2 Checkpoint 检查
+
+在门禁、交接、或工作区文件数达到阈值时运行：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
+```
+
+到期条件：未提交文件 ≥20、进入 G5/G7/G8、`--handoff`、已有 `CHECKPOINT.json` 基线后每 10 个 `done`、或用户要求。
+
+每次 checkpoint 建一个 `TASK-GIT-*` 任务（owner: DevOps）并写入 `state/TASKS.md`；brief 必须列出明确路径，禁止 `git add -A` / `git add .`。完成后写 `work/TASK-GIT-*-EVIDENCE.md`，运行 `checkpoint-check --mark`，再更新 `TASKS.md` / `RUN_LOG.md`。
+
+DevOps 提交成功后运行 `--mark` 更新 `state/CHECKPOINT.json`。**Chief 不得自己 `git add`/`git commit`/`git push`**；如果 Chief 遇到 `git add` 被拒，正确动作是派 DevOps，而不是绕过或把未提交状态写进 HANDOFF 就继续。
 
 ## 4. 只读角色红线
 
@@ -145,6 +159,18 @@ PASS  code-reviewer.md
 ```bash
 node scripts/audit-git-permissions.mjs --json
 ```
+
+另外两个审计：
+
+```bash
+# 检查“prompt 说了但权限/脚本没接线”的一致性问题
+node scripts/audit-team-consistency.mjs
+
+# 检查当前项目是否需要 checkpoint；--mark 会拒绝含原始日志/密钥/构建产物的 HEAD
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mjs" --project .
+```
+
+`node scripts/verify.mjs` 会自动运行上述两个审计（仅源码仓库）和所有 `.mjs` 的语法检查。
 
 ## 7. 残余风险
 

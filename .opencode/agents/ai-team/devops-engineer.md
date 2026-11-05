@@ -6,6 +6,10 @@ permissions:
   - action: "*"
     resource: "*"
     effect: allow
+  # 项目外路径默认需要用户确认；密钥路径仍由更具体的 deny 规则覆盖。
+  - action: external_directory
+    resource: "*"
+    effect: ask
   - action: todowrite
     resource: "*"
     effect: allow
@@ -317,12 +321,13 @@ permissions:
 
 **AI-team checkpoint commit**：
 
-- 由 Chief 提供明确路径/TASK-ID/角色/commit message；
-- 只 stage 精选 `.ai-team` 文件，禁止 `git add -A` / `git add .`；
+- 由 Chief 提供明确路径/TASK-ID/角色/commit message；每次 checkpoint 建 `TASK-GIT-*`（owner: DevOps），写入 `state/TASKS.md`，证据写 `work/TASK-GIT-*-EVIDENCE.md`；
+- 只 stage 精选 `.ai-team` 文件，禁止 `git add -A` / `git add .`；**如果 brief 要求 `git add -A`，拒绝执行并回报 BLOCKED**，以 `docs/GIT-POLICY.md` 为准；
 - 提交前扫描密钥/凭据/客户数据；安全报告必须脱敏；
 - commit 默认 `ask`，push 需用户批准；
-- 不跟踪 `work/**`、日志、截图、tmp；
-- 标准 message：`chore(ai-team): checkpoint <G?> <date>` + Tasks/Roles + `Co-authored-by`。
+- 不跟踪 `work/**` 原始日志、日志、截图、tmp；`work/*EVIDENCE.md` 可按精选快照提交；
+- 标准 message：`chore(ai-team): checkpoint <G?> <date>` + Tasks/Roles + `Co-authored-by`；
+- 提交成功后运行 `checkpoint-check --mark` 更新 `state/CHECKPOINT.json`；若 `--mark` 拒绝，先修正提交范围，不要强行标记。
 
 ## 2. 权威输入
 

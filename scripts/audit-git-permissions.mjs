@@ -33,6 +33,15 @@ const writeRoles = new Set([
   "technical-writer.md",
 ]);
 
+// QA writes tests and reports but does not commit; DevOps commits its output.
+const nonCommittingWriteRoles = new Set(["qa-engineer.md"]);
+
+const nonCommitRules = [
+  ["git commit *", "deny"],
+  ["git push *", "deny"],
+  ["git tag *", "deny"],
+];
+
 const commonWriteRules = [
   ["git commit *", "ask"],
   ["git push *", "ask"],
@@ -67,7 +76,7 @@ const commonWriteRules = [
 
 const roleExtraRules = {
   "engineer.md": [["git init *", "ask"]],
-  "qa-engineer.md": [["git init *", "ask"], ["git apply *", "deny"], ["git am *", "deny"]],
+  "qa-engineer.md": [["git init *", "deny"], ["git apply *", "deny"], ["git am *", "deny"]],
   "devops-engineer.md": [],
   "technical-writer.md": [["git init *", "ask"], ["git apply *", "deny"], ["git am *", "deny"]],
 };
@@ -87,8 +96,13 @@ function parseShellRules(file) {
     .map((m) => ({ resource: m[1], effect: m[2] }));
 }
 
+function lastEffect(rules, resource) {
+  const matches = rules.filter((r) => r.resource === resource);
+  return matches.length ? matches[matches.length - 1].effect : null;
+}
+
 function hasRule(rules, resource, effect) {
-  return rules.some((r) => r.resource === resource && r.effect === effect);
+  return lastEffect(rules, resource) === effect;
 }
 
 const files = fs.readdirSync(agentsDir).filter((f) => f.endsWith(".md")).sort();
@@ -104,13 +118,23 @@ for (const file of files) {
   if (readOnlyRoles.has(file)) {
     if (!shellDeny) missing.push("missing shell * deny");
     for (const forbidden of readOnlyForbidden) {
-      if (rules.some((r) => r.resource === forbidden && r.effect !== "deny")) {
-        missing.push(`read-only role has ${forbidden}`);
+      const effect = lastEffect(rules, forbidden);
+      if (effect && effect !== "deny") {
+        missing.push(`read-only role has ${forbidden} -> ${effect}`);
       }
     }
   } else if (writeRoles.has(file)) {
-    for (const [resource, effect] of [...commonWriteRules, ...(roleExtraRules[file] ?? [])]) {
-      if (!hasRule(rules, resource, effect)) missing.push(`missing ${resource} -> ${effect}`);
+    const expected = nonCommittingWriteRoles.has(file)
+      ? [
+          ...commonWriteRules.filter(([resource]) => !["git commit *", "git push *", "git tag *"].includes(resource)),
+          ...nonCommitRules,
+          ...(roleExtraRules[file] ?? []),
+        ]
+      : [...commonWriteRules, ...(roleExtraRules[file] ?? [])];
+    for (const [resource, effect] of expected) {
+      if (!hasRule(rules, resource, effect)) {
+        missing.push(`missing ${resource} -> ${effect} (last match: ${lastEffect(rules, resource) ?? "none"})`);
+      }
     }
   } else {
     missing.push("unknown role: not in read-only or write role list");

@@ -6,6 +6,10 @@ permissions:
   - action: "*"
     resource: "*"
     effect: allow
+  # 项目外路径默认需要用户确认；密钥路径仍由更具体的 deny 规则覆盖。
+  - action: external_directory
+    resource: "*"
+    effect: ask
   - action: todowrite
     resource: "*"
     effect: allow

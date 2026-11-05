@@ -123,7 +123,28 @@ cmd /c "java -version 2>&1"
 
 **`try { ... } catch { ... }` 被拒**：`try` 是 PowerShell 复合关键字，不是普通命令；不要用它包裹允许的命令。直接运行，或把逻辑写进 `.ps1` 脚本再执行。
 
-**项目外目录**：`D:\Development` 这类目录默认只保证“列目录”可用；读取文件内容、编辑、写入仍不在默认授权内。需要读取时，单独申请只读、限定目录的权限，并保留 `.env`/密钥/`.git` 的 deny。
+**项目外目录**：`D:\Development` 这类目录现在默认触发 `external_directory` 批准；读取文件内容、编辑、写入都需要确认。需要长期读取时，单独申请只读、限定目录的权限，并保留 `.env`/密钥/`.git` 的 deny。
+
+### 3.3 `git add 权限受限` / 有未提交改动但没人提交
+
+**现象**：
+
+- HANDOFF 写着 “Wave X 未提交（git add 权限受限）”；
+- 工作区有几十个文件，但一直没人提交；
+- `git add` 被拒绝。
+
+**原因**：Chief 是只读角色，**不能执行 `git add`/`git commit`**。正确动作不是绕过，也不是把未提交状态记进 HANDOFF 就继续，而是调度 `ai-team/devops-engineer` 做 checkpoint。旧会话常见错误是 Chief 自己尝试 `git add`，被拒后放弃。
+
+**处理**：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
+```
+
+- 到期 → 建 `TASK-GIT-*`，brief 列出明确路径，派 DevOps 提交；**brief 里不得写 `git add -A`**。
+- 只提交精选 `.ai-team` 路径；不提交 `work/**` 原始日志、截图、tmp、未脱敏安全报告。
+- 提交后 DevOps 运行 `checkpoint-check --mark`；若 HEAD 含原始日志/密钥/构建产物，`--mark` 会拒绝，先修正再标记。
+- 用户明确要求暂不提交 → 在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ## 4. 一直弹权限确认
 

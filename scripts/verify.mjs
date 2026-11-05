@@ -293,6 +293,38 @@ if (fs.existsSync(workflowDir)) {
 }
 
 // ---------------------------------------------------------------------------
+// Script syntax and team audits
+// ---------------------------------------------------------------------------
+const scriptFiles = [];
+const sourceScripts = path.join(root, "scripts");
+if (fs.existsSync(sourceScripts)) {
+  for (const name of fs.readdirSync(sourceScripts).filter((f) => f.endsWith(".mjs"))) {
+    scriptFiles.push(path.join(sourceScripts, name));
+  }
+}
+for (const dir of skillDirs) {
+  const scriptsDir = path.join(dir, "scripts");
+  if (!fs.existsSync(scriptsDir)) continue;
+  for (const name of fs.readdirSync(scriptsDir).filter((f) => f.endsWith(".mjs"))) {
+    scriptFiles.push(path.join(scriptsDir, name));
+  }
+}
+for (const file of scriptFiles) {
+  const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+  addCheck(`script syntax ${path.relative(root, file)}`, result.status === 0, (result.stderr ?? "").trim());
+}
+
+if (!installed) {
+  for (const audit of ["audit-git-permissions.mjs", "audit-team-consistency.mjs"]) {
+    const file = path.join(root, "scripts", audit);
+    if (!fs.existsSync(file)) continue;
+    const result = spawnSync(process.execPath, [file], { cwd: root, encoding: "utf8", timeout: 120000 });
+    const detail = result.status === 0 ? "" : `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim().split(/\r?\n/).filter(Boolean).slice(-3).join(" | ");
+    addCheck(`audit ${audit}`, result.status === 0, detail);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Portability checks
 // ---------------------------------------------------------------------------
 const scanRoots = [paths.agents, paths.commands, ...skillDirs];

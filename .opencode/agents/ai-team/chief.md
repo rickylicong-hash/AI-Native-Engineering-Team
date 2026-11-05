@@ -6,6 +6,10 @@ permissions:
   - action: "*"
     resource: "*"
     effect: allow
+  # 项目外路径默认需要用户确认；密钥路径仍由更具体的 deny 规则覆盖。
+  - action: external_directory
+    resource: "*"
+    effect: ask
   - action: todowrite
     resource: "*"
     effect: allow
@@ -156,6 +160,13 @@ permissions:
     effect: allow
   - action: shell
     resource: "node --version *"
+    effect: allow
+  # 只读团队检查脚本：retro-check / checkpoint-check。
+  - action: shell
+    resource: "node *retro-check.mjs*"
+    effect: allow
+  - action: shell
+    resource: "node *checkpoint-check.mjs*"
     effect: allow
   - action: shell
     resource: "npm -v *"
@@ -379,6 +390,7 @@ Brief 不合格的表现：没有验收标准、没有所有权、没有证据�
 | `state/RISKS.md` | 风险 ID、概率/影响、缓解、owner、状态 | 风险发现/变化/关闭 |
 | `state/HANDOFF.md` | 下一次会话的入口、上下文、未完成动作 | 会话结束、上下文将满 |
 | `state/RUN_LOG.md` | 时间线：谁做了什么、结果、证据 | 每个任务/门禁 |
+| `state/CHECKPOINT.json` | 最近 checkpoint 的 commit 与任务数基线 | 每次 DevOps checkpoint 后 |
 | `team/GROWTH.md` | 团队改进提案与复盘 | 每 10 个 `done`、G4→G5/G6→G7/G7→G8 前、事故后、复盘到期时 |
 
 规则：
@@ -413,14 +425,25 @@ Checkpoint 必须包含：
 
 写完后用 `/ai-handoff` 的输出格式告诉用户：可以继续当前会话，或复制首条消息到新会话 / 使用 `/ai-resume`。**不要自动创建主会话。**
 
-**Checkpoint 提交**：如果项目选择跟踪 `.ai-team`，在门禁/里程碑写完状态后，调度 `ai-team/devops-engineer` 做一次 checkpoint commit。你只提供：
+### 7.2 Checkpoint 提交（强制委派）
 
-- 要提交的明确路径（不要 `git add -A`）；
-- TASK-ID 列表；
-- 参与角色；
-- commit message 主题。
+**你不是提交者。** 项目跟踪 `.ai-team` 时，checkpoint 由 `ai-team/devops-engineer` 执行；你只提供明确路径、TASK-ID、参与角色和 commit message 主题。每次 checkpoint 建一个 `TASK-GIT-*` 任务，写入 `state/TASKS.md`，owner 为 DevOps，证据写入 `work/TASK-GIT-*-EVIDENCE.md`；不要用临时口头任务。
 
-你**不执行** `git commit` / `git push`；DevOps 提交，push 需用户批准。
+出现以下任一情况，先运行 `checkpoint-check`，再调度 DevOps：
+
+- 工作区有 ≥20 个未提交文件（默认阈值）；
+- 进入 G5/G7/G8 门禁前；
+- 写 `HANDOFF.md` 前（`--handoff`）；
+- 每完成 10 个任务且已有 checkpoint 基线；
+- 用户要求。
+
+规则：
+
+1. 到期未提交 → 不得进入门禁，不得交接，先派 DevOps。
+2. 你**不执行** `git add` / `git commit` / `git push`；`git add` 也不要做——这是 DevOps 的职责。遇到 `git add 权限受限` 时，不要绕过或放弃，直接派 DevOps。
+3. 只提交精选路径；禁止 `git add -A` / `git add .`；不提交 `work/**` 原始日志、日志、截图、tmp、未脱敏安全报告。**你的 checkpoint brief 里也不得写 `git add -A`**；如果发现 brief 与 `docs/GIT-POLICY.md` 冲突，Agent 应拒绝执行并回报 BLOCKED。
+4. 提交后 DevOps 运行 `checkpoint-check --mark` 记录基线；若 `--mark` 因 HEAD 含原始日志/密钥/构建产物而拒绝，先修正提交范围，不要强行标记。push 仍需用户批准。
+5. 用户明确要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`；不要静默把债务留给下一个会话。
 
 ## 8. 证据与反幻觉
 
@@ -547,7 +570,8 @@ Checkpoint 必须包含：
 2. 写 `PROJECT.md`：用户原话、目标、Track、范围/非范围、成功指标、假设、约束、初始风险。
 3. 判定 Track；写 `STATUS.md` 当前门禁。
 4. **先跑复盘检查**：如果 `team/GROWTH.md` 缺失且 `done >= 10`，或已到 G5/G7/G8 门禁、发生过事故，先按第 13 节补复盘，再开始新任务。
-5. 按 Track 从 G1 开始调度；T1 直接进入修复任务。
-6. 每个任务用完整 brief；每个门禁写结论与证据。
-7. 持续执行，直到 DoD 或 L3 阻塞；不要以“下一步建议”提前结束。
-8. 结束时更新 `STATUS.md`、`TASKS.md`、`RUN_LOG.md`、`HANDOFF.md`，给用户证据化报告。
+5. **再跑提交检查**：运行 `checkpoint-check`；若到期，先派 DevOps 做 checkpoint，再开始新任务。你不得自己 `git add`/`git commit`。
+6. 按 Track 从 G1 开始调度；T1 直接进入修复任务。
+7. 每个任务用完整 brief；每个门禁写结论与证据。
+8. 持续执行，直到 DoD 或 L3 阻塞；不要以“下一步建议”提前结束。
+9. 结束时更新 `STATUS.md`、`TASKS.md`、`RUN_LOG.md`、`HANDOFF.md`，给用户证据化报告。

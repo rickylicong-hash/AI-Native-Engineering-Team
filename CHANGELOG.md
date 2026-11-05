@@ -3,6 +3,32 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.5] - 2026-11-05
+
+### Fixed
+
+- **Chief could not run the new retro check**: Chief's shell was `* deny` with only `node -v`; added explicit allow for `node *retro-check.mjs*` and `node *checkpoint-check.mjs*`. The audit now detects “prompt references a script but permission does not allow it”.
+- **QA permission contradicted its prompt**: QA said it must not commit, but `git commit`/`git push`/`git tag` were `ask` and `git init` was `ask`. They are now `deny`; `audit-git-permissions.mjs` has a non-committing write-role category and checks the *last* matching rule instead of merely finding a deny anywhere.
+- **External directory claims were not enforced**: all 10 agents now have `external_directory * -> ask`, matching the docs that outside-project reads/edits require approval.
+- **Checkpoint work was ad hoc**: added `checkpoint-check.mjs`, `state/CHECKPOINT.json`, `TASK-GIT-*` requirement, `--mark` baseline, and a HEAD audit that rejects raw work logs, secrets and build output. Wired into `/ai`, `/ai-resume`, `/ai-status`, `/ai-handoff`, `/ai-deploy`, `/ai-hotfix`, `/ai-retro`, Chief §7.2/§15 and the gates.
+- **Old checkpoint briefs could say `git add -A`**: Chief/DevOps prompts now forbid it; DevOps must refuse such a brief with `BLOCKED`; checkpoint evidence must list explicit paths.
+- **`/ai-hotfix` had no GROWTH step**: P0/P1/hotfix/rollback now writes a lightweight retro.
+- **`/ai-deploy` did not check retro/checkpoint**: both are now release preconditions.
+
+### Added
+
+- `scripts/audit-team-consistency.mjs`: 80 checks for manifest/command/skill references, script permissions, QA commit posture, `external_directory`, and required templates/scripts.
+- `checkpoint-check.mjs`: file/task/gate/handoff triggers, `--mark` baseline, HEAD audit for `.ai-team/work/**.txt`, logs, secrets and build output.
+- `verify.mjs` now checks every `.mjs` syntax and runs both audits (190 checks).
+
+### Verified
+
+- `node scripts/verify.mjs` → 190/190.
+- `node scripts/audit-team-consistency.mjs` → 80 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `checkpoint-check.mjs` fixture tests → 13 cases, 0 failed.
+- `riccon-ai` current HEAD `ebb16df` was committed with `git add -A` (234 files) and contains 16 raw work logs; `checkpoint-check --mark` refuses it. Only 3 untracked evidence files remain.
+
 ## [1.2.4] - 2026-11-05
 
 ### Added

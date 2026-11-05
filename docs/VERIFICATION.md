@@ -12,7 +12,7 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 180, passed: 180, failed: 0, warnings: 0
+checks: 190, passed: 190, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -195,7 +195,7 @@ node scripts/version.mjs --update
 结果：
 
 ```text
-源验证 180/180 → 安装 10 agents / 12 commands / 4 skills
+源验证 179/179 → 安装 10 agents / 12 commands / 4 skills
 → 安装后验证 189/189（含 OpenCode 10 个 agent）
 → 写 marker
 → status: up-to-date
@@ -265,6 +265,37 @@ due:      no
 
 说明：脚本能从 `TASKS.md` 统计 `done`（含 `done（待确认）`）、与 GROWTH frontmatter 比较、识别 G5/G7/G8 门禁，并提示状态漂移。
 
+### 5.6 Checkpoint 检查（1.2.5）
+
+riccon-ai 当前 HEAD `ebb16df`（234 文件，`git add -A` 提交）：
+
+```text
+branch:   master @ ebb16df
+stage:    G4
+tasks:    done 29, last checkpoint 0 (never)
+changed:  3 files (modified 0, untracked 3)
+due:      no
+warning:  HEAD ebb16df contains 16 forbidden path(s) (raw logs, secrets, build output); --mark will refuse it
+```
+
+`--mark` 在 HEAD 含原始日志/密钥/构建产物时返回 3，不写入 `CHECKPOINT.json`。fixture 覆盖 13 个场景：未提交文件阈值、G5 门禁、`--handoff`、脏工作区、坏 HEAD、干净 HEAD 标记。
+
+### 5.7 一致性审计（1.2.5）
+
+```text
+node scripts/verify.mjs                  → 190/190
+node scripts/verify.mjs --installed      → 182/182 (skill scripts syntax)
+node scripts/audit-git-permissions.mjs   → 10 agents, 0 failed
+node scripts/audit-team-consistency.mjs  → 80 checks, 0 failed
+```
+
+一致性审计发现的真实缺口：
+
+- Chief 的 prompt 让跑 `retro-check`，但 shell 只允许 `node -v`；
+- QA 的 prompt 写“不 commit”，权限却是 `git commit ask`；
+- 文档说项目外目录不授权，但所有 agent 都没有 `external_directory` 规则；
+- `checkpoint-check` 尚未接入命令，riccon-ai 的 `TASK-GIT-006` 用 `git add -A` 提交了 16 个原始测试日志。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -294,8 +325,9 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.4 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.5 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
+- 一致性审计：通过（80 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。

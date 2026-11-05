@@ -6,6 +6,10 @@ permissions:
   - action: "*"
     resource: "*"
     effect: allow
+  # 项目外路径默认需要用户确认；密钥路径仍由更具体的 deny 规则覆盖。
+  - action: external_directory
+    resource: "*"
+    effect: ask
   - action: todowrite
     resource: "*"
     effect: allow
@@ -104,7 +108,7 @@ permissions:
     effect: deny
   - action: shell
     resource: "git commit *"
-    effect: ask
+    effect: deny
   - action: shell
     resource: "git reset --hard *"
     effect: deny
@@ -134,7 +138,7 @@ permissions:
     effect: deny
   - action: shell
     resource: "git push *"
-    effect: ask
+    effect: deny
   - action: shell
     resource: "docker push *"
     effect: ask
@@ -150,7 +154,7 @@ permissions:
   # Git safety: release/remote/history/working-tree guards.
   - action: shell
     resource: "git tag *"
-    effect: ask
+    effect: deny
   - action: shell
     resource: "git branch -D *"
     effect: deny
@@ -192,7 +196,7 @@ permissions:
     effect: ask
   - action: shell
     resource: "git init *"
-    effect: ask
+    effect: deny
   - action: shell
     resource: "git apply *"
     effect: deny

@@ -325,6 +325,24 @@ Co-authored-by: ai-team/qa-engineer <ai-team@local>
 
 硬规则：到期未复盘，不开始新的功能任务，不把门禁标为通过。轻量复盘 10–20 行即可；G8 做完整复盘。检查命令见 `ai-team-workflow` 3.1。
 
+### 7.3 Checkpoint 提交
+
+Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message。触发条件：
+
+- 未提交文件 ≥20（默认阈值）；
+- 进入 G5/G7/G8 前；
+- 写 `HANDOFF.md` 前；
+- 已有 `CHECKPOINT.json` 基线后，每 10 个 `done`；
+- 用户要求。
+
+检查命令：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
+```
+
+DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+
 ## 8. 并行规则
 
 - 契约冻结前不并行实现；

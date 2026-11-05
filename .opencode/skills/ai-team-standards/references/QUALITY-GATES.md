@@ -109,6 +109,17 @@
 
 > 到期未做，门禁不得标记通过，也不得开始新的功能任务。
 
+## 提交检查（G5/G7/G8 前，或交接前）
+
+- [ ] `checkpoint-check` 未到期，或已由 DevOps 完成 checkpoint；
+- [ ] checkpoint 有 `TASK-GIT-*`、brief 明确路径、`work/TASK-GIT-*EVIDENCE.md`；
+- [ ] 工作区未提交文件 < 20，或已提交精选路径；
+- [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark` 更新；
+- [ ] 没有把 `work/**`、日志、截图、tmp、未脱敏安全报告带进提交；
+- [ ] 没有 `git add -A` / `git add .`；Chief 没有自己 commit。
+
+> 到期未提交，门禁不得标记通过，也不得交接。
+
 ## G5 Verify
 
 ### Code Review

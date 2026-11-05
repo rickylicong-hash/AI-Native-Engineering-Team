@@ -21,6 +21,7 @@ $ARGUMENTS
    - 需要用户批准的事项。
 6. 更新 frontmatter：`last_retro`、`last_gate`、`tasks_at_last_retro`、`next_due_at`（= 当前 done + 10）、`last_trigger`。
 7. 更新 `state/STATUS.md` 的 `Retro:` 行、`state/HANDOFF.md` 和 `state/RUN_LOG.md`。
-8. 汇报：覆盖任务数、3 个主要问题、3 个提案、到期状态和下一次触发点。
+8. 若项目跟踪 `.ai-team`，写完后调度 `ai-team/devops-engineer` 做一次 checkpoint；你不得自己 `git add`/`git commit`，push 需用户批准。
+9. 汇报：覆盖任务数、3 个主要问题、3 个提案、到期状态和下一次触发点。
 
 不要直接修改 `.opencode/**` 或全局团队配置；只写提案。到期未做复盘时，不要开始新的功能任务，也不要把门禁标为通过。
