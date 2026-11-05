@@ -98,8 +98,18 @@ check("state-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow
 check("artifact-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "artifact-check.mjs")));
 const stateCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs"));
 check("state-check integrates artifact-check", stateCheckText.includes('from "./artifact-check.mjs"'), "missing artifact-check import");
+check(
+  "state-check validates HANDOFF against CHECKPOINT.json",
+  stateCheckText.includes("CHECKPOINT.json") && stateCheckText.includes("is behind"),
+  "missing checkpoint closeout validation",
+);
 const checkpointCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "checkpoint-check.mjs"));
 check("checkpoint-check integrates artifact-check", checkpointCheckText.includes('from "./artifact-check.mjs"'), "missing artifact-check import");
+check(
+  "checkpoint-check emits closeout next steps",
+  checkpointCheckText.includes("NEXT:") && checkpointCheckText.includes("HANDOFF Git/Baseline"),
+  "missing --mark closeout instructions",
+);
 
 for (const file of agentFiles) {
   const text = read(path.join(agentsDir, file));
@@ -232,7 +242,7 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "证据/产物卫生", "flake 治理"]) {
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
 const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));

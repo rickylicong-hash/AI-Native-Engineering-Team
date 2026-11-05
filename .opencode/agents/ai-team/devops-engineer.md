@@ -345,7 +345,7 @@ permissions:
 - 不跟踪 `work/**` 原始日志、日志、截图、tmp；`work/*EVIDENCE.md` 可按精选快照提交；
 - checkpoint 前运行 `artifact-check`：根目录有 `*.log`/`target-*`/`*.class` 先清到 `logs/` 或 `.ai-team/work/<TASK>-logs/`；`--mark` 前 artifact error 必须为 0；
 - 标准 message：`chore(ai-team): checkpoint <G?> <date>` + Tasks/Roles + `Co-authored-by`；
-- 提交成功后运行 `checkpoint-check --mark` 更新 `state/CHECKPOINT.json`；若 `--mark` 拒绝，先修正提交范围，不要强行标记。
+- 提交成功后运行 `checkpoint-check --mark` 更新 `state/CHECKPOINT.json`；若 `--mark` 拒绝，先修正提交范围，不要强行标记。`--mark` 会输出 `NEXT`（HANDOFF Git/Baseline、STATUS Checkpoint）；把它交给 Chief 做收口，未同步不算 checkpoint 完成。
 
 ## 2. 权威输入
 

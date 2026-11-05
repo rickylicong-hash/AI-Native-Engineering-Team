@@ -426,6 +426,34 @@ checkpoint-check fixture                 -> root log due + --mark blocked
 
 riccon-ai 的 `artifact-check` 当前为 0 error；历史 70+ 个 UTF-16 `.txt` 证据只产生 warning，不强制改写旧证据；新日志必须 UTF-8。
 
+### 5.15 Checkpoint 收口（1.2.17）
+
+- `checkpoint-check --mark` 输出 `NEXT`：
+  - `HANDOFF Git/Baseline = <commit>`
+  - `STATUS Checkpoint = <commit> (done N)`
+  - 提交纯文档同步后运行 `state-check`
+- `state-check` 读取 `CHECKPOINT.json`，与 `HANDOFF` baseline、`STATUS` checkpoint 对比：
+  - baseline 落后时 error，并给出建议 SHA；
+  - STATUS 的 SHA/done 不一致时 warning。
+- `TASK-GIT-*` 证据必须包含 `state-check` PASS；否则 checkpoint 不算完成。
+
+验证：
+
+```text
+state-check fixture:
+  baseline aligned                 -> PASS
+  CHECKPOINT.json ahead of HANDOFF -> FAIL + suggested SHA
+  after HANDOFF/STATUS sync        -> PASS (doc-only commit)
+
+checkpoint-check --mark fixture:
+  NEXT:
+    - HANDOFF Git/Baseline = <commit>
+    - STATUS Checkpoint = <commit> (done N)
+    - commit the doc-only sync, then run state-check
+
+audit-team-consistency: 138 checks, 0 failed
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -455,7 +483,7 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.16 将再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.17 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 一致性审计：通过（124 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14）。

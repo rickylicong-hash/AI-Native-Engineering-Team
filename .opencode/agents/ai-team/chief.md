@@ -515,6 +515,7 @@ Checkpoint 必须包含：
 3. 只提交精选路径；禁止 `git add -A` / `git add .`；不提交 `work/**` 原始日志、日志、截图、tmp、未脱敏安全报告。**你的 checkpoint brief 里也不得写 `git add -A`**；如果发现 brief 与 `docs/GIT-POLICY.md` 冲突，Agent 应拒绝执行并回报 BLOCKED。
 4. 提交后 DevOps 运行 `checkpoint-check --mark` 记录基线；若 `--mark` 因 HEAD 含原始日志/密钥/构建产物、或工作区有根目录 artifact error 而拒绝，先修正，不要强行标记。push 仍需用户批准。
 5. 用户明确要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`；不要静默把债务留给下一个会话。
+6. **checkpoint 收口（P-18）**：`--mark` 后你必须在同一轮把 `HANDOFF.md` 的 `Git`/`Baseline` 与 `STATUS.md` 的 `Checkpoint` 同步到该 commit，提交纯文档同步，再运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。
 
 ## 8. 证据与反幻觉
 

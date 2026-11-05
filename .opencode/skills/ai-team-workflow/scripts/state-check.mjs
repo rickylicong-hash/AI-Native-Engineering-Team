@@ -6,6 +6,7 @@
  *   - PROJECT.md frontmatter 的 track/stage 与 STATUS.md 是否一致；
  *   - STATUS.md 是否包含 Retro / Checkpoint 行；
  *   - HANDOFF.md 记录的 Git commit 是否与当前 HEAD 一致；
+ *   - HANDOFF/STATUS 的 checkpoint 是否与 CHECKPOINT.json 同步（P-18）；
  *   - TASKS.md 是否还在使用 `done（...）` 这类非标准完成状态；
  *   - 根目录临时产物与证据编码（调用 artifact-check）。
  *
@@ -41,10 +42,12 @@ const projectFile = path.join(stateDir, "PROJECT.md");
 const statusFile = path.join(stateDir, "STATUS.md");
 const tasksFile = path.join(stateDir, "TASKS.md");
 const handoffFile = path.join(stateDir, "HANDOFF.md");
+const checkpointFile = path.join(stateDir, "CHECKPOINT.json");
 
 const errors = [];
 const warnings = [];
 let artifactSummary = null;
+let checkpointSummary = null;
 
 function read(file) {
   return fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
@@ -67,6 +70,16 @@ function gate(value) {
 
 function git(gitArgs) {
   return spawnSync("git", gitArgs, { cwd: project, encoding: "utf8" });
+}
+
+function sameCommit(a, b) {
+  if (!a || !b) return false;
+  return a === b || a.startsWith(b) || b.startsWith(a);
+}
+
+function isAncestor(ancestor, descendant) {
+  if (!ancestor || !descendant) return false;
+  return git(["merge-base", "--is-ancestor", ancestor, descendant]).status === 0;
 }
 
 function isDocOnly(file) {
@@ -127,6 +140,37 @@ try {
   if (!/^-\s*Retro:/m.test(statusText)) warnings.push("STATUS.md has no Retro line");
   if (!/^-\s*Checkpoint:/m.test(statusText)) warnings.push("STATUS.md has no Checkpoint line");
 
+  // P-18：CHECKPOINT.json 是 checkpoint 的唯一事实源；HANDOFF/STATUS 必须同步到它。
+  let checkpointCommit = "";
+  let checkpointTasks = null;
+  if (fs.existsSync(checkpointFile)) {
+    try {
+      const checkpoint = JSON.parse(read(checkpointFile));
+      checkpointCommit = String(checkpoint.last_checkpoint_commit || "");
+      const tasksValue = checkpoint.tasks_at_last_checkpoint;
+      checkpointTasks = tasksValue !== undefined && tasksValue !== null && Number.isFinite(Number(tasksValue))
+        ? Number(tasksValue)
+        : null;
+      checkpointSummary = {
+        commit: checkpointCommit || null,
+        tasks: checkpointTasks,
+        at: checkpoint.last_checkpoint_at || null,
+      };
+    } catch {
+      warnings.push("CHECKPOINT.json 无法解析");
+    }
+  }
+
+  const statusCheckpointLine = statusText.match(/^-\s*Checkpoint:\s*([^\r\n]*)/m)?.[1] || "";
+  const statusCheckpointSha = statusCheckpointLine.match(/\b[0-9a-f]{7,40}\b/i)?.[0] || "";
+  if (statusCheckpointSha && checkpointCommit && !sameCommit(statusCheckpointSha, checkpointCommit)) {
+    warnings.push(`STATUS.md Checkpoint=${statusCheckpointSha}, CHECKPOINT.json=${checkpointCommit}; update STATUS after checkpoint sync`);
+  }
+  const statusDone = statusCheckpointLine.match(/done\s+(\d+)/i)?.[1];
+  if (statusDone && checkpointTasks !== null && Number(statusDone) !== checkpointTasks) {
+    warnings.push(`STATUS.md Checkpoint done=${statusDone}, CHECKPOINT.json done=${checkpointTasks}; update STATUS after checkpoint sync`);
+  }
+
   if (fs.existsSync(handoffFile)) {
     const handoffText = read(handoffFile);
     const gitLineText = handoffText.match(/^-\s*Git[：:][^\r\n]*/m)?.[0] || "";
@@ -134,18 +178,32 @@ try {
     const sourceLine = baselineLineText || gitLineText;
     const hashes = [...sourceLine.matchAll(/`?([0-9a-f]{7,40})`?/g)].map((m) => m[1]);
     const baseline = hashes.length ? hashes[hashes.length - 1] : "";
+    const head = git(["rev-parse", "--short=7", "HEAD"]);
+    const headCommit = head.status === 0 ? head.stdout.trim() : "";
     if (!baseline) {
       warnings.push("HANDOFF.md has no Git/Baseline commit reference");
     } else {
-      const head = git(["rev-parse", "--short=7", "HEAD"]);
-      const headCommit = head.status === 0 ? head.stdout.trim() : "";
-      if (headCommit && !headCommit.startsWith(baseline) && !baseline.startsWith(headCommit)) {
+      const checkpointHint = checkpointCommit && !sameCommit(baseline, checkpointCommit)
+        ? `; CHECKPOINT.json=${checkpointCommit}; update HANDOFF Git/Baseline to ${checkpointCommit}`
+        : "";
+      let headBlocked = false;
+      if (headCommit && !sameCommit(headCommit, baseline)) {
         const doc = docOnlySince(baseline, headCommit);
         if (!doc.ok) {
           const detail = doc.nonDoc?.length
             ? `; non-doc changes: ${doc.nonDoc.slice(0, 5).join(", ")}${doc.nonDoc.length > 5 ? " ..." : ""}`
             : `; ${doc.reason}`;
-          errors.push(`HANDOFF.md baseline=${baseline}, HEAD=${headCommit}${detail}`);
+          errors.push(`HANDOFF.md baseline=${baseline}, HEAD=${headCommit}${detail}${checkpointHint}`);
+          headBlocked = true;
+        }
+      }
+      if (!headBlocked && checkpointCommit && !sameCommit(baseline, checkpointCommit)) {
+        const checkpointBehind = sameCommit(checkpointCommit, headCommit) || isAncestor(checkpointCommit, headCommit);
+        const baselineBehind = isAncestor(baseline, checkpointCommit);
+        if (checkpointBehind && baselineBehind) {
+          errors.push(`HANDOFF.md baseline=${baseline} is behind CHECKPOINT.json=${checkpointCommit}; update HANDOFF Git/Baseline to ${checkpointCommit}`);
+        } else {
+          warnings.push(`HANDOFF.md baseline=${baseline} differs from CHECKPOINT.json=${checkpointCommit}`);
         }
       }
     }
@@ -193,10 +251,13 @@ try {
 const failed = errors.length > 0 || (strict && warnings.length > 0);
 
 if (json) {
-  console.log(JSON.stringify({ ok: !failed, errors, warnings, strict, artifacts: artifactSummary }, null, 2));
+  console.log(JSON.stringify({ ok: !failed, errors, warnings, strict, checkpoint: checkpointSummary, artifacts: artifactSummary }, null, 2));
 } else {
   console.log("AI Team state check");
   console.log(`project:  ${project}`);
+  if (checkpointSummary) {
+    console.log(`checkpoint: ${checkpointSummary.commit || "(unknown)"} (done ${checkpointSummary.tasks ?? "?"})`);
+  }
   console.log(`errors:   ${errors.length}`);
   for (const error of errors) console.log(`  ERROR  ${error}`);
   console.log(`warnings: ${warnings.length}`);

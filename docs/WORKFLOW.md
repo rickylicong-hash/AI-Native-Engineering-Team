@@ -358,7 +358,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。`checkpoint-check` 会同时扫描根目录产物和证据编码；有 artifact error 时 `--mark` 拒绝。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。`checkpoint-check` 会同时扫描根目录产物和证据编码；有 artifact error 时 `--mark` 拒绝。**`--mark` 后必须由 Chief 同步 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；未同步不算 checkpoint 完成。** Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -378,11 +378,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
 - **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
 
-### 7.6 证据与 flake 治理（P-15..P-17）
+### 7.6 证据与 flake 治理（P-15..P-18）
 
 - **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
 - **P-17 审查独立复现**：reviewer brief 默认授予测试/扫描 shell；无 shell 必须写 `RISK-*` + 补偿证据。证据必须可读（UTF-8 或文本摘要），UTF-16/二进制日志不能作为 P1/安全项唯一依据。reviewer 报告必须写“实际执行/未能执行”的命令。
+- **P-18 checkpoint 收口**：`--mark` 后 Chief 同步 `HANDOFF Git/Baseline` 与 `STATUS Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；`TASK-GIT-*` 证据包含 `state-check` PASS。
 
 ## 8. 并行规则
 

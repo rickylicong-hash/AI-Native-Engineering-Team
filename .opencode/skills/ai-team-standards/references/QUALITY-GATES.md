@@ -126,6 +126,7 @@
 - [ ] checkpoint 有 `TASK-GIT-*`、brief 明确路径、`work/TASK-GIT-*EVIDENCE.md`；
 - [ ] 工作区未提交文件 < 20，或已提交精选路径；
 - [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark` 更新；
+- [ ] `--mark` 后 `HANDOFF.md` 的 Git/Baseline 与 `STATUS.md` 的 Checkpoint 已同步到该 commit；`state-check` PASS 已写入 `TASK-GIT-*` 证据；
 - [ ] 没有把 `work/**`、日志、截图、tmp、未脱敏安全报告带进提交；
 - [ ] 没有 `git add -A` / `git add .`；Chief 没有自己 commit。
 

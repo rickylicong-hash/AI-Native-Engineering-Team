@@ -3,6 +3,21 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.17] - 2026-11-05
+
+### Added
+
+- **P-18 checkpoint closeout**: `checkpoint-check --mark` now prints the required `HANDOFF Git/Baseline` and `STATUS Checkpoint` values. `state-check` compares both against `CHECKPOINT.json` and reports the suggested commit when they lag; `TASK-GIT-*` evidence must include `state-check` PASS before a checkpoint is considered complete.
+
+### Verified
+
+- `node scripts/verify.mjs` → 193/193.
+- installed verify → 185/185; installed + OpenCode → 195/195.
+- `node scripts/audit-team-consistency.mjs` → 138 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `state-check` fixture: HANDOFF baseline behind `CHECKPOINT.json` fails with the suggested SHA; after sync, doc-only commit passes.
+- `checkpoint-check --mark` fixture: prints `NEXT` with HANDOFF/STATUS values.
+
 ## [1.2.16] - 2026-11-05
 
 ### Added

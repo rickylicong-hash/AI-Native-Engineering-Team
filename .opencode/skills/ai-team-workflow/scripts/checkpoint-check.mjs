@@ -205,10 +205,19 @@ if (mark) {
     tasks_at_last_checkpoint: done,
     updated: new Date().toISOString().slice(0, 10),
   };
+  const next = [
+    `HANDOFF Git/Baseline = ${headCommit}`,
+    `STATUS Checkpoint = ${headCommit} (done ${done})`,
+    "commit the doc-only sync, then run state-check",
+  ];
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(checkpointFile, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-  if (json) console.log(JSON.stringify({ ok: true, marked: payload }, null, 2));
-  else if (!quiet) console.log(`MARKED  ${path.relative(project, checkpointFile)} (${headCommit}, done ${done})`);
+  if (json) console.log(JSON.stringify({ ok: true, marked: payload, next }, null, 2));
+  else if (!quiet) {
+    console.log(`MARKED  ${path.relative(project, checkpointFile)} (${headCommit}, done ${done})`);
+    console.log("NEXT:");
+    for (const step of next) console.log(`  - ${step}`);
+  }
   process.exit(0);
 }
 

@@ -224,6 +224,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
 5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
 6. `checkpoint-check` 同时扫描根目录产物（`*.log`、`target-*`、`*.class` 等）和证据编码；有 error 时 `--mark` 拒绝。先把日志移到 `logs/` 或 `.ai-team/work/<TASK>-logs/`，不要用 `.gitignore` 掩盖。
+7. **checkpoint 收口（P-18）**：`--mark` 只更新 `CHECKPOINT.json`；Chief 必须在同一轮把 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit，提交纯文档同步后运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。
 
 ### 3.3 状态一致性检查
 
