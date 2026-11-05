@@ -224,11 +224,29 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
 5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
 
+### 3.3 状态一致性检查
+
+在会话启动、交接和门禁前运行：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
+```
+
+检查：
+
+- `PROJECT.md` 的 track/stage 与 `STATUS.md` 是否一致；
+- `STATUS.md` 是否有 `Retro:` / `Checkpoint:` 行；
+- `HANDOFF.md` 的 Git commit 是否等于当前 HEAD；
+- `TASKS.md` 是否还在用 `done（...）` 旧状态。
+
+有 error（stage/track 不一致）时，**不得交接、不得把门禁标为通过**；先修正状态文件。`--strict` 会把 warning 也变成失败。
+
 ## 4. 目录与产物
 
 ```text
 .ai-team/
   README.md
+  .gitignore         # 从 templates/AI-TEAM-GITIGNORE 复制（跟踪 .ai-team 时）
   state/
     PROJECT.md
     STATUS.md
@@ -337,8 +355,15 @@ owner: ai-team/chief
 ```markdown
 | ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |
 |---|---|---|---|---|---|---|
-| TASK-0001 | ... | engineer | TASK-0000 | todo/doing/review/qa/done/done（待确认）/blocked/changes_requested/superseded | AC-1.. | path |
+| TASK-0001 | ... | engineer | TASK-0000 | todo/doing/blocked/changes_requested/review/qa/done/superseded | AC-1.. | path |
 ```
+
+状态语义：
+
+- `done` = 已通过审查/QA/门禁验收；`review`/`qa` 都还不算完成。
+- `done（待确认）`/`done（待审查）` 是旧写法，新项目不得使用；存量项目迁移到 `review`/`qa`。
+- 复盘节奏计数可用 `done` 前缀（含旧写法）衡量工作量；**门禁/验收只认 exact `done`**。
+- `superseded` 不计入完成；返工行 `-R1`/`-R2` 计入复盘工作量。
 
 ### 5.4 ID 规范
 

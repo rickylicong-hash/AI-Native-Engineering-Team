@@ -94,13 +94,14 @@ for (const dir of skillDirs) {
 check("GROWTH template", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "templates", "GROWTH.md")));
 check("retro-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "retro-check.mjs")));
 check("checkpoint-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "checkpoint-check.mjs")));
+check("state-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")));
 
 for (const file of agentFiles) {
   const text = read(path.join(agentsDir, file));
   const rules = parseRules(text);
   const shellRules = rules.filter((r) => r.action === "shell");
 
-  for (const script of ["retro-check", "checkpoint-check"]) {
+  for (const script of ["retro-check", "checkpoint-check", "state-check"]) {
     if (text.includes(script)) {
       const shellMatches = rules.filter((r) => (r.action === "shell" || r.action === "*") && r.resource === "*");
       const shellEnabled = shellMatches.length > 0 && shellMatches[shellMatches.length - 1].effect === "allow";

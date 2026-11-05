@@ -3,6 +3,28 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.6] - 2026-11-05
+
+### Reviewed
+
+Riccon-ai `GROWTH.md` RETRO-0001 (29 done, 17 review reports) produced six proposals. Verdict: P-01/P-02/P-04/P-05 are team-level capability gaps and were implemented; P-03 was already implemented in 1.2.5 but the project has not executed it; P-06 is project cleanup plus a reusable template.
+
+### Added
+
+- **P-01 P1 closure**: `REVIEW.md` now has a P1 closure table (original P1, fix, reproduction command, regression result) and a “new same-class P1” check. Reviewer prompt and G5 checklist require it for fix/regression reviews.
+- **P-02 state consistency**: `state-check.mjs` compares `PROJECT.md`/`STATUS.md` track and stage, checks `HANDOFF.md` Git commit against HEAD, and flags legacy `done（...）` statuses. Wired into `/ai`, `/ai-resume`, `/ai-status`, `/ai-handoff`, Chief startup/handoff and the gates.
+- **P-04 unique test baseline**: `TEST-REPORT.md` has a canonical baseline block (command, pass/fail/skipped, exclusions, delta, evidence); QA prompt and G4/G5 gates forbid “excluding stale baseline” as a pass criterion.
+- **P-05 contract freeze**: task brief now has `契约影响` and `回归范围`; `REVIEW.md` has a contract comparison section; reviewer checks contract diff before implementation; G4/G5 gates require ADR/DEC records for contract changes.
+- **P-06 raw-log guard**: `templates/AI-TEAM-GITIGNORE` for `.ai-team/.gitignore`; GIT-POLICY tells projects to copy it before tracking `.ai-team`.
+- **G-03 status vocabulary**: `done` means accepted; `review`/`qa` are not done; `done（...）` is legacy. Retro cadence counts `done` prefix for workload, but gates/acceptance count exact `done` only.
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 82 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `state-check` on riccon-ai after fixing `PROJECT.md` stage → PASS (1 warning: 7 legacy `done（...）` statuses).
+
 ## [1.2.5] - 2026-11-05
 
 ### Fixed

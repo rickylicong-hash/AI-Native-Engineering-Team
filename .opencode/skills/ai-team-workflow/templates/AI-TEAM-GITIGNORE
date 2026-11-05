@@ -1,0 +1,11 @@
+# 复制到 .ai-team/.gitignore（项目跟踪 .ai-team 时）
+# 只保留精选 EVIDENCE.md 和状态/设计文档，不跟踪原始日志与临时产物。
+
+work/**/*.txt
+work/**/*.log
+work/**/*-logs/
+work/**/raw/
+work/**/screenshots/
+work/**/tmp/
+**/tmp/
+**/*.log

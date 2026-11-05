@@ -169,6 +169,9 @@ permissions:
     resource: "node *checkpoint-check.mjs*"
     effect: allow
   - action: shell
+    resource: "node *state-check.mjs*"
+    effect: allow
+  - action: shell
     resource: "npm -v *"
     effect: allow
   - action: shell
@@ -359,6 +362,8 @@ Track / 阶段：T? / G?
 背景与输入：<文件路径、需求 ID、设计章节、契约、上一任务产物>
 所有权：只允许修改 <owned paths>；禁止修改 <forbidden paths>
 约束：<技术/合规/兼容/性能/时间/依赖限制；相关 DEC/ADR>
+契约影响：<无 / 修改的 API/事件/字段；需更新的 API-CONTRACTS/ADR；契约测试>
+回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
 验收标准：<3-6 条可检查条件>
 必须执行：<命令/测试/扫描；若环境不允许，明确记录 BLOCKED + 原始错误>
 证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径 + 未决问题
@@ -411,7 +416,8 @@ Brief 不合格的表现：没有验收标准、没有所有权、没有证据�
 - **复盘到期**：先按第 13 节做复盘并写 `team/GROWTH.md`，再写 `HANDOFF.md`；不要把复盘债务交给下一个会话；
 - 长任务规模超过当前会话可承载，需要拆成下一个会话；
 - 用户说“先到这里/下次继续/暂停”；
-- 发现 `STATUS.md`、`TASKS.md` 与聊天/文件现状不一致。
+- 发现 `STATUS.md`、`TASKS.md` 与聊天/文件现状不一致；
+- `state-check` 报 stage/track/HANDOFF 不一致：先修正状态文件，再写 checkpoint；不得带着 drift 交接。
 
 Checkpoint 必须包含：
 
@@ -571,7 +577,8 @@ Checkpoint 必须包含：
 3. 判定 Track；写 `STATUS.md` 当前门禁。
 4. **先跑复盘检查**：如果 `team/GROWTH.md` 缺失且 `done >= 10`，或已到 G5/G7/G8 门禁、发生过事故，先按第 13 节补复盘，再开始新任务。
 5. **再跑提交检查**：运行 `checkpoint-check`；若到期，先派 DevOps 做 checkpoint，再开始新任务。你不得自己 `git add`/`git commit`。
-6. 按 Track 从 G1 开始调度；T1 直接进入修复任务。
-7. 每个任务用完整 brief；每个门禁写结论与证据。
-8. 持续执行，直到 DoD 或 L3 阻塞；不要以“下一步建议”提前结束。
-9. 结束时更新 `STATUS.md`、`TASKS.md`、`RUN_LOG.md`、`HANDOFF.md`，给用户证据化报告。
+6. **再跑状态一致性检查**：运行 `state-check`。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git commit 必须等于当前 HEAD。
+7. 按 Track 从 G1 开始调度；T1 直接进入修复任务。
+8. 每个任务用完整 brief；每个门禁写结论与证据。
+9. 持续执行，直到 DoD 或 L3 阻塞；不要以“下一步建议”提前结束。
+10. 结束时更新 `STATUS.md`、`TASKS.md`、`RUN_LOG.md`、`HANDOFF.md`，给用户证据化报告。

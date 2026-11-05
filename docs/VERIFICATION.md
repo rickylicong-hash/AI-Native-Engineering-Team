@@ -12,7 +12,7 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 190, passed: 190, failed: 0, warnings: 0
+checks: 192, passed: 192, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -283,10 +283,10 @@ warning:  HEAD ebb16df contains 16 forbidden path(s) (raw logs, secrets, build o
 ### 5.7 一致性审计（1.2.5）
 
 ```text
-node scripts/verify.mjs                  → 190/190
-node scripts/verify.mjs --installed      → 182/182 (skill scripts syntax)
+node scripts/verify.mjs                  → 192/192
+node scripts/verify.mjs --installed      → 184/184 (skill scripts syntax + templates)
 node scripts/audit-git-permissions.mjs   → 10 agents, 0 failed
-node scripts/audit-team-consistency.mjs  → 80 checks, 0 failed
+node scripts/audit-team-consistency.mjs  → 82 checks, 0 failed
 ```
 
 一致性审计发现的真实缺口：
@@ -295,6 +295,28 @@ node scripts/audit-team-consistency.mjs  → 80 checks, 0 failed
 - QA 的 prompt 写“不 commit”，权限却是 `git commit ask`；
 - 文档说项目外目录不授权，但所有 agent 都没有 `external_directory` 规则；
 - `checkpoint-check` 尚未接入命令，riccon-ai 的 `TASK-GIT-006` 用 `git add -A` 提交了 16 个原始测试日志。
+
+### 5.8 GROWTH 复盘落地（1.2.6）
+
+Riccon-ai `GROWTH.md` 的 P-01/P-02/P-04/P-05/P-06 已转为团队能力：
+
+```text
+P-01 → REVIEW.md P1 closure 表 + reviewer 检查 + G5 门禁
+P-02 → state-check.mjs；/ai、/ai-resume、/ai-status、/ai-handoff 接入
+P-03 → 1.2.5 已实现 checkpoint-check + TASK-GIT-*；项目仍需清理历史日志
+P-04 → TEST-REPORT.md 唯一基线 + QA prompt + G4/G5 门禁
+P-05 → brief 契约影响字段 + REVIEW.md 契约对照 + reviewer 契约 diff 检查
+P-06 → templates/AI-TEAM-GITIGNORE
+```
+
+`state-check` 对 riccon-ai 的结果（修正 `PROJECT.md` stage 后）：
+
+```text
+errors:   0
+warnings: 1
+  WARN   7 task(s) use non-standard done(...) status
+result:   PASS
+```
 
 ## 6. 未执行项
 
@@ -325,9 +347,10 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.5 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.6 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（80 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线）。
+- 一致性审计：通过（82 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线）。
+- 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。

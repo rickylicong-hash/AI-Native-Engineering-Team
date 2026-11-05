@@ -223,6 +223,8 @@ Track / 阶段：T3 / G4
 背景与输入：<文件/需求/设计/契约/上一任务>
 所有权：只允许修改 <paths>；禁止 <paths>
 约束：<技术/合规/兼容/性能/依赖>
+契约影响：<无 / 修改的 API/事件/字段；API-CONTRACTS/ADR；契约测试>
+回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
 验收标准：
   1. ...
   2. ...
@@ -264,6 +266,8 @@ Track / 阶段：T3 / G4
 - 截图替代可复现命令；
 - 审查无文件/行号；
 - 部署无健康检查/回滚。
+
+修复/回归任务额外要求：`work/TASK-*-EVIDENCE.md` 附 P1 closure 表（原 P1、修复点、复现命令、回归结果），并说明是否引入新的同类 P1；没有这张表，G5 不通过。
 
 ## 7. 状态协议
 
@@ -342,6 +346,16 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 ```
 
 DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+
+### 7.4 状态一致性
+
+会话启动、交接、门禁前运行：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
+```
+
+检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git commit、`TASKS.md` 的 `done（...）` 旧状态。stage/track 不一致时先修正状态文件，不得交接或把门禁标为通过。
 
 ## 8. 并行规则
 

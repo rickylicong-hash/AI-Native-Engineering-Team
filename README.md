@@ -119,6 +119,7 @@ flowchart LR
 
 ```text
 .ai-team/
+  .gitignore        # 跟踪 .ai-team 时复制 templates/AI-TEAM-GITIGNORE
   state/
     PROJECT.md      # 目标、Track、范围、成功指标、假设
     STATUS.md       # 当前阶段、门禁、进行中、阻塞、下一步
@@ -217,13 +218,13 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 190, passed: 190, failed: 0
+# 期望：checks: 192, passed: 192, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 192, passed: 192, failed: 0
+# 期望：checks: 194, passed: 194, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。

@@ -103,6 +103,8 @@ Checkpoint 触发：
 
 ### 3.2 Checkpoint 检查
 
+项目跟踪 `.ai-team` 时，先把 `ai-team-workflow/templates/AI-TEAM-GITIGNORE` 复制为 `.ai-team/.gitignore`，忽略 `work/**/*.txt`、`*-logs/`、截图、tmp 等原始产物；只保留 `work/*EVIDENCE.md`。
+
 在门禁、交接、或工作区文件数达到阈值时运行：
 
 ```powershell
