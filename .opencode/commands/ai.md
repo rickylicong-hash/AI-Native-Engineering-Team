@@ -10,7 +10,7 @@ $ARGUMENTS
 按 `ai-team/chief` 的启动协议执行完整交付流程：
 
 1. 读取或初始化 `.ai-team/`（使用 skill `ai-team-workflow` 的模板）。
-1.1 **权限预检**：运行 `permission-lint.mjs --role ai-team/chief`；失败时用 `permission-doctor.mjs` 定位，不要带病启动。
+1.1 **权限预检**：运行 `team-shell.mjs --role chief --action script.permission-lint --project .`；失败时用 `permission-doctor.mjs` 定位，不要带病启动。
 2. 自动判定 Track（T0–T4）与当前门禁，写入 `state/PROJECT.md` 和 `state/STATUS.md`。
 3. **检查复盘是否到期**：运行 `retro-check`（见 `ai-team-workflow` 3.1）。若到期，先用 `/ai-retro` 的轻量流程写 `team/GROWTH.md`，再开始新功能任务。
 4. **检查提交状态**：运行 `checkpoint-check`。若到期（≥20 个未提交文件、门禁/交接、或 10 个任务未 checkpoint），先调度 `ai-team/devops-engineer` 做精选提交；你不得自己 `git add`/`git commit`。

@@ -411,7 +411,18 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --
 
 下次审计只处理 `last_audited_session_created_ms` / `last_audited_session_updated_ms` / `last_audited_message_ms` 之后的会话和消息；不要重复分析全部历史。
 
-#### 10. 为什么有未提交改动却没提交
+#### 10. 统一命令网关
+
+读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs`：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
+  --role chief --action script.growth-check --project .
+```
+
+角色只能调用 `permissions.json.gateway` 里声明的动作；`git add/commit/push` 等写操作仍走角色直接权限（`ask`）。新增动作先改矩阵，再改网关。
+
+#### 11. 为什么有未提交改动却没提交
 
 Chief 是只读角色，**不能执行 `git add`/`git commit`**。如果它尝试提交，会被权限拒绝；正确动作是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队现在用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。
 

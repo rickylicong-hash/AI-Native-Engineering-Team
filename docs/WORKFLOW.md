@@ -387,7 +387,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
 - **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
 
-### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-34）
+### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-35）
 
 - **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
@@ -407,6 +407,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
 - **T-34 权限矩阵与预检**：`permissions.json` 是 required/forbidden 单一事实源；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝；新增脚本先改矩阵再改权限。
+- **T-35 统一命令网关**：`team-shell.mjs --role <role> --action <action>` 执行 git 读取、构建/测试、扫描和团队脚本；动作由 `permissions.json.gateway` 授权；不经过 shell；写操作仍直接走角色权限。
 
 ## 8. 并行规则
 

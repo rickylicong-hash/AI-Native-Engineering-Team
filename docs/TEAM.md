@@ -181,6 +181,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - Engineer/QA/DevOps/Writer：允许构建/测试；同一工作区同一时刻只有一个构建；发布/部署命令只允许 DevOps（`ask`），其他角色 `deny`；
 - Shell 一次一条命令：禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；`git add -A`/`git add .` 权限 deny；
 - 权限矩阵：`permissions.json` 是 required/forbidden 单一事实源；`/ai` 与 `/ai-resume` 先跑 `permission-lint --role`；拒绝用 `permission-doctor` 定位；
+- 统一网关：读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs --role <role> --action <action>`；写操作/commit 仍按角色权限直接执行；
 - 所有角色：`.env`/密钥读取 deny；外部目录 ask/deny。
 
 ### 5.3 生产发布

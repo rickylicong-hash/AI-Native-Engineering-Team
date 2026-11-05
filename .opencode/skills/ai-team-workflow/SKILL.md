@@ -354,6 +354,37 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.m
 - `ask` 视为可用（需要确认），`deny`/`none` 才是缺口；
 - 仍然禁止用扩大 `node *`/`git *` 的方式绕过；复合 shell 应先拆分。
 
+### 3.8 统一命令网关（1.4.0）
+
+读取/构建/测试/扫描/团队脚本优先走 `team-shell.mjs`；它把“角色 + 动作”映射为参数数组，不经过 shell。
+
+```powershell
+# 团队脚本
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
+  --role chief --action script.growth-check --project .
+
+# Reviewer 跑测试
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
+  --role code-reviewer --action build.test --project . --module server --test FooTest
+
+# Security 跑依赖扫描
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
+  --role security-auditor --action scan.dependency --project .
+
+# 只看将要执行的命令
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
+  --role chief --action build.test --project . --dry-run
+```
+
+规则：
+
+- 角色只能使用 `permissions.json` 的 `gateway` 动作；
+- 不支持任意脚本名/任意 shell 参数；测试类、模块、revision 有格式校验；
+- `git add`/`commit`/`push` 等写操作仍按角色权限直接执行（`ask`），网关不代理；
+- 每次调用写 `.ai-team/work/TEAM-SHELL.log`；
+- 新增动作：先改 `permissions.json` 的 `gateway`，再改 `team-shell.mjs`，然后 `permission-lint`；
+- 直接的 `node *script.mjs*` allow 为兼容保留；新命令/新脚本一律走 gateway，后续版本再移除直接 allow。
+
 ## 4. 目录与产物
 
 ```text

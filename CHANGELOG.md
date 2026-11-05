@@ -3,6 +3,27 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.4.0] - 2026-11-06
+
+### Added
+
+- **T-35 `team-shell` gateway**: a single structured command entry for git reads, build/test/package/verify, dependency/secret/SAST scans, and team scripts. Actions are declared per role in `permissions.json.gateway`; the gateway uses argument arrays and never invokes a shell for its own actions. `git add`/`commit`/`push` remain direct role permissions because they require `ask`.
+- **Per-role gateway allow**: every agent can only invoke `node *team-shell.mjs --role <its-role> *`; a Chief cannot invoke the QA/DevOps gateway role, and vice versa.
+- **Gateway audit log**: every call appends role/action/command/exit/duration to `.ai-team/work/TEAM-SHELL.log`.
+- **Gateway preflight adoption**: `/ai` and `/ai-resume` now run `script.permission-lint` and `script.growth-check` through the Chief gateway.
+- **Safety guards**: action allowlist from the matrix, safe module/test/revision formats, `--dry-run`, 30-minute timeout, and no arbitrary script names.
+
+### Verified
+
+- `node scripts/verify.mjs` → 201/201.
+- installed verify → 193/193; installed + OpenCode → 203/203.
+- `node scripts/audit-team-consistency.mjs` → 264 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 211 checks, 0 failed; `--role chief` → 31 checks, 0 failed.
+- `team-shell` actual: riccon-ai `build.compile` → BUILD SUCCESS, exit 0, 8.0s.
+- `team-shell` dry-run: QA `build.test` → `mvn.cmd -B -pl server -am test -Dtest=M1HappyPathE2ETest`.
+- `team-shell` deny: Chief `build.test` → `action not allowed for chief`.
+
 ## [1.3.3] - 2026-11-06
 
 ### Added

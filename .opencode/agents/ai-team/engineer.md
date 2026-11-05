@@ -247,6 +247,11 @@ permissions:
     resource: "git add . *"
     effect: deny
 
+  # T-35 team-shell gateway：只允许本角色的统一命令入口。
+  - action: shell
+    resource: "node *team-shell.mjs --role engineer *"
+    effect: allow
+
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
     resource: "AGENTS.md"

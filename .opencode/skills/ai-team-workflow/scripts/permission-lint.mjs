@@ -61,6 +61,11 @@ for (const role of roles) {
   if (!fs.existsSync(file)) continue;
   const rules = readRules(role);
   const spec = matrix.roles[role] || {};
+  check(
+    `${role} has gateway actions`,
+    Array.isArray(spec.gateway) && spec.gateway.length > 0,
+    "permissions.json role has no gateway actions",
+  );
   for (const [action, resources] of Object.entries(spec.required || {})) {
     for (const resource of resources) {
       const effect = effectiveEffect(rules, action, resource);

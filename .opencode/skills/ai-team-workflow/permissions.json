@@ -20,7 +20,8 @@
           "node *audit-state.mjs*",
           "node *permission-lint.mjs*",
           "node *permission-doctor.mjs*",
-          "Get-Content */.ai-team/state/*"
+          "Get-Content */.ai-team/state/*",
+          "node *team-shell.mjs --role chief *"
         ],
         "edit": [
           ".ai-team/state/*",
@@ -40,39 +41,130 @@
           "git add . *",
           "mvn *test*"
         ]
-      }
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log",
+        "git.show",
+        "git.rev-parse",
+        "script.state-check",
+        "script.retro-check",
+        "script.checkpoint-check",
+        "script.artifact-check",
+        "script.growth-check",
+        "script.audit-state",
+        "script.permission-lint"
+      ]
     },
     "product-manager": {
       "required": {
-        "shell": ["git status *", "git diff *", "git log *", "pwd", "ls *", "dir *"],
-        "edit": [".ai-team/product/*"]
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "pwd",
+          "ls *",
+          "dir *",
+          "node *team-shell.mjs --role product-manager *"
+        ],
+        "edit": [
+          ".ai-team/product/*"
+        ]
       },
       "forbidden": {
-        "shell": ["git add *", "git commit *", "*;*", "*&&*", "*||*", "*2>&1*"]
-      }
+        "shell": [
+          "git add *",
+          "git commit *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log"
+      ]
     },
     "ux-designer": {
       "required": {
-        "shell": ["git status *", "git diff *", "git log *", "pwd", "ls *", "dir *"],
-        "edit": [".ai-team/design/ux/*", "design/*", "mockups/*", "prototypes/*"]
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "pwd",
+          "ls *",
+          "dir *",
+          "node *team-shell.mjs --role ux-designer *"
+        ],
+        "edit": [
+          ".ai-team/design/ux/*",
+          "design/*",
+          "mockups/*",
+          "prototypes/*"
+        ]
       },
       "forbidden": {
-        "shell": ["git add *", "git commit *", "*;*", "*&&*", "*||*", "*2>&1*"]
-      }
+        "shell": [
+          "git add *",
+          "git commit *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log"
+      ]
     },
     "system-architect": {
       "required": {
-        "shell": ["git status *", "git diff *", "git log *", "java -version *", "mvn -v *"],
-        "edit": [".ai-team/design/architecture/*", ".ai-team/design/adr/*", "docs/adr/*"]
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "java -version *",
+          "mvn -v *",
+          "node *team-shell.mjs --role system-architect *"
+        ],
+        "edit": [
+          ".ai-team/design/architecture/*",
+          ".ai-team/design/adr/*",
+          "docs/adr/*"
+        ]
       },
       "forbidden": {
-        "shell": ["git add *", "git commit *", "*;*", "*&&*", "*||*", "*2>&1*"]
-      }
+        "shell": [
+          "git add *",
+          "git commit *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log"
+      ]
     },
     "engineer": {
       "required": {
-        "shell": ["git status *", "git diff *", "mvn *test*"],
-        "edit": [".ai-team/work/*"]
+        "shell": [
+          "git status *",
+          "git diff *",
+          "mvn *test*",
+          "node *team-shell.mjs --role engineer *"
+        ],
+        "edit": [
+          ".ai-team/work/*"
+        ]
       },
       "forbidden": {
         "shell": [
@@ -86,7 +178,15 @@
           "*||*",
           "*2>&1*"
         ]
-      }
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "build.compile",
+        "build.test",
+        "build.clean-test",
+        "build.package"
+      ]
     },
     "code-reviewer": {
       "required": {
@@ -102,17 +202,46 @@
           "mvn *compile*",
           "mvn *dependency-check*",
           "rg *",
-          "node *review-check.mjs*"
+          "node *review-check.mjs*",
+          "node *team-shell.mjs --role code-reviewer *"
         ],
-        "edit": [".ai-team/reviews/*"]
+        "edit": [
+          ".ai-team/reviews/*"
+        ]
       },
       "forbidden": {
-        "shell": ["git add *", "git commit *", "git push *", "*;*", "*&&*", "*||*", "*2>&1*"]
-      }
+        "shell": [
+          "git add *",
+          "git commit *",
+          "git push *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log",
+        "git.show",
+        "git.rev-parse",
+        "build.compile",
+        "build.test",
+        "build.verify",
+        "build.package",
+        "scan.dependency"
+      ]
     },
     "qa-engineer": {
       "required": {
-        "shell": ["git status *", "mvn *test*", "mvn *package*", "mvn *compile*"],
+        "shell": [
+          "git status *",
+          "mvn *test*",
+          "mvn *package*",
+          "mvn *compile*",
+          "node *team-shell.mjs --role qa-engineer *"
+        ],
         "edit": [
           "tests/*",
           "test/*",
@@ -125,8 +254,23 @@
         ]
       },
       "forbidden": {
-        "shell": ["git add *", "git commit *", "git push *", "*;*", "*&&*", "*||*", "*2>&1*"]
-      }
+        "shell": [
+          "git add *",
+          "git commit *",
+          "git push *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      },
+      "gateway": [
+        "git.status",
+        "build.compile",
+        "build.test",
+        "build.clean-test",
+        "build.package"
+      ]
     },
     "security-auditor": {
       "required": {
@@ -142,13 +286,35 @@
           "semgrep *",
           "trivy *",
           "gitleaks *",
-          "node *review-check.mjs*"
+          "node *review-check.mjs*",
+          "node *team-shell.mjs --role security-auditor *"
         ],
-        "edit": [".ai-team/security/*"]
+        "edit": [
+          ".ai-team/security/*"
+        ]
       },
       "forbidden": {
-        "shell": ["git add *", "git commit *", "git push *", "*;*", "*&&*", "*||*", "*2>&1*"]
-      }
+        "shell": [
+          "git add *",
+          "git commit *",
+          "git push *",
+          "*;*",
+          "*&&*",
+          "*||*",
+          "*2>&1*"
+        ]
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log",
+        "git.show",
+        "build.test",
+        "build.verify",
+        "scan.dependency",
+        "scan.secrets",
+        "scan.sast"
+      ]
     },
     "devops-engineer": {
       "required": {
@@ -160,7 +326,8 @@
           "git commit *",
           "node *growth-check.mjs*",
           "node *artifact-check.mjs*",
-          "node *checkpoint-check.mjs*"
+          "node *checkpoint-check.mjs*",
+          "node *team-shell.mjs --role devops-engineer *"
         ],
         "edit": [
           "deploy/*",
@@ -181,12 +348,36 @@
           "*||*",
           "*2>&1*"
         ]
-      }
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log",
+        "git.show",
+        "build.compile",
+        "build.test",
+        "build.package",
+        "build.verify",
+        "script.growth-check",
+        "script.artifact-check",
+        "script.checkpoint-check"
+      ]
     },
     "technical-writer": {
       "required": {
-        "shell": ["git status *", "git diff *", "git log *"],
-        "edit": ["docs/*", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"]
+        "shell": [
+          "git status *",
+          "git diff *",
+          "git log *",
+          "node *team-shell.mjs --role technical-writer *"
+        ],
+        "edit": [
+          "docs/*",
+          "README.md",
+          "CHANGELOG.md",
+          "CONTRIBUTING.md",
+          "SECURITY.md"
+        ]
       },
       "forbidden": {
         "shell": [
@@ -200,7 +391,12 @@
           "*||*",
           "*2>&1*"
         ]
-      }
+      },
+      "gateway": [
+        "git.status",
+        "git.diff",
+        "git.log"
+      ]
     }
   }
 }

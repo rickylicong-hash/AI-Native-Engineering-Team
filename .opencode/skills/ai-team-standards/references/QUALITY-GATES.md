@@ -90,6 +90,7 @@
 - [ ] DoR 满足；
 - [ ] 每个 subagent brief 已通过 `brief-lint`（独立验证/证据位置/测试路径/P2 处置/构建隔离齐全）；
 - [ ] `permission-lint` 对当前角色 PASS；新增脚本/命令已进入 `permissions.json`；
+- [ ] 读/构建/测试/扫描/团队脚本优先走 `team-shell`，gateway 动作已声明；
 - [ ] `TASKS.md` 已写。
 
 ## G4 Build

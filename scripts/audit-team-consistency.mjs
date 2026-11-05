@@ -277,7 +277,7 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
-for (const script of ["brief-lint.mjs", "review-check.mjs", "audit-state.mjs", "permission-lint.mjs", "permission-doctor.mjs"]) {
+for (const script of ["brief-lint.mjs", "review-check.mjs", "audit-state.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs"]) {
   check(
     `workflow script ${script} exists`,
     fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),
@@ -303,6 +303,19 @@ if (permissionMatrix) {
     matrixRoles.length === manifestRoles.length && manifestRoles.every((role) => matrixRoles.includes(role)),
     `matrix=${matrixRoles.join(",")} manifest=${manifestRoles.join(",")}`,
   );
+  for (const role of matrixRoles) {
+    check(
+      `gateway actions declared for ${role}`,
+      Array.isArray(permissionMatrix.roles[role].gateway) && permissionMatrix.roles[role].gateway.length > 0,
+      "missing gateway action list",
+    );
+    const roleRules = parseRules(read(path.join(agentsDir, `${role}.md`)));
+    check(
+      `gateway allow for ${role}`,
+      hasEffective(roleRules, "shell", `node *team-shell.mjs --role ${role} *`, "allow"),
+      "agent cannot invoke its team-shell gateway",
+    );
+  }
 }
 check(
   "chief can run permission-lint",
