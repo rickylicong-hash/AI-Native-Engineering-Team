@@ -381,7 +381,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 - 角色只能使用 `permissions.json` 的 `gateway` 动作；
 - 不支持任意脚本名/任意 shell 参数；测试类、模块、revision 有格式校验；
 - `git add`/`commit`/`push` 等写操作仍按角色权限直接执行（`ask`），网关不代理；
-- 每次调用写 `.ai-team/work/TEAM-SHELL.log`；
+- 每次调用写 `.ai-team/work/team-shell-logs/TEAM-SHELL.log`；
 - 新增动作：先改 `permissions.json` 的 `gateway`，再改 `team-shell.mjs`，然后 `permission-lint`；
 - 直接的 `node *script.mjs*` allow 为兼容保留；新命令/新脚本一律走 gateway，后续版本再移除直接 allow。
 

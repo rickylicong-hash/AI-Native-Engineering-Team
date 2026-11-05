@@ -221,10 +221,11 @@ const payload = {
   error: result.error ? { code: result.error.code, message: result.error.message } : null,
 };
 
-// 审计日志：不阻断主命令。
+// 审计日志：不阻断主命令。P-23：放在 team-shell-logs 子目录，避免 raw-log-location。
 try {
-  const workDir = path.join(project, ".ai-team", "work");
-  if (fs.existsSync(workDir)) {
+  const logDir = path.join(project, ".ai-team", "work", "team-shell-logs");
+  if (fs.existsSync(path.join(project, ".ai-team", "work"))) {
+    fs.mkdirSync(logDir, { recursive: true });
     const log = {
       time: new Date().toISOString(),
       role,
@@ -235,7 +236,7 @@ try {
       durationMs,
       error: payload.error?.code || null,
     };
-    fs.appendFileSync(path.join(workDir, "TEAM-SHELL.log"), `${JSON.stringify(log)}\n`, "utf8");
+    fs.appendFileSync(path.join(logDir, "TEAM-SHELL.log"), `${JSON.stringify(log)}\n`, "utf8");
   }
 } catch {
   // 审计日志失败不影响命令结果。

@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.4.1] - 2026-11-06
+
+### Fixed
+
+- **P-23 / RISK-0062**: `team-shell` audit logs now go to `.ai-team/work/team-shell-logs/TEAM-SHELL.log` instead of the work root, so `artifact-check` no longer reports `raw-log-location` and T4 `--strict` can pass. The fixed gateway was installed before moving the existing log, preventing recreation at the old path.
+- riccon-ai also converted the remaining UTF-16 `TASK-0023-logs/01-install-arco.log`; `artifact-check --strict` now reports 0 errors / 0 warnings.
+
+### Verified
+
+- `node scripts/verify.mjs` → 201/201.
+- installed verify → 193/193; installed + OpenCode → 203/203.
+- `node scripts/audit-team-consistency.mjs` → 264 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- riccon-ai `artifact-check --strict` → 0 error / 0 warning.
+- riccon-ai `growth-check --strict` → 23 proposals, done 23, open 0.
+- riccon-ai `state-check` → PASS, 0 error / 0 warning.
+
 ## [1.4.0] - 2026-11-06
 
 ### Added

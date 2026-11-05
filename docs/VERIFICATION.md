@@ -592,7 +592,7 @@ audit-git-permissions:     10 agents, 0 failed
 - `permissions.json` 增加每个角色的 `gateway` 动作列表；`permission-lint` 校验矩阵 + 每角色 gateway allow，共 211 项（Chief 31 项）。
 - 所有 10 个角色增加 `node *team-shell.mjs --role <role> *` allow；角色不能调用其他角色的 gateway。
 - `/ai`、`/ai-resume` 的权限预检与 growth 预检改用 `script.permission-lint` / `script.growth-check`。
-- 网关写入 `.ai-team/work/TEAM-SHELL.log`；写操作/commit/push 仍走角色直接权限（ask）。
+- 网关写入 `.ai-team/work/team-shell-logs/TEAM-SHELL.log`；写操作/commit/push 仍走角色直接权限（ask）。
 
 验证：
 
@@ -607,6 +607,26 @@ installed verify:          193/193
 installed + OpenCode:      203/203
 audit-team-consistency:    264 checks, 0 failed
 audit-git-permissions:     10 agents, 0 failed
+```
+
+### 5.23 P-23 网关日志路径（1.4.1）
+
+- 确认 P-23 是缺陷：`team-shell` 把原始日志写到 `.ai-team/work/TEAM-SHELL.log`，触发 `artifact-check` 的 `raw-log-location`，导致 T4 `--strict` 失败。
+- `team-shell` 日志改为 `.ai-team/work/team-shell-logs/TEAM-SHELL.log`；目录在首次调用时创建。
+- riccon-ai 已迁移旧日志，并转换残留的 `TASK-0023-logs/01-install-arco.log`（UTF-16 → UTF-8）。
+- 结果：`artifact-check --strict` → **0 error / 0 warning**；`RISK-0062` 可关闭；GROWTH P-23 标记 `done@1.4.1`。
+- 注意先安装 1.4.1 再移动旧日志；否则旧版本 gateway 会重新创建 `.ai-team/work/TEAM-SHELL.log`。
+
+验证：
+
+```text
+artifact-check --fix-all:  fixed 1 UTF-16 file
+artifact-check --strict:   0 error / 0 warning
+team-shell log:            .ai-team/work/team-shell-logs/TEAM-SHELL.log
+source verify:             201/201
+installed verify:          193/193
+installed + OpenCode:      203/203
+audit-team-consistency:    264 checks, 0 failed
 ```
 
 ## 6. 未执行项
@@ -638,7 +658,7 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.4.0 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.4.1 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 一致性审计：通过（264 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口、权限矩阵缺口、gateway 覆盖缺口）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
