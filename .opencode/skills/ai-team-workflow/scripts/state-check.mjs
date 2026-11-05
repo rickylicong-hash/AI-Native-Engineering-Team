@@ -62,6 +62,42 @@ function gate(value) {
   return (value || "").match(/G[0-8]/)?.[0] || "";
 }
 
+function git(gitArgs) {
+  return spawnSync("git", gitArgs, { cwd: project, encoding: "utf8" });
+}
+
+function isDocOnly(file) {
+  const f = file.replace(/\\/g, "/");
+  return /^docs\//.test(f)
+    || /^\.ai-team\//.test(f)
+    || /^(README|CHANGELOG|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT|LICENSE)(\.|$)/.test(f)
+    || /^(AGENTS|CLAUDE)\.md$/.test(f)
+    || /^opencode\.jsonc?$/.test(f)
+    || /^\.github\/(ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE|CODEOWNERS)\//.test(f);
+}
+
+function docOnlySince(baseline, head) {
+  const ancestor = git(["merge-base", "--is-ancestor", baseline, head]);
+  if (ancestor.status !== 0) {
+    return { ok: false, reason: "baseline is not an ancestor of HEAD", files: [] };
+  }
+  const rev = git(["rev-list", `${baseline}..${head}`]);
+  if (rev.status !== 0) {
+    return { ok: false, reason: "could not list commits after baseline", files: [] };
+  }
+  const commits = rev.stdout.split(/\r?\n/).filter(Boolean);
+  const files = new Set();
+  for (const commit of commits) {
+    const show = git(["show", "--pretty=format:", "--name-only", commit]);
+    if (show.status !== 0) {
+      return { ok: false, reason: `could not inspect ${commit}`, files: [...files] };
+    }
+    for (const file of show.stdout.split(/\r?\n/).filter(Boolean)) files.add(file);
+  }
+  const nonDoc = [...files].filter((file) => !isDocOnly(file));
+  return { ok: nonDoc.length === 0, reason: nonDoc.length ? "non-doc changes after baseline" : "", files: [...files], nonDoc };
+}
+
 if (!fs.existsSync(stateDir)) {
   const message = `not an AI Team project: missing ${stateDir}`;
   if (json) console.log(JSON.stringify({ ok: false, error: message }, null, 2));
@@ -91,15 +127,23 @@ try {
   if (fs.existsSync(handoffFile)) {
     const handoffText = read(handoffFile);
     const gitLineText = handoffText.match(/^-\s*Git[：:][^\r\n]*/m)?.[0] || "";
-    const hashes = [...gitLineText.matchAll(/`?([0-9a-f]{7,40})`?/g)].map((m) => m[1]);
-    const gitLine = hashes.length ? hashes[hashes.length - 1] : "";
-    if (!gitLine) {
-      warnings.push("HANDOFF.md has no Git commit reference");
+    const baselineLineText = handoffText.match(/^-\s*Baseline[：:][^\r\n]*/m)?.[0] || "";
+    const sourceLine = baselineLineText || gitLineText;
+    const hashes = [...sourceLine.matchAll(/`?([0-9a-f]{7,40})`?/g)].map((m) => m[1]);
+    const baseline = hashes.length ? hashes[hashes.length - 1] : "";
+    if (!baseline) {
+      warnings.push("HANDOFF.md has no Git/Baseline commit reference");
     } else {
-      const head = spawnSync("git", ["rev-parse", "--short=7", "HEAD"], { cwd: project, encoding: "utf8" });
+      const head = git(["rev-parse", "--short=7", "HEAD"]);
       const headCommit = head.status === 0 ? head.stdout.trim() : "";
-      if (headCommit && !headCommit.startsWith(gitLine) && !gitLine.startsWith(headCommit)) {
-        warnings.push(`HANDOFF.md git=${gitLine}, HEAD=${headCommit}`);
+      if (headCommit && !headCommit.startsWith(baseline) && !baseline.startsWith(headCommit)) {
+        const doc = docOnlySince(baseline, headCommit);
+        if (!doc.ok) {
+          const detail = doc.nonDoc?.length
+            ? `; non-doc changes: ${doc.nonDoc.slice(0, 5).join(", ")}${doc.nonDoc.length > 5 ? " ..." : ""}`
+            : `; ${doc.reason}`;
+          errors.push(`HANDOFF.md baseline=${baseline}, HEAD=${headCommit}${detail}`);
+        }
       }
     }
   } else {
@@ -117,7 +161,7 @@ try {
       if (/^done（/.test(status) || /^done\(/.test(status)) legacy.push(`${id}=${status}`);
     }
     if (legacy.length > 0) {
-      warnings.push(`${legacy.length} task(s) use non-standard done(...) status: ${legacy.slice(0, 5).join(", ")}${legacy.length > 5 ? " ..." : ""}`);
+      warnings.push(`${legacy.length} task(s) use non-standard done(...) status: ${legacy.join(", ")}`);
     }
   }
 } catch (error) {

@@ -9,7 +9,7 @@ agent: ai-team/chief
 2. 更新 `STATUS.md`、`TASKS.md`、`RUN_LOG.md`：当前 Track/Stage、完成项、未完成项、阻塞、证据路径。
 3. **检查复盘是否到期**（`retro-check` / `ai-team-workflow` 3.1）。若到期，先按 `/ai-retro` 轻量流程写 `team/GROWTH.md`；不要把复盘债务交给下一个会话。
 4. **检查提交状态**（`checkpoint-check --handoff`）。若到期，先调度 `ai-team/devops-engineer` 做精选 checkpoint；你不得自己 `git add`/`git commit`。用户明确要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
-5. **检查状态一致性**（`state-check`）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git commit 必须等于当前 HEAD。未通过不得交接。
+5. **检查状态一致性**（`state-check`）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git/Baseline 必须等于最近代码 checkpoint，纯文档提交允许落后。未通过不得交接。
 6. 按 skill `ai-team-workflow` 的 `templates/HANDOFF.md` 重写 `.ai-team/state/HANDOFF.md`，至少包含：
    - 时间、Track/Stage、目标；
    - 已完成（含证据路径）；
@@ -17,6 +17,7 @@ agent: ai-team/chief
    - 关键决策/风险；
    - Retro 状态（not due / done / DUE）；
    - Checkpoint 状态（clean / done / DUE / WAIVED）；
+   - Git / Baseline（最近代码 checkpoint；Baseline 默认同 Git）；
    - 必读文件；
    - 下一条指令；
    - 新会话首条消息（可直接粘贴）。

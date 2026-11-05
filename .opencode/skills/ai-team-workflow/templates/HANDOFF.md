@@ -9,6 +9,8 @@
 - 阻塞/风险：
 - Retro：not due / done YYYY-MM-DD / DUE — 先补
 - Checkpoint：clean / done <commit> / DUE — 先派 DevOps / WAIVED
+- Git：<last code checkpoint SHA>
+- Baseline：<last code checkpoint SHA；默认同 Git；用于区分后续纯文档提交>
 - 下一条指令：
 - 必读文件：
   - `.ai-team/state/STATUS.md`

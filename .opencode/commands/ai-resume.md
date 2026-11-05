@@ -11,7 +11,7 @@ agent: ai-team/chief
    - 不要用 `;`/`&&`/`2>&1`/`echo` 拼接；不要 `git -C`；不要扫描 `~/.config/opencode`；不要跑 `mvn`；读文件用 `read` 工具。
 3. **先检查复盘是否到期**（`retro-check` / `ai-team-workflow` 3.1）。到期则先按 `/ai-retro` 轻量流程写 `team/GROWTH.md`，再继续编码或门禁。
 4. **检查提交状态**（`checkpoint-check`）。到期则先调度 `ai-team/devops-engineer` 做精选 checkpoint；你不得自己 `git add`/`git commit`。
-5. **检查状态一致性**（`state-check`）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git commit 必须等于当前 HEAD。
+5. **检查状态一致性**（`state-check`）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git/Baseline 必须等于最近代码 checkpoint，纯文档提交允许落后。
 6. 用一行复述：当前 Track/门禁、最近决策、未完成动作、下一步。
 7. 直接继续 HANDOFF 中的“下一条指令”，不要重新做已完成工作。
 8. 若 HANDOFF 缺失或过期，先补齐状态，再从 `TASKS.md` 中选择最高优先级未完成任务。

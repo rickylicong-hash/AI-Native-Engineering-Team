@@ -3,6 +3,29 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.15] - 2026-11-05
+
+### Added
+
+Implemented the remaining team-level proposals from riccon-ai `GROWTH.md` RETRO-0002/0003:
+
+- **P-07 assembly checklist**: task brief now requires Bean registration point, persistence repository, external dependency/artifact, config keys and migration; missing → BLOCKED. G3/G4 check wiring, not just “implemented”.
+- **P-08 review throttle**: same module may have at most 2 unreviewed slices; the 3rd slice cannot start before review.
+- **P-09 checkpoint hard gate**: `checkpoint-check` runs before any new implementation task, not only gates/handoff.
+- **P-10 status backfill**: task reports must include a suggested `TASKS.md` update; Chief writes it in the same round.
+- **P-12 HANDOFF baseline**: `HANDOFF.md` has `Git` and `Baseline` lines; `state-check` allows doc-only/`.ai-team` commits after the baseline and **fails** on code commits after it. No more self-referential Git warning.
+- **P-13 design pre-review**: credential/migration/transport/tenant-boundary designs require `SEC-*` review before G4; Security/Architect prompts and G2 cross-review updated.
+- **P-14 contract same commit**: contract changes must be in the same commit as implementation; reviewer template and G4/G5 gates enforce it.
+- **P-11 legacy statuses**: `state-check` now lists every `done（...）` task ID for migration.
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 124 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `state-check` on riccon-ai → PASS, 0 warnings (baseline `89ced79`, HEAD `8f0fd5b`, doc-only commit).
+- state-check fixture: doc-only commit after baseline passes; code commit after baseline fails.
+
 ## [1.2.14] - 2026-11-05
 
 ### Added

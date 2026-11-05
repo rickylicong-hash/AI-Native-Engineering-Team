@@ -382,6 +382,27 @@ Write to .ai-team/work/TASK-GIT-011-EVIDENCE.md   Permission denied: edit
 
 审计 117 项，0 失败（1.2.14 增加“重复规则”永久检查）。
 
+### 5.13 GROWTH RETRO-0002/0003 落地（1.2.15）
+
+- P-07 装配清单进入 brief/G3/G4；
+- P-08 同模块未审切片 ≤2；
+- P-09 新实现任务前强制 `checkpoint-check`；
+- P-10 任务回报带 `TASKS.md` 建议更新；
+- P-12 `HANDOFF` 增加 `Baseline`；`state-check` 允许 baseline 后的纯文档提交，代码提交仍报 error；
+- P-13 凭据/迁移/传输/租户边界设计先过 `SEC-*`；
+- P-14 契约与实现同一提交；
+- P-11 `state-check` 列出全部 legacy `done（...）`。
+
+riccon-ai 当前 `state-check`：
+
+```text
+errors: 0
+warnings: 0
+result: PASS
+```
+
+fixture：baseline 后纯文档提交 PASS；baseline 后代码提交 FAIL。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -411,9 +432,10 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.14 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.15 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（117 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则）。
+- 一致性审计：通过（124 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用）。
+- 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14）。
 - 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
 - DevOps 证据写入：通过（1.2.8 允许 `work/*EVIDENCE.md` 并禁止 shell 绕过）。

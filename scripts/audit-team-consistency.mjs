@@ -226,6 +226,17 @@ check(
   "Chief cannot dispatch team via V1 task action",
 );
 
+const chiefText = read(path.join(agentsDir, "chief.md"));
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填"]) {
+  check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
+}
+const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));
+check(
+  "review template checks contract same commit",
+  reviewTemplate.includes("契约更新是否与实现同一提交"),
+  "missing contract/implementation same-commit check",
+);
+
 // 命令里引用但团队不存在的脚本路径。
 for (const file of commandFiles) {
   const text = read(path.join(commandsDir, file));

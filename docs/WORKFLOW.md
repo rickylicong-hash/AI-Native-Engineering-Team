@@ -223,7 +223,9 @@ Track / 阶段：T3 / G4
 背景与输入：<文件/需求/设计/契约/上一任务>
 所有权：只允许修改 <paths>；禁止 <paths>
 约束：<技术/合规/兼容/性能/依赖>
-契约影响：<无 / 修改的 API/事件/字段；API-CONTRACTS/ADR；契约测试>
+设计预审：<无 / 涉及凭据、迁移、传输、租户边界 → SEC-xxxx 通过后才能开工>
+装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
+契约影响：<必填；无则写“无”；有则列出 API/事件/字段 + 同一提交更新 API-CONTRACTS/ADR + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
 验收标准：
   1. ...
@@ -231,7 +233,7 @@ Track / 阶段：T3 / G4
 必须执行：<命令/测试/扫描>
 证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径
 禁止：不得启动 subagent；不得跨职责；不得改 state；不得伪造证据
-回报格式：结论/改动/证据/风险/下一步
+回报格式：结论/改动/证据/风险/下一步/TASKS.md 建议更新
 ```
 
 ## 6. 证据标准
@@ -355,7 +357,15 @@ DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。Chief 不得自
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
 ```
 
-检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git commit、`TASKS.md` 的 `done（...）` 旧状态。stage/track 不一致时先修正状态文件，不得交接或把门禁标为通过。
+检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git/Baseline commit、`TASKS.md` 的 `done（...）` 旧状态。`Baseline` 只写最近代码 checkpoint；其后的纯文档/`.ai-team` 提交不报 warning。stage/track 不一致时先修正状态文件，不得交接或把门禁标为通过。
+
+### 7.5 设计与契约前置
+
+- **P-13 设计预审**：涉及凭据、迁移、传输、租户边界的设计，必须先有 `SEC-*` 预审通过，才能进入实现。
+- **P-14 契约同提交**：新增/修改错误码、端点、事件字段时，同一提交更新 `API-CONTRACTS` 和契约测试；G5 检查枚举与契约恒等。
+- **P-07 装配清单**：任务 brief 必须写 Bean 注册点、持久化仓储、外部依赖/制品、配置键、迁移；缺项即 BLOCKED。
+- **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
+- **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
 
 ## 8. 并行规则
 
