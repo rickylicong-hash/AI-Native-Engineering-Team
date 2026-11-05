@@ -22,49 +22,14 @@ const args = process.argv.slice(2);
 const json = args.includes("--json");
 const agentsDir = path.resolve(".opencode", "agents", "ai-team");
 
-const destructive = [
-  "git reset --hard*",
-  "git clean*",
-  "git checkout --*",
-  "git checkout -f*",
-  "git restore*",
-  "git switch -f*",
-  "git switch --discard-changes*",
-  "git reset --merge*",
-  "git branch -D*",
-  "git branch -d*",
-  "git tag -d*",
-  "git tag --delete*",
-  "git stash clear*",
-  "git stash drop*",
-  "git update-ref -d*",
-  "git reflog expire*",
-  "git gc --prune*",
-  "git filter-branch*",
-  "git filter-repo*",
-  "git push --force*",
-  "git push * --force*",
-  "git push -f*",
-  "git push * -f*",
-  "git push --mirror*",
-  "git push * +*",
-  "git push --delete*",
-  "git push * --delete*",
-  "git worktree remove*",
-  "rm -rf*",
-  "rm -r*",
-  "del /s*",
-  "del /q /s*",
-  "rd /s*",
-  "rd /q /s*",
-  "Remove-Item * -Recurse*",
-  "Remove-Item -Recurse*",
-  "docker system prune*",
-  "docker volume prune*",
-  "docker image prune*",
-  "terraform destroy*",
-  "kubectl delete*",
-];
+const matrix = JSON.parse(
+  fs.readFileSync(path.resolve(".opencode", "skills", "ai-team-workflow", "permissions.json"), "utf8"),
+);
+const destructive = matrix.shellDestructiveDeny ?? [];
+if (destructive.length === 0) {
+  console.error("permissions.json must define shellDestructiveDeny");
+  process.exit(2);
+}
 
 function parseShellRules(file) {
   const text = fs.readFileSync(file, "utf8");

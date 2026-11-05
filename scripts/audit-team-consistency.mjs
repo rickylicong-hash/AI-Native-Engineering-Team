@@ -138,8 +138,6 @@ for (const file of agentFiles) {
     }
   }
 
-  check(`agent ${file} has external_directory`, rules.some((r) => r.action === "external_directory"), "missing external_directory rule");
-
   const seen = new Map();
   const duplicates = [];
   for (const rule of rules) {
@@ -150,20 +148,7 @@ for (const file of agentFiles) {
   check(`agent ${file} has no duplicate rules`, duplicates.length === 0, duplicates.join(", "));
 }
 
-const devopsRules = parseRules(read(path.join(agentsDir, "devops-engineer.md")));
-check(
-  "devops can write TASK-GIT evidence",
-  hasEffective(devopsRules, "edit", ".ai-team/work/TASK-GIT-*EVIDENCE.md", "allow"),
-  "DevOps must be able to write TASK-GIT-*EVIDENCE.md without shell bypass",
-);
-
 const qaText = read(path.join(agentsDir, "qa-engineer.md"));
-const qaRules = parseRules(qaText);
-check(
-  "qa can edit Java/Maven e2e tests",
-  qaRules.some((rule) => rule.action === "edit" && rule.resource === "**/src/test/java/**/e2e/**" && rule.effect === "allow"),
-  "QA cannot write server/src/test/java/**/e2e tests",
-);
 check(
   "qa manifest owns Java/Maven e2e tests",
   (manifest.agents.find((agent) => agent.id === "ai-team/qa-engineer")?.owns ?? []).includes("**/src/test/java/**/e2e/**"),
@@ -180,23 +165,6 @@ check(
   "QA prompt does not enforce QA-only defect closure",
 );
 
-for (const resource of [
-  "**/src/test/java/**/e2e/**",
-  "**/src/test/java/**/qa/**",
-  "**/src/test/resources/**/e2e/**",
-  "**/src/test/resources/**/qa/**",
-]) {
-  check(
-    `engineer denied QA Java test ${resource}`,
-    hasEffective(parseRules(read(path.join(agentsDir, "engineer.md"))), "edit", resource, "deny"),
-    "Engineer can edit QA-owned build-integrated tests",
-  );
-}
-check(
-  "devops can write TASK-GIT evidence",
-  hasEffective(parseRules(read(path.join(agentsDir, "devops-engineer.md"))), "edit", ".ai-team/work/TASK-GIT-*EVIDENCE.md", "allow"),
-  "DevOps cannot write checkpoint evidence",
-);
 check(
   "DEFECTS template exists",
   fs.existsSync(path.join(skillsDir, "ai-team-workflow", "templates", "DEFECTS.md")),
@@ -269,34 +237,6 @@ for (const file of agentFiles) {
     `Shell-first requires shell * -> allow (effective=${shellEffect})`,
   );
 }
-
-const engineerRules = parseRules(read(path.join(agentsDir, "engineer.md")));
-for (const resource of ["docs/*", "deploy/*", "qa/*", ".ai-team/tasks/*", "AGENTS.md"]) {
-  check(
-    `engineer denied edit ${resource}`,
-    hasEffective(engineerRules, "edit", resource, "deny"),
-    "Engineer can edit another role's owned path via the base allow rule",
-  );
-}
-
-const writerRules = parseRules(read(path.join(agentsDir, "technical-writer.md")));
-check(
-  "writer denied edit docs/adr",
-  hasEffective(writerRules, "edit", "docs/adr/*", "deny"),
-  "Writer should not change architecture decisions",
-);
-
-const chiefRulesAll = parseRules(read(path.join(agentsDir, "chief.md")));
-check(
-  "chief task deny all",
-  hasEffective(chiefRulesAll, "task", "*", "deny"),
-  "V1 task permission can bypass subagent restrictions",
-);
-check(
-  "chief task allow ai-team",
-  hasEffective(chiefRulesAll, "task", "ai-team/*", "allow"),
-  "Chief cannot dispatch team via V1 task action",
-);
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
 for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "技能：", "构建互斥", "状态自检", "growth-check", "brief-lint", "review-check", "audit-state", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {

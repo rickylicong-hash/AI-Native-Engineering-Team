@@ -679,6 +679,28 @@ audit-team-consistency:    183 checks, 0 failed
 audit-git-permissions:     10 agents, 0 failed
 ```
 
+### 5.26 最小权限配置（1.5.1）
+
+- 每个角色的 `permissions` 统一为 **44 条**：42 条 shell（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow（覆盖 base ask）。
+- 移除所有非 shell 规则：15 条 read、10–61 条 edit、task/subagent/question/external_directory。
+- 不再有 agent 级 `read`/`edit`/`task`/`subagent`/`external_directory` 限制；角色边界降为 prompt/流程约定。
+- `permission-lint` 仍为 570 项；`audit-git-permissions` 只检查 shell 破坏性规则。
+- `audit-team-consistency` 移除依赖 edit/task/external_directory 的检查，剩 158 项。
+
+验证：
+
+```text
+role config:               44 rules each (42 shell + 2 read allow)
+permission-lint:           570 checks, 0 failed
+permission-lint --role chief: 57 checks, 0 failed
+doctor cases:              20/20
+audit-git-permissions:     10 agents, 0 failed
+audit-team-consistency:    158 checks, 0 failed
+source verify:             187/187
+installed verify:          179/179
+installed + OpenCode:      189/189
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -708,12 +730,12 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.5.0 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.5.1 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（183 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口、权限矩阵缺口、gateway 覆盖缺口）。
+- 一致性审计：通过（158 项；移除依赖 edit/task/external_directory 的旧检查，只保留结构、文档与 shell 边界）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
 - 成长处置：通过（`GROWTH.md` 提案处置索引 23/23 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
-- Shell 权限：通过（1.5.0 Shell-first strict：10 个角色 `shell * allow` + 41 条破坏性 deny；commit/push/publish/`.env`/`git add -A` 不再拦截；ask=0）。
+- Shell 权限：通过（1.5.1 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
 - 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验破坏性边界）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。

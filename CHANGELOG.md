@@ -3,6 +3,30 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.5.1] - 2026-11-06
+
+### Changed
+
+- **Minimal agent permissions**: every agent now has exactly 44 rules: 42 shell rules (1 `* -> allow` + 41 destructive `deny`) and 2 `.env` `read` allow rules.
+- Removed all non-shell agent rules: 15 `read` rules per role, 10–61 `edit` rules per role, and `task`/`subagent`/`question`/`external_directory` rules.
+- `read`/`edit`/`task`/`subagent`/`external_directory` are no longer restricted at agent level; role boundaries remain prompt/process conventions.
+- `.env`/`.ssh`/`.aws` reads are allowed; the agent `.env` allow overrides the base `ask`.
+
+### Risk
+
+- Same as 1.5.0, expanded: agents can edit any file, spawn subagents, ask questions, and read secrets. Only destructive shell commands are denied. Use OS ACL/container isolation for hard boundaries.
+
+### Verified
+
+- `node scripts/verify.mjs` → 187/187.
+- installed verify → 179/179; installed + OpenCode → 189/189.
+- `node scripts/audit-team-consistency.mjs` → 158 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed; `--role chief` → 57 checks, 0 failed.
+- `permission-doctor` matrix → 20/20 cases.
+- Every agent: 44 permission rules (42 shell + 2 `.env` read allow).
+- `sourceHash === installedHash` (`6429010b...`), version `1.5.1`.
+
 ## [1.5.0] - 2026-11-06
 
 ### Changed

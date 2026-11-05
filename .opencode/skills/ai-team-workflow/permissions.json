@@ -1,35 +1,64 @@
 {
-  "schema": 1,
-  "description": "AI Team role permission matrix. permission-lint validates these required/forbidden actions against each agent's frontmatter.",
+  "schema": 2,
+  "description": "Shell is allow by default. Only shellDestructiveDeny is restricted at agent level; roles list team-shell gateway actions.",
+  "shellDestructiveDeny": [
+    "git reset --hard*",
+    "git clean*",
+    "git checkout --*",
+    "git checkout -f*",
+    "git restore*",
+    "git switch -f*",
+    "git switch --discard-changes*",
+    "git reset --merge*",
+    "git branch -D*",
+    "git branch -d*",
+    "git tag -d*",
+    "git tag --delete*",
+    "git stash clear*",
+    "git stash drop*",
+    "git update-ref -d*",
+    "git reflog expire*",
+    "git gc --prune*",
+    "git filter-branch*",
+    "git filter-repo*",
+    "git push --force*",
+    "git push * --force*",
+    "git push -f*",
+    "git push * -f*",
+    "git push --mirror*",
+    "git push * +*",
+    "git push --delete*",
+    "git push * --delete*",
+    "git worktree remove*",
+    "rm -rf*",
+    "rm -r*",
+    "del /s*",
+    "del /q /s*",
+    "rd /s*",
+    "rd /q /s*",
+    "Remove-Item * -Recurse*",
+    "Remove-Item -Recurse*",
+    "docker system prune*",
+    "docker volume prune*",
+    "docker image prune*",
+    "terraform destroy*",
+    "kubectl delete*"
+  ],
+  "shellMustAllow": [
+    "git add",
+    "git add -A",
+    "git commit",
+    "git commit *",
+    "git push",
+    "git push *",
+    "git tag",
+    "npm publish*",
+    "kubectl apply*",
+    "terraform apply*",
+    "Get-Content .env"
+  ],
   "roles": {
     "chief": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "git show *",
-          "git rev-parse *",
-          "node *state-check.mjs*",
-          "node *retro-check.mjs*",
-          "node *checkpoint-check.mjs*",
-          "node *artifact-check.mjs*",
-          "node *growth-check.mjs*",
-          "node *brief-lint.mjs*",
-          "node *review-check.mjs*",
-          "node *audit-state.mjs*",
-          "node *permission-lint.mjs*",
-          "node *permission-doctor.mjs*",
-          "Get-Content */.ai-team/state/*",
-          "node *team-shell.mjs --role chief *"
-        ],
-        "edit": [
-          ".ai-team/state/*",
-          ".ai-team/tasks/*",
-          ".ai-team/team/*",
-          ".ai-team/README.md"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -46,20 +75,6 @@
       ]
     },
     "product-manager": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "pwd",
-          "ls *",
-          "dir *",
-          "node *team-shell.mjs --role product-manager *"
-        ],
-        "edit": [
-          ".ai-team/product/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -67,23 +82,6 @@
       ]
     },
     "ux-designer": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "pwd",
-          "ls *",
-          "dir *",
-          "node *team-shell.mjs --role ux-designer *"
-        ],
-        "edit": [
-          ".ai-team/design/ux/*",
-          "design/*",
-          "mockups/*",
-          "prototypes/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -91,21 +89,6 @@
       ]
     },
     "system-architect": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "java -version *",
-          "mvn -v *",
-          "node *team-shell.mjs --role system-architect *"
-        ],
-        "edit": [
-          ".ai-team/design/architecture/*",
-          ".ai-team/design/adr/*",
-          "docs/adr/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -113,17 +96,6 @@
       ]
     },
     "engineer": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "mvn *test*",
-          "node *team-shell.mjs --role engineer *"
-        ],
-        "edit": [
-          ".ai-team/work/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -134,26 +106,6 @@
       ]
     },
     "code-reviewer": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "git show *",
-          "git rev-parse *",
-          "mvn *test*",
-          "mvn *verify*",
-          "mvn *package*",
-          "mvn *compile*",
-          "mvn *dependency-check*",
-          "rg *",
-          "node *review-check.mjs*",
-          "node *team-shell.mjs --role code-reviewer *"
-        ],
-        "edit": [
-          ".ai-team/reviews/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -168,25 +120,6 @@
       ]
     },
     "qa-engineer": {
-      "required": {
-        "shell": [
-          "git status *",
-          "mvn *test*",
-          "mvn *package*",
-          "mvn *compile*",
-          "node *team-shell.mjs --role qa-engineer *"
-        ],
-        "edit": [
-          "tests/*",
-          "test/*",
-          "e2e/*",
-          "**/src/test/java/**/e2e/**",
-          "**/src/test/java/**/qa/**",
-          "**/src/test/resources/**/e2e/**",
-          "**/src/test/resources/**/qa/**",
-          ".ai-team/qa/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "build.compile",
@@ -196,26 +129,6 @@
       ]
     },
     "security-auditor": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "git show *",
-          "git grep *",
-          "mvn *test*",
-          "mvn *dependency-check*",
-          "npm audit *",
-          "semgrep *",
-          "trivy *",
-          "gitleaks *",
-          "node *review-check.mjs*",
-          "node *team-shell.mjs --role security-auditor *"
-        ],
-        "edit": [
-          ".ai-team/security/*"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -229,25 +142,6 @@
       ]
     },
     "devops-engineer": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "git show *",
-          "git commit *",
-          "node *growth-check.mjs*",
-          "node *artifact-check.mjs*",
-          "node *checkpoint-check.mjs*",
-          "node *team-shell.mjs --role devops-engineer *"
-        ],
-        "edit": [
-          "deploy/*",
-          "ops/*",
-          ".ai-team/release/*",
-          ".ai-team/work/TASK-GIT-*EVIDENCE.md"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -263,21 +157,6 @@
       ]
     },
     "technical-writer": {
-      "required": {
-        "shell": [
-          "git status *",
-          "git diff *",
-          "git log *",
-          "node *team-shell.mjs --role technical-writer *"
-        ],
-        "edit": [
-          "docs/*",
-          "README.md",
-          "CHANGELOG.md",
-          "CONTRIBUTING.md",
-          "SECURITY.md"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",

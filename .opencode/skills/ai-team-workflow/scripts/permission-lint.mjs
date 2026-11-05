@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * 权限矩阵校验（1.5.0）。
+ * 权限矩阵校验（1.5.1）。
  *
  * 读取 `skills/ai-team-workflow/permissions.json`，检查每个角色：
- *   - required 动作是否最终为 allow；
- *   - forbidden 动作是否最终不是 allow；
- *   - 矩阵角色是否有对应 agent 文件。
+ *   - shell 默认 allow；
+ *   - 41 条破坏性命令 deny；
+ *   - 非破坏性命令 allow；
+ *   - 只有破坏性 shell 限制，没有 read/edit/task 等额外规则。
  *
  * 用法：
  *   node permission-lint.mjs
@@ -55,64 +56,13 @@ function check(name, ok, detail = "") {
   if (!ok) failures.push(`${name}${detail ? `: ${detail}` : ""}`);
 }
 
-// Shell-first strict：只允许这些破坏性/历史改写命令 deny。
-const SHELL_SAFETY_DENIES = [
-  "git reset --hard*",
-  "git clean*",
-  "git checkout --*",
-  "git checkout -f*",
-  "git restore*",
-  "git switch -f*",
-  "git switch --discard-changes*",
-  "git reset --merge*",
-  "git branch -D*",
-  "git branch -d*",
-  "git tag -d*",
-  "git tag --delete*",
-  "git stash clear*",
-  "git stash drop*",
-  "git update-ref -d*",
-  "git reflog expire*",
-  "git gc --prune*",
-  "git filter-branch*",
-  "git filter-repo*",
-  "git push --force*",
-  "git push * --force*",
-  "git push -f*",
-  "git push * -f*",
-  "git push --mirror*",
-  "git push * +*",
-  "git push --delete*",
-  "git push * --delete*",
-  "git worktree remove*",
-  "rm -rf*",
-  "rm -r*",
-  "del /s*",
-  "del /q /s*",
-  "rd /s*",
-  "rd /q /s*",
-  "Remove-Item * -Recurse*",
-  "Remove-Item -Recurse*",
-  "docker system prune*",
-  "docker volume prune*",
-  "docker image prune*",
-  "terraform destroy*",
-  "kubectl delete*",
-];
-// 这些操作不是破坏性命令，必须保持 allow；用于防止安全边界再次膨胀。
-const SHELL_MUST_ALLOW = [
-  "git add",
-  "git add -A",
-  "git commit",
-  "git commit *",
-  "git push",
-  "git push *",
-  "git tag",
-  "npm publish*",
-  "kubectl apply*",
-  "terraform apply*",
-  "Get-Content .env",
-];
+// Shell-first strict：策略列表只维护在 permissions.json。
+const SHELL_SAFETY_DENIES = matrix.shellDestructiveDeny ?? [];
+const SHELL_MUST_ALLOW = matrix.shellMustAllow ?? [];
+if (SHELL_SAFETY_DENIES.length === 0 || SHELL_MUST_ALLOW.length === 0) {
+  console.error("permissions.json must define shellDestructiveDeny and shellMustAllow");
+  process.exit(2);
+}
 
 for (const role of roles) {
   const file = agentFile(role);
@@ -157,7 +107,7 @@ for (const role of roles) {
       const effect = effectiveEffect(rules, action, resource);
       check(
         `${role} required ${action} ${resource}`,
-        effect === "allow" || effect === "ask",
+        effect !== "deny",
         `effective=${effect}`,
       );
     }

@@ -3,134 +3,6 @@ description: 技术文档工程师（Subagent）。负责 README、API/架构文
 mode: subagent
 color: "#64748B"
 permissions:
-  - action: "*"
-    resource: "*"
-    effect: allow
-  # 项目外路径默认需要用户确认；密钥路径仍由更具体的 deny 规则覆盖。
-  - action: external_directory
-    resource: "*"
-    effect: ask
-  - action: todowrite
-    resource: "*"
-    effect: allow
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: task
-    resource: "*"
-    effect: deny
-  - action: question
-    resource: "*"
-    effect: deny
-  - action: read
-    resource: "*.env"
-    effect: deny
-  - action: read
-    resource: "*.env.*"
-    effect: deny
-  - action: read
-    resource: "*.env.example"
-    effect: allow
-  - action: read
-    resource: "*.env.sample"
-    effect: allow
-  - action: read
-    resource: "*.env.template"
-    effect: allow
-  - action: read
-    resource: "*/.git/*"
-    effect: deny
-  - action: read
-    resource: "*/secrets/*"
-    effect: deny
-  - action: read
-    resource: "*.pem"
-    effect: deny
-  - action: read
-    resource: "*.key"
-    effect: deny
-  - action: read
-    resource: "*/.ssh/*"
-    effect: deny
-  - action: read
-    resource: "*/.aws/*"
-    effect: deny
-  - action: read
-    resource: "*/.npmrc"
-    effect: deny
-  - action: read
-    resource: "*/.pypirc"
-    effect: deny
-  - action: read
-    resource: "*/.netrc"
-    effect: deny
-  - action: read
-    resource: "*/id_rsa*"
-    effect: deny
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: edit
-    resource: "docs/*"
-    effect: allow
-  - action: edit
-    resource: "README.md"
-    effect: allow
-  - action: edit
-    resource: "README.*.md"
-    effect: allow
-  - action: edit
-    resource: "CHANGELOG.md"
-    effect: allow
-  - action: edit
-    resource: "CONTRIBUTING.md"
-    effect: allow
-  - action: edit
-    resource: "SECURITY.md"
-    effect: allow
-  - action: edit
-    resource: "CODE_OF_CONDUCT.md"
-    effect: allow
-  - action: edit
-    resource: "LICENSE"
-    effect: allow
-  - action: edit
-    resource: ".ai-team/docs/*"
-    effect: allow
-  - action: edit
-    resource: ".git/*"
-    effect: deny
-  - action: edit
-    resource: ".opencode/*"
-    effect: deny
-  - action: edit
-    resource: "*.env"
-    effect: deny
-  - action: edit
-    resource: "*.env.*"
-    effect: deny
-  # Git safety: release/remote/history/working-tree guards.
-
-  # 代理指令/项目配置只能由用户或授权维护者修改。
-  - action: edit
-    resource: "AGENTS.md"
-    effect: deny
-  - action: edit
-    resource: "CLAUDE.md"
-    effect: deny
-  - action: edit
-    resource: "opencode.json"
-    effect: deny
-  - action: edit
-    resource: "opencode.jsonc"
-    effect: deny
-  # ADR 由架构师负责；Writer 只做文档化，不改决策。
-  - action: edit
-    resource: "docs/adr/*"
-    effect: deny
-
-
-  # T-37 Shell-first strict：只有破坏性命令 deny；其余 shell 操作 allow。
   - action: shell
     resource: "*"
     effect: allow
@@ -257,6 +129,13 @@ permissions:
   - action: shell
     resource: "kubectl delete*"
     effect: deny
+  # 非破坏性读取：覆盖 base 的 .env ask，避免残留权限提示。
+  - action: read
+    resource: "*.env"
+    effect: allow
+  - action: read
+    resource: "*.env.*"
+    effect: allow
 
 ---
 

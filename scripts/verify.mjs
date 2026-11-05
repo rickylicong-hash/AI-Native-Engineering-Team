@@ -188,18 +188,6 @@ for (const file of agentFiles) {
       if (rule.effect && !["allow", "ask", "deny"].includes(rule.effect)) invalid++;
     }
     addCheck(`${label} permission shape`, invalid === 0, `${invalid} invalid rule(s)`);
-
-    const hasAllowChief = data.permissions.some(
-      (r) => r.action === "subagent" && r.resource === "ai-team/*" && r.effect === "allow",
-    );
-    const hasDenySub = data.permissions.some(
-      (r) => (r.action === "subagent" || r.action === "task") && r.resource === "*" && r.effect === "deny",
-    );
-    if (data.mode === "primary") {
-      addCheck(`${label} can dispatch team`, hasAllowChief);
-    } else {
-      addCheck(`${label} cannot dispatch subagents`, hasDenySub);
-    }
   }
 
   if (manifestAgents.size > 0) {
@@ -217,24 +205,6 @@ const chiefFile = path.join(paths.agents, "chief.md");
 if (fs.existsSync(chiefFile)) {
   const { data } = parseFrontmatter(readText(chiefFile));
   addCheck("chief mode is primary", data.mode === "primary", String(data.mode));
-  const rules = Array.isArray(data.permissions) ? data.permissions : [];
-  const allowsTeam = rules.some((r) => r.action === "subagent" && r.resource === "ai-team/*" && r.effect === "allow");
-  addCheck("chief dispatches ai-team/*", allowsTeam);
-  const editsOnlyState = rules.some((r) => r.action === "edit" && r.resource === "*" && r.effect === "deny");
-  addCheck("chief cannot edit source by default", editsOnlyState);
-}
-
-// Reviewers must be read-only for code.
-for (const reviewer of ["code-reviewer", "security-auditor"]) {
-  const file = path.join(paths.agents, `${reviewer}.md`);
-  if (!fs.existsSync(file)) {
-    addCheck(`reviewer ${reviewer} exists`, false);
-    continue;
-  }
-  const { data } = parseFrontmatter(readText(file));
-  const rules = Array.isArray(data.permissions) ? data.permissions : [];
-  const deniesAllEdits = rules.some((r) => r.action === "edit" && r.resource === "*" && r.effect === "deny");
-  addCheck(`reviewer ${reviewer} is read-only for code`, deniesAllEdits);
 }
 
 // ---------------------------------------------------------------------------

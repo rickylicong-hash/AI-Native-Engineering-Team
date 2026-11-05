@@ -158,7 +158,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 
 ### 5.1 写权限
 
-| Agent | 可写 | 不可写 |
+| Agent | 流程上可写 | 流程上不可写 |
 |---|---|---|
 | Chief | `.ai-team/state/**`、`tasks/**`、`team/**`、`README.md` | 源码、产品、设计、测试、部署、`.opencode/**` |
 | PM | `.ai-team/product/**` | 其他一切 |
@@ -171,15 +171,16 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 | DevOps | `deploy/**`、`ops/**`、`infra/**`、`terraform/**`、`k8s/**`、`helm/**`、`docker/**`、`.github/**`、CI/Docker/Makefile、`.ai-team/release/**`、`.ai-team/work/TASK-GIT-*EVIDENCE.md` | 业务代码、需求/设计/测试 |
 | Writer | `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.ai-team/docs/**` | 源码、需求/设计/测试/部署 |
 
-`edit`/`read` 仍采用“基础 allow + 显式 deny/allow 覆盖”；但 shell 只保留破坏性命令 deny，跨角色写路径不再由 shell 权限强制。项目级 `.opencode/opencode.jsonc` 可以新增破坏性 deny，但不能把 shell 重新收紧成 allowlist。
+`edit`/`read`/`task`/`subagent`/`external_directory` 不再有 agent 级权限限制；唯一权限边界是 shell 破坏性命令 deny。项目级 `.opencode/opencode.jsonc` 可以新增破坏性 deny，但不能把 shell 重新收紧成 allowlist。
 
 ### 5.2 Shell
 
-- **Shell-first strict（1.5.0）**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`；
+- **Shell-first strict（1.5.1）**：每个角色只有 44 条权限规则：42 条 shell（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow（覆盖 base ask）；
+- 允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`；
 - 只有破坏性命令 `deny`：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
-- `.env`/密钥读取、commit/push、publish/deploy **不再由 shell 权限拦截**；由 brief、ownership、review、checkpoint 和会话审计约束；
+- `.env`/密钥读取、commit/push、publish/deploy **不再由权限拦截**；由 brief、ownership、review、checkpoint 和会话审计约束；
 - 只读角色不再有 shell 强制边界；Chief/PM/UX/Architect/Reviewer/Security 不提交是**流程约定**，不是权限保证；
-- 权限矩阵：`permissions.json` 只保留破坏性 `forbidden`；`/ai` 与 `/ai-resume` 先跑 `permission-lint --role`；拒绝用 `permission-doctor` 定位；
+- 权限矩阵：`permissions.json` 维护 `shellDestructiveDeny` / `shellMustAllow` 与各角色 `gateway`；`permission-lint` 校验 agent 只含 42 shell + 2 read allow；
 - 统一网关：读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs --role <role> --action <action>`；但普通 shell 不再要求走网关；
 - 残余风险：shell 可以写文件、提交、发布、读取密钥；需要强隔离时用 OS ACL 或容器只读挂载。
 
