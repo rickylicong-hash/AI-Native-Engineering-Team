@@ -146,6 +146,34 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 - 提交后 DevOps 运行 `checkpoint-check --mark`；若 HEAD 含原始日志/密钥/构建产物，`--mark` 会拒绝，先修正再标记。
 - 用户明确要求暂不提交 → 在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
+### 3.4 `/ai-resume` 大量 Permission denied
+
+**现象**：
+
+```text
+Shell git status --short 2>&1; echo "---EXIT:$LASTEXITCODE"   Permission denied
+Shell git -C D:\Development\riccon-ai status --short          Permission denied
+Shell Get-Content .ai-team\state\RUN_LOG.md -Tail 40          Permission denied
+Shell mvn -v                                                  Permission denied
+```
+
+**原因**：
+
+- Chief 是只读角色，shell 是 allowlist；
+- `;`/`&&`/`2>&1` 会把命令拆成多段，`echo`、重定向段不在白名单；
+- `git -C ...` 不是 `git status *`，旧版没匹配；
+- `Get-Content` 不在白名单（应该用 `read` 工具）；
+- `mvn -v` 旧版只允许 `mvn -version`/`mvn --version`。
+
+**处理（1.2.7 已优化）**：
+
+- 一次一条命令；不要用 `;`/`&&`/`2>&1`/`echo` 拼接；
+- 读文件用 `read` 工具；只有 `.ai-team/state|tasks|team` 可用 `Get-Content`；
+- 不要用 `git -C`；cwd 就是项目根；
+- 不要扫描 `~/.config/opencode`；直接运行已知脚本路径；
+- 1.2.7 增加 `mvn -v`、`git -C * status/diff/log`、`Get-Content .ai-team/state|tasks|team`、`echo`；
+- 如果仍被拒，不要换写法硬试：改用 `read`/脚本，或派对应 owner。
+
 ## 4. 一直弹权限确认
 
 原因：规则没匹配到，默认 `ask`。

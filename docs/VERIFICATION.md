@@ -318,6 +318,26 @@ warnings: 1
 result:   PASS
 ```
 
+### 5.9 `/ai-resume` 权限噪声（1.2.7）
+
+riccon-ai 新会话选择 Chief 执行 `/ai-resume` 时出现：
+
+```text
+git status --short 2>&1; echo ...          Permission denied
+git -C D:\Development\riccon-ai status --short  Permission denied
+Get-Content .ai-team\state\RUN_LOG.md -Tail 40   Permission denied
+mvn -v                                      Permission denied
+Get-ChildItem C:\Users\...\.config\opencode ...  Permission denied
+```
+
+原因与修复：
+
+- `;`/`2>&1` 把命令拆段，`echo` 不在白名单 → 增加 `echo *`，并要求一次一条命令；
+- `git -C` 不匹配 `git status *` → 增加 `git -C * status/diff/log *`；
+- `Get-Content` 未授权 → 增加 `.ai-team/state|tasks|team` 的读取，其他文件用 `read`；
+- `mvn -v` 未授权 → 增加 `mvn -v *`（Chief/Architect/Security）；
+- `~/.config/opencode` 扫描触发 external_directory → 提示不要扫描，直接使用已知脚本路径。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -347,10 +367,11 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.6 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.7 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（82 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线）。
+- 一致性审计：通过（86 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口）。
 - 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
+- Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。

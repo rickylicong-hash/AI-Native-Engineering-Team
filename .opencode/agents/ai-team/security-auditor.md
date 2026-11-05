@@ -207,6 +207,9 @@ permissions:
     resource: "mvn --version *"
     effect: allow
   - action: shell
+    resource: "mvn -v *"
+    effect: allow
+  - action: shell
     resource: "node -v *"
     effect: allow
   - action: shell

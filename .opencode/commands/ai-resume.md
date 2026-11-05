@@ -7,6 +7,8 @@ agent: ai-team/chief
 
 1. 读取 `.ai-team/state/HANDOFF.md`、`STATUS.md`、`TASKS.md`、`DECISIONS.md`、`RISKS.md`。
 2. 核对工作区 `git status --short` 与文件现状；发现与记忆不一致时，以文件和 git 证据为准并记录差异。
+   - 预检只跑：`git status --short`、`git log --oneline -8`、`state-check`、`retro-check`、`checkpoint-check`。
+   - 不要用 `;`/`&&`/`2>&1`/`echo` 拼接；不要 `git -C`；不要扫描 `~/.config/opencode`；不要跑 `mvn`；读文件用 `read` 工具。
 3. **先检查复盘是否到期**（`retro-check` / `ai-team-workflow` 3.1）。到期则先按 `/ai-retro` 轻量流程写 `team/GROWTH.md`，再继续编码或门禁。
 4. **检查提交状态**（`checkpoint-check`）。到期则先调度 `ai-team/devops-engineer` 做精选 checkpoint；你不得自己 `git add`/`git commit`。
 5. **检查状态一致性**（`state-check`）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git commit 必须等于当前 HEAD。

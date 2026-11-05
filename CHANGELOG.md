@@ -3,6 +3,27 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.7] - 2026-11-05
+
+### Fixed
+
+- `/ai-resume` under Chief produced a burst of `Permission denied: shell` on riccon-ai:
+  - `git status --short 2>&1; echo ...` failed because compound commands split and `echo` was not allowlisted;
+  - `git -C <project> status --short` failed because only `git status *` was allowed;
+  - `Get-Content .ai-team\state\RUN_LOG.md` failed because shell file reads were not allowlisted;
+  - `mvn -v` failed because only `mvn -version`/`mvn --version` were allowed;
+  - scanning `~/.config/opencode` triggered external-directory approval.
+- Chief allowlist now includes `mvn -v *`, `git -C * status/diff/log *`, `Get-Content .ai-team/{state,tasks,team}/*`, `Get-Content .ai-team/*.md`, and `echo *` (harmless).
+- Added Chief §11.1 “只读 shell 命令风格”: one command per call, no `;`/`&&`/`2>&1`/`echo` chaining, use `read` for files, no `git -C` unless needed, do not scan `~/.config/opencode`, do not run `mvn`, use known script paths.
+- `/ai-resume` now lists the exact preflight commands and the “do not run” list.
+- `TROUBLESHOOTING.md` 3.4 documents the symptom, cause and fix.
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 86 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+
 ## [1.2.6] - 2026-11-05
 
 ### Reviewed

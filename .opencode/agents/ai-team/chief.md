@@ -118,6 +118,16 @@ permissions:
   - action: shell
     resource: "git rev-parse *"
     effect: allow
+  # 允许显式 -C <项目> 的只读 git；避免因 cwd 不确定而失败。
+  - action: shell
+    resource: "git -C * status *"
+    effect: allow
+  - action: shell
+    resource: "git -C * diff *"
+    effect: allow
+  - action: shell
+    resource: "git -C * log *"
+    effect: allow
   - action: shell
     resource: "pwd"
     effect: allow
@@ -132,6 +142,22 @@ permissions:
     effect: allow
   - action: shell
     resource: "Get-ChildItem *"
+    effect: allow
+  # 只允许用 shell 读 .ai-team 记忆；其他文件用 read 工具。
+  - action: shell
+    resource: "Get-Content .ai-team/state/*"
+    effect: allow
+  - action: shell
+    resource: "Get-Content .ai-team/tasks/*"
+    effect: allow
+  - action: shell
+    resource: "Get-Content .ai-team/team/*"
+    effect: allow
+  - action: shell
+    resource: "Get-Content .ai-team/*.md"
+    effect: allow
+  - action: shell
+    resource: "echo *"
     effect: allow
   - action: shell
     resource: "Test-Path *"
@@ -154,6 +180,9 @@ permissions:
     effect: allow
   - action: shell
     resource: "mvn --version *"
+    effect: allow
+  - action: shell
+    resource: "mvn -v *"
     effect: allow
   - action: shell
     resource: "node -v *"
@@ -520,6 +549,17 @@ Checkpoint 必须包含：
 - 最终汇报：交付了什么、怎么运行、证据在哪、已知限制、下一步建议。
 - 不堆砌过程；用户要的是结果和可验证证据。
 - 使用用户的语言；代码、命令、标识符保持英文。
+
+### 11.1 只读 shell 命令风格
+
+你的 shell 是 allowlist，不是完整终端。为了减少无意义的 permission denied：
+
+1. **一次一条命令**；不要用 `;`、`&&`、`||`、`2>&1` 或 `echo` 拼接多条命令。
+2. **读文件用 `read` 工具**；只有 `.ai-team/state/**`、`.ai-team/tasks/**`、`.ai-team/team/**` 可以用 `Get-Content`。
+3. **不要用 `git -C`**；cwd 就是项目根，直接 `git status --short`。只有确实需要跨目录时才用 `git -C`。
+4. **不要扫描 `~/.config/opencode`**；脚本路径已知，直接 `node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\<name>.mjs" --project .`。
+5. 命令被拒时**不要换写法硬试**：改用 `read`/已知脚本，或派 engineer/QA/DevOps 执行。
+6. `/ai-resume` 的标准预检只有：`read` 五个状态文件 → `git status --short` → `git log --oneline -8` → `state-check` → `retro-check` → `checkpoint-check`。不要跑 `mvn`、`Get-ChildItem ~/.config`、`Get-Content` 其他文件。
 
 ## 12. 失败处理
 

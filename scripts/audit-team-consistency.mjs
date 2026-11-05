@@ -119,6 +119,17 @@ for (const file of agentFiles) {
   check(`agent ${file} has external_directory`, rules.some((r) => r.action === "external_directory"), "missing external_directory rule");
 }
 
+// `ai-resume` 在 Chief 下必须可用的只读命令；防止再次出现大量 permission denied。
+const chiefRules = parseRules(read(path.join(agentsDir, "chief.md")));
+for (const resource of [
+  "mvn -v *",
+  "git -C * status *",
+  "Get-Content .ai-team/state/*",
+  "echo *",
+]) {
+  check(`chief resume allow ${resource}`, hasEffective(chiefRules, "shell", resource, "allow"), "missing allow rule");
+}
+
 // 命令里引用但团队不存在的脚本路径。
 for (const file of commandFiles) {
   const text = read(path.join(commandsDir, file));
