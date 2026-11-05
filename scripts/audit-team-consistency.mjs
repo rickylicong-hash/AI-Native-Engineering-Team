@@ -148,6 +148,13 @@ check(
   hasEffective(reviewerRules, "shell", "git -C * diff *", "allow"),
   "reviewer cannot diff an explicit project path",
 );
+for (const resource of ["java -version *", "mvn -v *", "mvn *compile*", "Get-ChildItem *"]) {
+  check(
+    `code-reviewer can run ${resource}`,
+    hasEffective(reviewerRules, "shell", resource, "allow"),
+    "missing read-only verification rule",
+  );
+}
 
 const securityRules = parseRules(read(path.join(agentsDir, "security-auditor.md")));
 check(

@@ -164,6 +164,49 @@ permissions:
   - action: shell
     resource: "mvn *checkstyle*"
     effect: allow
+  # 工具链与只读构建检查。
+  - action: shell
+    resource: "java -version *"
+    effect: allow
+  - action: shell
+    resource: "java --version *"
+    effect: allow
+  - action: shell
+    resource: "mvn -v *"
+    effect: allow
+  - action: shell
+    resource: "mvn -version *"
+    effect: allow
+  - action: shell
+    resource: "mvn --version *"
+    effect: allow
+  - action: shell
+    resource: "mvn *compile*"
+    effect: allow
+  - action: shell
+    resource: "mvn *dependency:analyze*"
+    effect: allow
+  - action: shell
+    resource: "Get-ChildItem *"
+    effect: allow
+  - action: shell
+    resource: "Test-Path *"
+    effect: allow
+  - action: shell
+    resource: "Get-Command *"
+    effect: allow
+  - action: shell
+    resource: "Select-Object *"
+    effect: allow
+  - action: shell
+    resource: "Out-String *"
+    effect: allow
+  - action: shell
+    resource: "Write-Output *"
+    effect: allow
+  - action: shell
+    resource: "Write-Host *"
+    effect: allow
   - action: shell
     resource: "*mvnw* test*"
     effect: allow
@@ -273,8 +316,10 @@ permissions:
 
 ### 3.1 独立验证
 
-- 你有只读构建/测试/扫描权限：`mvn test/verify/package`、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test，以及只读 `git -C`。
+- 你有只读构建/测试/扫描权限：`java -version`、`mvn -v`、`mvn test/verify/package/compile/dependency:tree/dependency-check/spotbugs/pmd/checkstyle`、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test，以及只读 `git -C`。
+- 先确认工具链：`java -version`、`mvn -v`；再跑测试/构建。多模块项目用 `mvn -f <pom> ...` 或 `mvn -pl <module> -am ...`，不要 `cd`。
 - 必须**自己运行**项目已有的测试/构建命令并记录命令、退出码、关键输出；不能只引用工程师的“测试通过”。
+- 一次一条命令；不要用 `;`/`&&`/`2>&1`/管道拼接。测试报告用 `read` 工具读 `target/surefire-reports/**`，不要用 `Get-Content`。
 - 只跑只读/本地验证；不跑 deploy/release/install/publish，不改代码，不 commit/push。
 - 需要外部服务/生产数据才能跑的测试，记录环境限制和未验证范围，不要伪造。
 - 命令被 `permission.rejected` 时返回 BLOCKED，要求 Chief 补精确 allow；不要用 shell 重定向/脚本绕过。

@@ -3,6 +3,22 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.11] - 2026-11-05
+
+### Fixed
+
+- `code-reviewer` could not run toolchain checks or inspect build output:
+  - added `java -version`/`java --version`, `mvn -v`/`-version`/`--version`;
+  - added `mvn *compile*` and `mvn *dependency:analyze*`;
+  - added `Get-ChildItem`, `Test-Path`, `Get-Command`, `Select-Object`, `Out-String`, `Write-Output`, `Write-Host`.
+- Reviewer prompt now says: check `java -version` and `mvn -v` first; use `mvn -f <pom>`/`-pl <module> -am` instead of `cd`; run one command at a time; read `target/surefire-reports/**` with the `read` tool, not `Get-Content`.
+- `audit-team-consistency` now checks these reviewer capabilities (95 checks).
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 95 checks, 0 failed.
+
 ## [1.2.10] - 2026-11-05
 
 ### Fixed
