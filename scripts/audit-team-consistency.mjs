@@ -117,6 +117,15 @@ for (const file of agentFiles) {
   }
 
   check(`agent ${file} has external_directory`, rules.some((r) => r.action === "external_directory"), "missing external_directory rule");
+
+  const seen = new Map();
+  const duplicates = [];
+  for (const rule of rules) {
+    const key = `${rule.action}|${rule.resource}`;
+    if (seen.has(key)) duplicates.push(`${key} (${seen.get(key)} -> ${rule.effect})`);
+    seen.set(key, rule.effect);
+  }
+  check(`agent ${file} has no duplicate rules`, duplicates.length === 0, duplicates.join(", "));
 }
 
 // `ai-resume` 在 Chief 下必须可用的只读命令；防止再次出现大量 permission denied。

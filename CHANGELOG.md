@@ -3,6 +3,17 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.14] - 2026-11-05
+
+### Added
+
+- `audit-team-consistency.mjs` now fails on duplicate exact `(action, resource)` rules for every agent. This makes the “duplicate permission” class a permanent regression check (117 checks).
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 117 checks, 0 failed.
+
 ## [1.2.13] - 2026-11-05
 
 ### Fixed
