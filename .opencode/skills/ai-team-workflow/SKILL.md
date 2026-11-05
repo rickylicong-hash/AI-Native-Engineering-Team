@@ -281,6 +281,56 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" -
 - 归档后主文件保留索引与归档导航，不删除历史；
 - 复盘、交接、门禁前运行 `growth-check`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
 
+### 3.5 Shell 与 brief 预检（1.3.1）
+
+**Shell 单命令：**
+
+- 一次只跑一条命令；禁止 `;`、`&&`、`||`、`2>&1` 和管道拼接；
+- 被 `permission.rejected` 后不要换写法硬试：拆成单条命令、改用 `read` 工具，或派对应 owner；
+- `git add` 只允许显式路径；`git add -A` / `git add .` 被权限 deny；
+- 日志用 `Out-File -Encoding utf8` 或工具重定向，不用复合 shell。
+
+**Brief 预检：**
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" `
+  --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/qa-engineer
+```
+
+缺字段时不得派发 subagent。Reviewer/Security 缺 `独立验证`/`P2 处置`、QA 缺 `测试路径` 时，`brief-lint` 直接失败。
+
+**报告门禁：**
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\review-check.mjs" `
+  --report .ai-team/reviews/REV-xxxx-TASK-xxxx.md --kind review --strict
+```
+
+Review/Security 报告必须有 `## 独立验证`、实际命令和退出码；只有 `RISK-*` 的报告不能关闭 P1/安全项。
+
+### 3.6 会话审计水位（1.3.1）
+
+全量审计结束后，用 `audit-state.mjs --mark` 记录审计时间和已覆盖的最大会话/消息时间戳：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" `
+  --project . --mark --report .ai-team/team/TEAM-USAGE-AUDIT-YYYY-MM-DD.md `
+  --scope <worktree> --session-count 152 `
+  --last-session-created <ms> --last-session-updated <ms> --last-message-time <ms>
+```
+
+下次审计只处理：
+
+- `session_v2.time_created > last_audited_session_created_ms`
+- `session_v2.time_updated > last_audited_session_updated_ms`
+- `session_message.time_created > last_audited_message_ms`
+
+查看水位：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --project . --status
+```
+
 ## 4. 目录与产物
 
 ```text

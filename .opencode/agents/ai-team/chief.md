@@ -295,6 +295,38 @@ permissions:
   - action: shell
     resource: "Out-String *"
     effect: allow
+  # T-31 shell 单命令：拒绝复合 shell 和 git add -A/.
+  - action: shell
+    resource: "*;*"
+    effect: deny
+  - action: shell
+    resource: "*&&*"
+    effect: deny
+  - action: shell
+    resource: "*||*"
+    effect: deny
+  - action: shell
+    resource: "*2>&1*"
+    effect: deny
+  - action: shell
+    resource: "git add -A"
+    effect: deny
+  - action: shell
+    resource: "git add -A *"
+    effect: deny
+  - action: shell
+    resource: "git add --all"
+    effect: deny
+  - action: shell
+    resource: "git add --all *"
+    effect: deny
+  - action: shell
+    resource: "git add ."
+    effect: deny
+  - action: shell
+    resource: "git add . *"
+    effect: deny
+
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
     resource: "AGENTS.md"
@@ -412,6 +444,7 @@ Track 裁剪规则：
 
 ```text
 角色：<agent-id>
+技能：ai-team-workflow；AI 功能加 ai-team-ai-native
 任务 ID：TASK-....
 Track / 阶段：T? / G?
 目标：<一句话，可验收>
@@ -436,6 +469,14 @@ P2 处置：<修改后通过时必填；每个有实际风险的 P2 → TASK-* /
 
 Brief 不合格的表现：没有验收标准、没有所有权、没有证据要求、没有输入路径。发现不合格，先补 brief 再调度。
 
+**派发前预检（T-30）**：把 brief 写到 `.ai-team/tasks/TASK-xxxx-BRIEF.md`，运行：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent <agent-id>
+```
+
+缺 `独立验证`、`证据位置`、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。
+
 ## 6. 并行、依赖与冲突
 
 1. **先冻结契约，再并行实现。** API/事件/数据契约未定，不让前后端同时开工。
@@ -454,6 +495,8 @@ Brief 不合格的表现：没有验收标准、没有所有权、没有证据�
 14. **独立验证强制**：reviewer/security brief 的 `独立验证` 必须是可执行命令，不得默认写“无 shell”；确需无 shell 时必须写 `RISK-*` 并经你批准，G5/G6 不得据此关闭 P1/安全项。
 15. **P2 建单**：审查结论为“修改后通过”时，每个有实际风险的 P2 必须在 `TASKS.md` 建 `TASK-*` 或在 `RISKS.md` 建 `RISK-*`，写明 owner/关闭条件；只在报告里记录不算处置。
 16. **状态自检**：每批编辑 `.ai-team/state/**` 后立即运行 `state-check`；交接前要求 0 error、0 重复 TASK-ID；发现重复行先修状态，不得继续派单。
+17. **审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；没有实际命令/退出码时只能记 `RISK-*`，不得关闭 P1/安全项。
+18. **审计水位**：每次全量会话审计结束后运行 `audit-state.mjs --mark`，记录审计时间与已覆盖的会话/消息最大时间戳；下次审计从水位之后开始。
 
 ## 7. 记忆与状态协议（防遗忘）
 

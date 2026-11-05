@@ -265,6 +265,36 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
+for (const script of ["brief-lint.mjs", "review-check.mjs", "audit-state.mjs"]) {
+  check(
+    `workflow script ${script} exists`,
+    fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),
+    `missing ${script}`,
+  );
+}
+const briefLintText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs"));
+check(
+  "brief-lint validates skill and independent verification",
+  briefLintText.includes("skill") && briefLintText.includes("independent") && briefLintText.includes("test_path"),
+  "brief-lint does not validate the required contract fields",
+);
+for (const role of ["engineer.md", "qa-engineer.md", "devops-engineer.md", "code-reviewer.md", "security-auditor.md", "technical-writer.md"]) {
+  const rules = parseRules(read(path.join(agentsDir, role)));
+  for (const resource of ["*;*", "*&&*", "*||*", "*2>&1*"]) {
+    check(
+      `${role} denies compound shell ${resource}`,
+      hasEffective(rules, "shell", resource, "deny"),
+      "compound shell can bypass one-command rule",
+    );
+  }
+  for (const resource of ["git add -A", "git add -A *", "git add --all *", "git add .", "git add . *"]) {
+    check(
+      `${role} denies ${resource}`,
+      hasEffective(rules, "shell", resource, "deny"),
+      "git add -A/. is not permission-blocked",
+    );
+  }
+}
 
 const engineerRules = parseRules(read(path.join(agentsDir, "engineer.md")));
 for (const resource of ["docs/*", "deploy/*", "qa/*", ".ai-team/tasks/*", "AGENTS.md"]) {
@@ -316,7 +346,7 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "构建互斥", "状态自检", "growth-check", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "技能：", "构建互斥", "状态自检", "growth-check", "brief-lint", "review-check", "audit-state", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
 const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));

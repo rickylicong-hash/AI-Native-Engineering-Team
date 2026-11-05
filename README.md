@@ -401,7 +401,17 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" -
 
 已全部处置且不是最近一轮的 RETRO，可用 `--archive --yes` 归档到 `team/archive/`，主文件保留索引和最近复盘。
 
-#### 8. 为什么有未提交改动却没提交
+#### 9. 会话审计水位
+
+全量会话审计后记录 `team/AUDIT.json`：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --project . --status
+```
+
+下次审计只处理 `last_audited_session_created_ms` / `last_audited_session_updated_ms` / `last_audited_message_ms` 之后的会话和消息；不要重复分析全部历史。
+
+#### 10. 为什么有未提交改动却没提交
 
 Chief 是只读角色，**不能执行 `git add`/`git commit`**。如果它尝试提交，会被权限拒绝；正确动作是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队现在用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。
 

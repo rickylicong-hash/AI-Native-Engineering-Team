@@ -15,5 +15,6 @@ $ARGUMENTS
 4. 调度 `ai-team/security-auditor`：威胁面、鉴权、输入/输出、密钥、依赖、配置。
 5. 两份报告分别写入 `.ai-team/reviews/**` 与 `.ai-team/security/**`。
 6. 汇总阻断项（P0/P1、Critical/High）、非阻断项、修复 owner 与关闭条件；每个有实际风险的 P2 必须给出 `TASK-*`/`RISK-*`/书面接受处置；同一任务第 3 轮仍不通过时给 Chief 拆分/降级/接受风险建议。
+6.1 对每份 Reviewer/Security 报告运行 `review-check.mjs --strict`；没有实际命令/退出码的报告退回补证据，不能作为 G5/G6 放行依据。
 
 不要修改代码；修复由原 owner 执行。若发现 P0/Critical，明确阻断发布。

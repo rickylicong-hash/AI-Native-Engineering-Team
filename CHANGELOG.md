@@ -3,6 +3,27 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.3.1] - 2026-11-06
+
+### Added
+
+- **T-30 brief preflight**: `brief-lint.mjs` validates the brief file before any subagent dispatch. All roles need role, skill, task, track, goal, background, ownership, constraints, acceptance, must-execute, evidence location, evidence requirements, forbidden actions, report format, and build isolation. Reviewer/security additionally need `独立验证` and `P2 处置`; QA needs `测试路径`.
+- **T-31 shell single-command**: shell permission now denies `;`, `&&`, `||`, `2>&1`, and `git add -A` / `git add .` patterns for the writing/verification roles. Compound commands must be split; `git add` must use explicit paths.
+- **T-32 review report gate**: `review-check.mjs` requires `## 独立验证`, actual command evidence, and an exit code. A risk-only report can be recorded but cannot close a P1/security item. Security report template now has an independent-verification section.
+- **T-33 session audit watermark**: `audit-state.mjs --mark` records the audit timestamp and the maximum session/message timestamps in `.ai-team/team/AUDIT.json`; the next audit starts after that watermark instead of rescanning all history.
+- **Skill loading in briefs**: the brief now records `技能：ai-team-workflow` (plus `ai-team-ai-native` for AI work), and `brief-lint` rejects a missing skill field.
+
+### Verified
+
+- `node scripts/verify.mjs` → 197/197.
+- installed verify → 189/189; installed + OpenCode → 199/199.
+- `node scripts/audit-team-consistency.mjs` → 230 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `brief-lint` fixture: QA pass; reviewer missing `独立验证`/`P2 处置` fails.
+- `review-check` fixture: strict command + exit code passes.
+- `audit-state`: riccon-ai 152 sessions, watermark written to `.ai-team/team/AUDIT.json`.
+- `git add -A` and compound-shell deny rules present in effective config.
+
 ## [1.3.0] - 2026-11-06
 
 ### Added

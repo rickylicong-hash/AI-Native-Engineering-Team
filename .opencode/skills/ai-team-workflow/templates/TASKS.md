@@ -13,6 +13,7 @@
 - Owner：
 - Track/阶段：
 - 目标：
+- Brief：`.ai-team/tasks/TASK-xxxx-BRIEF.md`（派发前 `brief-lint`）
 - 输入：
 - 所有权：
 - 约束：

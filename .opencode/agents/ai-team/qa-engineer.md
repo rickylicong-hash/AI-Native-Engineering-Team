@@ -230,6 +230,38 @@ permissions:
   - action: shell
     resource: "git push * +*"
     effect: deny
+  # T-31 shell 单命令：拒绝复合 shell 和 git add -A/.
+  - action: shell
+    resource: "*;*"
+    effect: deny
+  - action: shell
+    resource: "*&&*"
+    effect: deny
+  - action: shell
+    resource: "*||*"
+    effect: deny
+  - action: shell
+    resource: "*2>&1*"
+    effect: deny
+  - action: shell
+    resource: "git add -A"
+    effect: deny
+  - action: shell
+    resource: "git add -A *"
+    effect: deny
+  - action: shell
+    resource: "git add --all"
+    effect: deny
+  - action: shell
+    resource: "git add --all *"
+    effect: deny
+  - action: shell
+    resource: "git add ."
+    effect: deny
+  - action: shell
+    resource: "git add . *"
+    effect: deny
+
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
     resource: "AGENTS.md"

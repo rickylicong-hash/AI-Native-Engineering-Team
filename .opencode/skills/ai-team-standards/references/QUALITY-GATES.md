@@ -88,6 +88,7 @@
 - [ ] 关键路径/并行路径清楚；
 - [ ] 风险/阻塞/回退计划；
 - [ ] DoR 满足；
+- [ ] 每个 subagent brief 已通过 `brief-lint`（独立验证/证据位置/测试路径/P2 处置/构建隔离齐全）；
 - [ ] `TASKS.md` 已写。
 
 ## G4 Build
@@ -160,6 +161,7 @@
 - [ ] 修复/回归任务有 P1 closure 表（原 P1、修复点、复现、回归）；
 - [ ] reviewer brief 允许独立执行测试/扫描；无 shell 有 `RISK-*` + Chief 批准；不接受默认“无 shell”；
 - [ ] reviewer/security 报告记录实际执行/未能执行的命令；
+- [ ] reviewer/security 报告通过 `review-check --strict`（或明确 RISK 且不关闭 P1/安全项）；
 - [ ] 同一任务第 3 轮仍不通过时有 Chief 裁决（拆分/降级/接受风险）；
 - [ ] P2 有 `TASK-*`/`RISK-*` 或书面接受；
 - [ ] S1/S2 DEF 由 QA 独立回归关单，owner 未自关；
@@ -228,6 +230,7 @@
 - [ ] `team/GROWTH.md` 已追加并更新 frontmatter；
 - [ ] 每条提案已回填处置状态；`growth-check` 无 error；
 - [ ] 已处置旧 RETRO 已归档或列入归档计划；
+- [ ] 全量会话审计已用 `audit-state --mark` 记录 `AUDIT.json` 水位；
 - [ ] 遗留项进入 backlog/风险；
 - [ ] `HANDOFF.md` 更新。
 

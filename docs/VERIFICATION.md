@@ -525,6 +525,27 @@ growth-check (riccon-ai):  22 proposals, done 22, open 0, strict PASS
 version:                   1.3.0, sourceHash === installedHash
 ```
 
+### 5.19 会话审计与执行层硬化（1.3.1）
+
+- **T-30 brief 预检**：新增 `brief-lint.mjs`；所有角色 brief 必须有技能、目标、所有权、验收、必须执行、证据位置/要求、禁止项、回报格式、构建隔离；Reviewer/Security 加 `独立验证`/`P2 处置`，QA 加 `测试路径`。
+- **T-31 shell 单命令**：Engineer/QA/DevOps/Reviewer/Security/Writer/Chief 的权限增加 `;`、`&&`、`||`、`2>&1` 拒绝；`git add -A`/`git add .` 权限 deny。
+- **T-32 审查报告门禁**：新增 `review-check.mjs`；报告必须有 `## 独立验证`、实际命令和退出码；只有 RISK 的报告不能关闭 P1/安全项。
+- **T-33 审计水位**：新增 `audit-state.mjs` 与 `.ai-team/team/AUDIT.json`；riccon-ai 首次全量审计记录 152 个会话，下次从 `last_audited_*` 之后开始。
+- **审计结论**：riccon-ai 152 个会话、149 个子代理；0 嵌套子代理、0 完成态越权编辑；但独立验证 0/38、同工作区 Maven 重叠 224 对、权限拒绝 131 次（81 次复合 shell）、engineer 成功 `git add -A` 2 次。报告见 `.ai-team/team/TEAM-USAGE-AUDIT-2026-11-06.md`。
+
+验证：
+
+```text
+source verify:             197/197
+installed verify:          189/189
+installed + OpenCode:      199/199
+audit-team-consistency:    230 checks, 0 failed
+audit-git-permissions:     10 agents, 0 failed
+brief-lint fixture:        QA pass; reviewer missing independent/p2 fail
+review-check fixture:      strict command + exit pass
+audit-state:               riccon-ai 152 sessions, watermark written
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -554,9 +575,9 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.0 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.1 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（168 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口）。
+- 一致性审计：通过（230 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
 - 成长处置：通过（`GROWTH.md` 提案处置索引 22/22 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。

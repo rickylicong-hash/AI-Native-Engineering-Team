@@ -426,6 +426,38 @@ permissions:
   - action: shell
     resource: "*gradle* dependencies*"
     effect: allow
+  # T-31 shell 单命令：拒绝复合 shell 和 git add -A/.
+  - action: shell
+    resource: "*;*"
+    effect: deny
+  - action: shell
+    resource: "*&&*"
+    effect: deny
+  - action: shell
+    resource: "*||*"
+    effect: deny
+  - action: shell
+    resource: "*2>&1*"
+    effect: deny
+  - action: shell
+    resource: "git add -A"
+    effect: deny
+  - action: shell
+    resource: "git add -A *"
+    effect: deny
+  - action: shell
+    resource: "git add --all"
+    effect: deny
+  - action: shell
+    resource: "git add --all *"
+    effect: deny
+  - action: shell
+    resource: "git add ."
+    effect: deny
+  - action: shell
+    resource: "git add . *"
+    effect: deny
+
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
     resource: "AGENTS.md"
@@ -575,6 +607,7 @@ mvn -B org.owasp:dependency-check-maven:check
 - 只跑只读/本地命令；不跑 deploy/release/install/publish，不改代码，不 commit/push；
 - 需要生产数据/外部服务才能验证的项，记录环境限制，不伪造；
 - 命令被 `permission.rejected` 时返回 BLOCKED，要求 Chief 补精确 allow；不要用 shell 重定向/脚本绕过。
+- 报告写完后运行 `review-check.mjs --kind security --strict`；没有实际命令/退出码时只记 `RISK-*`，不能放行 Critical/High。
 
 ## 6. 严重级别与结论
 

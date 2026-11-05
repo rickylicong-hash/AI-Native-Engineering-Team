@@ -179,6 +179,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - Reviewer：只读 git + 项目已有测试/构建/扫描（`mvn test/verify/package/compile`、Gradle/npm/pytest/go/cargo/dotnet test 等）；
 - Security：只读 git + 安全扫描器 + 项目测试/构建；
 - Engineer/QA/DevOps/Writer：允许构建/测试；同一工作区同一时刻只有一个构建；发布/部署命令只允许 DevOps（`ask`），其他角色 `deny`；
+- Shell 一次一条命令：禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；`git add -A`/`git add .` 权限 deny；
 - 所有角色：`.env`/密钥读取 deny；外部目录 ask/deny。
 
 ### 5.3 生产发布
@@ -198,6 +199,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - 提案标准：≥2 次证据、不重复现有能力、最小改动、可验收。
 - 处置回传：每条提案必须进入 `GROWTH.md` 的“提案处置索引”；处置后同一轮回填状态、落地版本/任务、证据、日期。
 - 检查：复盘/交接/门禁前运行 `growth-check`；全部处置且非最近一轮的 RETRO 可归档到 `team/archive/`。
+- 会话审计：全量审计后用 `audit-state.mjs --mark` 记录 `AUDIT.json` 水位；下次只审计水位之后的会话/消息。
 - 批准：Chief 提案 → 安全/架构审计 → 用户批准 → 授权方修改 `.opencode/**`。
 - **团队不能自己改自己。**
 
