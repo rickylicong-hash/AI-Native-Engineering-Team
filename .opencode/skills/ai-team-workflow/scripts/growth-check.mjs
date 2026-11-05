@@ -309,14 +309,22 @@ if (archive) {
     next = next.replace(item.section, replacement);
   }
   // 保留完整处置索引（compact ledger）；只把 RETRO 详情移入 archive。
-  const indexStart = next.indexOf("## 提案处置索引");
-  const indexEnd = next.indexOf("## ", indexStart + 1);
-  if (indexStart >= 0 && indexEnd > indexStart) {
-    const before = next.slice(0, indexStart);
-    const indexBlock = next.slice(indexStart, indexEnd).trimEnd();
-    const after = next.slice(indexEnd);
-    const nav = ["## 已归档复盘", "", ...eligible.map((item) => `- ${item.match[1]} — \`team/archive/GROWTH-${year}.md\``), "", ""].join("\n");
-    next = `${before}${indexBlock}\n\n${nav}${after}`;
+  const navHeading = "## 已归档复盘";
+  const navLines = eligible.map((item) => `- ${item.match[1]} — \`team/archive/GROWTH-${year}.md\``);
+  if (next.includes(navHeading)) {
+    const navStart = next.indexOf(navHeading);
+    const nextHeading = next.indexOf("## ", navStart + 1);
+    const navEnd = nextHeading >= 0 ? nextHeading : next.length;
+    const existing = next.slice(navStart, navEnd).trimEnd();
+    const additions = navLines.filter((line) => !existing.includes(line));
+    next = `${next.slice(0, navStart)}${existing}${additions.length ? `\n${additions.join("\n")}` : ""}\n\n${next.slice(navEnd)}`;
+  } else {
+    const indexStart = next.indexOf("## 提案处置索引");
+    const indexEnd = next.indexOf("## ", indexStart + 1);
+    if (indexStart >= 0 && indexEnd > indexStart) {
+      const nav = [navHeading, "", ...navLines, "", ""].join("\n");
+      next = `${next.slice(0, indexEnd)}${nav}${next.slice(indexEnd)}`;
+    }
   }
   const remainingOpen = [...index.values()].filter((row) => !TERMINAL.has(row.status) && !eligible.some((item) => item.rows.some((p) => p.id === row.id))).length;
   next = next.replace(/^open_proposals:\s*\d+\s*$/m, `open_proposals: ${remainingOpen}`);
