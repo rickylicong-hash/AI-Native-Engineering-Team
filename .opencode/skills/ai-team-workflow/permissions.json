@@ -30,13 +30,6 @@
           ".ai-team/README.md"
         ]
       },
-      "forbidden": {
-        "shell": [
-          "git add -A *",
-          "git add .",
-          "git add . *"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -67,12 +60,6 @@
           ".ai-team/product/*"
         ]
       },
-      "forbidden": {
-        "shell": [
-          "git add *",
-          "git commit *"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -97,12 +84,6 @@
           "prototypes/*"
         ]
       },
-      "forbidden": {
-        "shell": [
-          "git add *",
-          "git commit *"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -125,12 +106,6 @@
           "docs/adr/*"
         ]
       },
-      "forbidden": {
-        "shell": [
-          "git add *",
-          "git commit *"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -147,15 +122,6 @@
         ],
         "edit": [
           ".ai-team/work/*"
-        ]
-      },
-      "forbidden": {
-        "shell": [
-          "git add -A",
-          "git add -A *",
-          "git add --all *",
-          "git add .",
-          "git add . *"
         ]
       },
       "gateway": [
@@ -186,13 +152,6 @@
         ],
         "edit": [
           ".ai-team/reviews/*"
-        ]
-      },
-      "forbidden": {
-        "shell": [
-          "git add *",
-          "git commit *",
-          "git push *"
         ]
       },
       "gateway": [
@@ -228,13 +187,6 @@
           ".ai-team/qa/*"
         ]
       },
-      "forbidden": {
-        "shell": [
-          "git add *",
-          "git commit *",
-          "git push *"
-        ]
-      },
       "gateway": [
         "git.status",
         "build.compile",
@@ -262,13 +214,6 @@
         ],
         "edit": [
           ".ai-team/security/*"
-        ]
-      },
-      "forbidden": {
-        "shell": [
-          "git add *",
-          "git commit *",
-          "git push *"
         ]
       },
       "gateway": [
@@ -303,15 +248,6 @@
           ".ai-team/work/TASK-GIT-*EVIDENCE.md"
         ]
       },
-      "forbidden": {
-        "shell": [
-          "git add -A",
-          "git add -A *",
-          "git add --all *",
-          "git add .",
-          "git add . *"
-        ]
-      },
       "gateway": [
         "git.status",
         "git.diff",
@@ -340,15 +276,6 @@
           "CHANGELOG.md",
           "CONTRIBUTING.md",
           "SECURITY.md"
-        ]
-      },
-      "forbidden": {
-        "shell": [
-          "git add -A",
-          "git add -A *",
-          "git add --all *",
-          "git add .",
-          "git add . *"
         ]
       },
       "gateway": [

@@ -138,11 +138,6 @@ for (const file of agentFiles) {
     }
   }
 
-  if (/不执行\s*`?git commit/.test(text)) {
-    const denied = hasEffective(rules, "shell", "*", "deny") || hasEffective(rules, "shell", "git commit *", "deny");
-    check(`agent ${file} says no git commit`, denied, "prompt says no commit but permission allows it");
-  }
-
   check(`agent ${file} has external_directory`, rules.some((r) => r.action === "external_directory"), "missing external_directory rule");
 
   const seen = new Map();
@@ -155,66 +150,12 @@ for (const file of agentFiles) {
   check(`agent ${file} has no duplicate rules`, duplicates.length === 0, duplicates.join(", "));
 }
 
-// `ai-resume` 在 Chief 下必须可用的只读命令；防止再次出现大量 permission denied。
-const chiefRules = parseRules(read(path.join(agentsDir, "chief.md")));
-for (const resource of [
-  "mvn -v *",
-  "git -C * status *",
-  "Get-Content .ai-team/state/*",
-  "echo *",
-]) {
-  check(`chief resume allow ${resource}`, hasEffective(chiefRules, "shell", resource, "allow"), "missing allow rule");
-}
-
 const devopsRules = parseRules(read(path.join(agentsDir, "devops-engineer.md")));
 check(
   "devops can write TASK-GIT evidence",
   hasEffective(devopsRules, "edit", ".ai-team/work/TASK-GIT-*EVIDENCE.md", "allow"),
   "DevOps must be able to write TASK-GIT-*EVIDENCE.md without shell bypass",
 );
-check(
-  "devops can run growth-check",
-  hasEffective(devopsRules, "shell", "node *growth-check.mjs*", "allow"),
-  "DevOps cannot validate GROWTH dispositions before checkpoint",
-);
-
-const reviewerRules = parseRules(read(path.join(agentsDir, "code-reviewer.md")));
-check(
-  "code-reviewer can run maven tests",
-  hasEffective(reviewerRules, "shell", "mvn *test*", "allow"),
-  "reviewer cannot independently reproduce Maven tests",
-);
-check(
-  "code-reviewer can use git -C",
-  hasEffective(reviewerRules, "shell", "git -C * diff *", "allow"),
-  "reviewer cannot diff an explicit project path",
-);
-for (const resource of ["java -version *", "mvn -v *", "mvn *compile*", "Get-ChildItem *", "Select-String *"]) {
-  check(
-    `code-reviewer can run ${resource}`,
-    hasEffective(reviewerRules, "shell", resource, "allow"),
-    "missing read-only verification rule",
-  );
-}
-
-const securityRules = parseRules(read(path.join(agentsDir, "security-auditor.md")));
-check(
-  "security-auditor can run maven tests",
-  hasEffective(securityRules, "shell", "mvn *test*", "allow"),
-  "security cannot independently reproduce Maven tests",
-);
-check(
-  "security-auditor can run dependency-check",
-  hasEffective(securityRules, "shell", "mvn *dependency-check*", "allow"),
-  "security cannot run Maven OWASP dependency-check",
-);
-for (const [role, rules] of [["code-reviewer", reviewerRules], ["security-auditor", securityRules]]) {
-  check(
-    `${role} can run review-check`,
-    hasEffective(rules, "shell", "node *review-check.mjs*", "allow"),
-    `${role} cannot validate its own report`,
-  );
-}
 
 const qaText = read(path.join(agentsDir, "qa-engineer.md"));
 const qaRules = parseRules(qaText);
@@ -309,24 +250,8 @@ if (permissionMatrix) {
       Array.isArray(permissionMatrix.roles[role].gateway) && permissionMatrix.roles[role].gateway.length > 0,
       "missing gateway action list",
     );
-    const roleRules = parseRules(read(path.join(agentsDir, `${role}.md`)));
-    check(
-      `gateway allow for ${role}`,
-      hasEffective(roleRules, "shell", `node *team-shell.mjs --role ${role} *`, "allow"),
-      "agent cannot invoke its team-shell gateway",
-    );
   }
 }
-check(
-  "chief can run permission-lint",
-  hasEffective(chiefRules, "shell", "node *permission-lint.mjs*", "allow"),
-  "Chief cannot run the permission matrix preflight",
-);
-check(
-  "chief can run permission-doctor",
-  hasEffective(chiefRules, "shell", "node *permission-doctor.mjs*", "allow"),
-  "Chief cannot diagnose permission denials",
-);
 const briefLintText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs"));
 check(
   "brief-lint validates skill and independent verification",
@@ -343,16 +268,6 @@ for (const file of agentFiles) {
     shellEffect === "allow",
     `Shell-first requires shell * -> allow (effective=${shellEffect})`,
   );
-}
-for (const role of ["engineer.md", "qa-engineer.md", "devops-engineer.md", "code-reviewer.md", "security-auditor.md", "technical-writer.md"]) {
-  const rules = parseRules(read(path.join(agentsDir, role)));
-  for (const resource of ["git add -A", "git add -A *", "git add --all *", "git add .", "git add . *"]) {
-    check(
-      `${role} denies ${resource}`,
-      hasEffective(rules, "shell", resource, "deny"),
-      "git add -A/. is not permission-blocked",
-    );
-  }
 }
 
 const engineerRules = parseRules(read(path.join(agentsDir, "engineer.md")));
@@ -371,27 +286,6 @@ check(
   "Writer should not change architecture decisions",
 );
 
-const releaseResources = [
-  "npm publish*",
-  "pnpm publish*",
-  "yarn publish*",
-  "cargo publish*",
-  "twine upload*",
-  "docker push*",
-  "kubectl apply*",
-  "helm upgrade*",
-  "terraform apply*",
-];
-for (const role of ["engineer.md", "qa-engineer.md", "technical-writer.md"]) {
-  const rules = parseRules(read(path.join(agentsDir, role)));
-  const missing = releaseResources.filter((resource) => !hasEffective(rules, "shell", resource, "deny"));
-  check(
-    `${role} release commands denied`,
-    missing.length === 0,
-    missing.join(", "),
-  );
-}
-
 const chiefRulesAll = parseRules(read(path.join(agentsDir, "chief.md")));
 check(
   "chief task deny all",
@@ -405,13 +299,6 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const script of ["growth-check", "brief-lint", "review-check", "audit-state"]) {
-  check(
-    `chief can run ${script}`,
-    hasEffective(chiefRules, "shell", `node *${script}.mjs*`, "allow"),
-    `Chief cannot run ${script} during resume/handoff`,
-  );
-}
 for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "技能：", "构建互斥", "状态自检", "growth-check", "brief-lint", "review-check", "audit-state", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
@@ -454,9 +341,9 @@ check(
 );
 const teamDoc = read(path.resolve("docs", "TEAM.md"));
 check(
-  "TEAM doc reflects shell-first",
-  teamDoc.includes("所有角色 shell 默认 `allow`") && teamDoc.includes("只读角色"),
-  "TEAM doc still describes a shell allowlist",
+  "TEAM doc reflects shell-first strict",
+  teamDoc.includes("Shell-first strict") && teamDoc.includes("只有破坏性"),
+  "TEAM doc still describes a broad allowlist or non-destructive restrictions",
 );
 check(
   "TEAM doc has QA Java E2E ownership",

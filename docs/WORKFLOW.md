@@ -314,12 +314,12 @@ P2 处置：<修改后通过时必填；TASK-* / RISK-* / 明确接受>
 
 - **作者负责内容**：每个角色只写自己的 owned paths。
 - **DevOps 统一 checkpoint commit**：`.ai-team` 的精选快照由 DevOps 提交；Chief 只提供路径/TASK/角色/message。
-- **代码作者提交代码**：Engineer 提交代码 + 单测 + `.ai-team/work/TASK-*` 证据；commit 默认 `ask`。
-- **文档作者提交文档**：Writer 提交 `docs/**`、README、CHANGELOG、`.ai-team/docs`；commit 默认 `ask`。
-- **只读角色不 commit**：Chief/PM/UX/Architect/Reviewer/Security 不拿 raw git。
-- **禁止 `git add -A` / `git add .`**；只 stage 明确路径。
+- **代码作者提交代码**：Engineer 提交代码 + 单测 + `.ai-team/work/TASK-*` 证据；commit 由作者执行，权限不再 `ask`。
+- **文档作者提交文档**：Writer 提交 `docs/**`、README、CHANGELOG、`.ai-team/docs`；commit 由作者执行，权限不再 `ask`。
+- **只读角色不 commit**：Chief/PM/UX/Architect/Reviewer/Security 不拿 raw git；这是流程约定，权限不再强制。
+- **流程建议只 stage 明确路径**；`git add -A`/`git add .` 不再被权限拒绝。
 - **提交前扫描密钥/凭据/客户数据**；安全报告脱敏。
-- **push 需用户批准**（L3）。
+- **push 前需用户批准**（L3）；权限不再 `ask`，由流程保证。
 
 Commit message：
 
@@ -403,12 +403,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/落地/证据/日期；`growth-check` 检查；已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
 - **T-30 brief 预检**：派发 subagent 前写 `.ai-team/tasks/TASK-*-BRIEF.md` 并运行 `brief-lint.mjs --agent`；缺 `独立验证`/`证据位置`/QA `测试路径`/Reviewer-Security `P2 处置`/`构建隔离` 时不得派发。
-- **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；`git add -A`/`git add .` 仍 deny。
+- **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；1.5.0 不再保留这些限制。
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
-- **T-34 权限矩阵与预检**：`permissions.json` 是 required/forbidden 单一事实源；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝；新增脚本先改矩阵再改权限。
-- **T-35 统一命令网关**：`team-shell.mjs --role <role> --action <action>` 执行 git 读取、构建/测试、扫描和团队脚本；动作由 `permissions.json.gateway` 授权；不经过 shell；写操作仍直接走角色权限。
-- **T-36 Shell-first**：所有角色 shell 默认 allow；允许管道/复合命令；只保留破坏性命令、发布/部署、`.env`/密钥、只读角色 git 写操作和 `git add -A`/`git add .` 的 deny；ownership 由 brief + diff + checkpoint + 会话审计约束。
+- **T-34 权限矩阵与预检**：`permissions.json` 只保留破坏性 shell forbidden；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝。
+- **T-35 统一命令网关**：`team-shell.mjs --role <role> --action <action>` 执行 git 读取、构建/测试、扫描和团队脚本；动作由 `permissions.json.gateway` 授权；不经过 shell；普通 shell 不再强制走网关。
+- **T-36 Shell-first strict（1.5.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
 
 ## 8. 并行规则
 

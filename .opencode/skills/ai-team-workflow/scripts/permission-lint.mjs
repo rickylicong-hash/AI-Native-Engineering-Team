@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 权限矩阵校验（1.4.2）。
+ * 权限矩阵校验（1.5.0）。
  *
  * 读取 `skills/ai-team-workflow/permissions.json`，检查每个角色：
  *   - required 动作是否最终为 allow；
@@ -55,33 +55,64 @@ function check(name, ok, detail = "") {
   if (!ok) failures.push(`${name}${detail ? `: ${detail}` : ""}`);
 }
 
-// Shell-first 只放开普通命令；这些破坏性/历史改写命令必须保持非 allow。
+// Shell-first strict：只允许这些破坏性/历史改写命令 deny。
 const SHELL_SAFETY_DENIES = [
-  "git reset --hard *",
-  "git clean *",
-  "git push --force*",
-  "git push -f*",
-  "git push --mirror *",
-  "git update-ref -d *",
-  "git reflog expire *",
+  "git reset --hard*",
+  "git clean*",
+  "git checkout --*",
+  "git checkout -f*",
+  "git restore*",
+  "git switch -f*",
+  "git switch --discard-changes*",
+  "git reset --merge*",
+  "git branch -D*",
+  "git branch -d*",
+  "git tag -d*",
+  "git tag --delete*",
+  "git stash clear*",
+  "git stash drop*",
+  "git update-ref -d*",
+  "git reflog expire*",
   "git gc --prune*",
-  "git branch -D *",
-  "git stash clear *",
-  "rm -rf *",
-  "Remove-Item * -Recurse *",
-  "docker system prune *",
-  "terraform destroy *",
-  "kubectl delete *",
+  "git filter-branch*",
+  "git filter-repo*",
+  "git push --force*",
+  "git push * --force*",
+  "git push -f*",
+  "git push * -f*",
+  "git push --mirror*",
+  "git push * +*",
+  "git push --delete*",
+  "git push * --delete*",
+  "git worktree remove*",
+  "rm -rf*",
+  "rm -r*",
+  "del /s*",
+  "del /q /s*",
+  "rd /s*",
+  "rd /q /s*",
+  "Remove-Item * -Recurse*",
+  "Remove-Item -Recurse*",
+  "docker system prune*",
+  "docker volume prune*",
+  "docker image prune*",
+  "terraform destroy*",
+  "kubectl delete*",
 ];
-// 这些角色通过 shell 也不得 staging/commit/push/tag，写操作只走授权角色。
-const READ_ONLY_ROLES = new Set([
-  "chief",
-  "code-reviewer",
-  "product-manager",
-  "ux-designer",
-  "system-architect",
-  "security-auditor",
-]);
+// 这些操作不是破坏性命令，必须保持 allow；用于防止安全边界再次膨胀。
+const SHELL_MUST_ALLOW = [
+  "git add",
+  "git add -A",
+  "git commit",
+  "git commit *",
+  "git push",
+  "git push *",
+  "git tag",
+  "npm publish*",
+  "kubectl apply*",
+  "terraform apply*",
+  "Get-Content .env",
+];
 
 for (const role of roles) {
   const file = agentFile(role);
@@ -97,7 +128,7 @@ for (const role of roles) {
   );
   check(
     `${role} has shell-first guidance`,
-    agentText.includes("Shell 使用纪律（Shell-first）"),
+    agentText.includes("Shell 使用纪律（Shell-first strict）"),
     "missing shell-first recovery guidance",
   );
   check(
@@ -109,25 +140,17 @@ for (const role of roles) {
     const effect = effectiveEffect(rules, "shell", resource);
     check(`${role} safety ${resource}`, effect !== "allow", `effective=${effect}`);
   }
+  const extraShellRestrictions = rules
+    .filter((rule) => rule.action === "shell" && rule.effect !== "allow" && !SHELL_SAFETY_DENIES.includes(rule.resource))
+    .map((rule) => `${rule.effect}:${rule.resource}`);
   check(
-    `${role} blocks bulk git add`,
-    effectiveEffect(rules, "shell", "git add -A") !== "allow",
-    `effective=${effectiveEffect(rules, "shell", "git add -A")}`,
+    `${role} only destructive shell restrictions`,
+    extraShellRestrictions.length === 0,
+    extraShellRestrictions.join(", "),
   );
-  if (READ_ONLY_ROLES.has(role)) {
-    for (const resource of [
-      "git add",
-      "git add *",
-      "git commit",
-      "git commit *",
-      "git push",
-      "git push *",
-      "git tag",
-      "git tag *",
-    ]) {
-      const effect = effectiveEffect(rules, "shell", resource);
-      check(`${role} read-only ${resource}`, effect !== "allow", `effective=${effect}`);
-    }
+  for (const resource of SHELL_MUST_ALLOW) {
+    const effect = effectiveEffect(rules, "shell", resource);
+    check(`${role} non-destructive allow ${resource}`, effect === "allow", `effective=${effect}`);
   }
   for (const [action, resources] of Object.entries(spec.required || {})) {
     for (const resource of resources) {

@@ -528,7 +528,7 @@ version:                   1.3.0, sourceHash === installedHash
 ### 5.19 会话审计与执行层硬化（1.3.1）
 
 - **T-30 brief 预检**：新增 `brief-lint.mjs`；所有角色 brief 必须有技能、目标、所有权、验收、必须执行、证据位置/要求、禁止项、回报格式、构建隔离；Reviewer/Security 加 `独立验证`/`P2 处置`，QA 加 `测试路径`。
-- **T-31 shell 单命令（1.4.2 起由 T-36 Shell-first 取代）**：1.3.1 曾拒绝 `;`、`&&`、`||`、`2>&1`；`git add -A`/`git add .` 仍 deny。
+- **T-31 shell 单命令（1.4.2 起由 T-36 取代；1.5.0 全部移除）**：1.3.1 曾拒绝 `;`、`&&`、`||`、`2>&1`；1.5.0 只保留破坏性命令 deny。
 - **T-32 审查报告门禁**：新增 `review-check.mjs`；报告必须有 `## 独立验证`、实际命令和退出码；只有 RISK 的报告不能关闭 P1/安全项。
 - **T-33 审计水位**：新增 `audit-state.mjs` 与 `.ai-team/team/AUDIT.json`；riccon-ai 首次全量审计记录 152 个会话，下次从 `last_audited_*` 之后开始。
 - **审计结论**：riccon-ai 152 个会话、149 个子代理；0 嵌套子代理、0 完成态越权编辑；但独立验证 0/38、同工作区 Maven 重叠 224 对、权限拒绝 131 次（81 次复合 shell）、engineer 成功 `git add -A` 2 次。报告见 `.ai-team/team/TEAM-USAGE-AUDIT-2026-11-06.md`。
@@ -629,7 +629,9 @@ installed + OpenCode:      203/203
 audit-team-consistency:    264 checks, 0 failed
 ```
 
-### 5.24 Shell-first 权限（1.4.2）
+### 5.24 Shell-first 权限（1.4.2，历史）
+
+> 1.5.0 已由 §5.25 的 Shell-first strict 取代；以下保留当时边界。
 
 - 10 个角色 shell 默认改为 `allow`；移除 `;`/`&&`/`||`/`2>&1` 复合命令 deny。
 - 最近 riccon-ai 会话统计：125 次 shell 拒绝中 60 次为复合命令、26 次为 `Get-ChildItem`；两类在 1.4.2 后不再被拒。
@@ -652,6 +654,28 @@ source verify:             201/201
 installed verify:          193/193
 installed + OpenCode:      203/203
 audit-team-consistency:    250 checks, 0 failed
+audit-git-permissions:     10 agents, 0 failed
+```
+
+### 5.25 Shell-first strict（1.5.0）
+
+- 10 个角色统一为：`shell * -> allow` + 41 条破坏性 `deny`，`ask = 0`。
+- 移除：只读角色 Git 边界、`git add -A` 保护、发布/部署边界、`.env`/`.ssh`/`.aws` shell 读取拦截、remote/restore/worktree 等 `ask`。
+- 保留：reset/clean/restore/checkout 丢弃、force push/mirror/delete、history rewrite、删除分支/tag/stash/worktree、`rm -rf`/`Remove-Item -Recurse`、prune/destroy/delete。
+- `permission-lint` 检查默认 allow、41 条破坏性 deny、非破坏性 allow、Shell-first 指南，共 687 项。
+- `audit-git-permissions` 检查每个角色只有 `* allow` + 破坏性命中，无其他 shell 规则。
+- `permission-doctor` 只对破坏性命令给出拒绝建议；commit/push/publish/.env 均为 allow。
+
+验证：
+
+```text
+permission-lint:           687 checks, 0 failed
+permission-lint --role chief: 78 checks, 0 failed
+doctor cases:              20/20
+source verify:             201/201
+installed verify:          193/193
+installed + OpenCode:      203/203
+audit-team-consistency:    183 checks, 0 failed
 audit-git-permissions:     10 agents, 0 failed
 ```
 
@@ -684,13 +708,13 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.4.2 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.5.0 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（250 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口、权限矩阵缺口、gateway 覆盖缺口）。
+- 一致性审计：通过（183 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口、权限矩阵缺口、gateway 覆盖缺口）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
 - 成长处置：通过（`GROWTH.md` 提案处置索引 23/23 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
-- Shell 权限：通过（1.4.2 Shell-first：10 个角色 shell 默认 allow；复合命令/管道不再误拒；破坏性/发布/密钥/只读角色 git 写操作仍 deny）。
-- 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验安全边界）。
+- Shell 权限：通过（1.5.0 Shell-first strict：10 个角色 `shell * allow` + 41 条破坏性 deny；commit/push/publish/`.env`/`git add -A` 不再拦截；ask=0）。
+- 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验破坏性边界）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。

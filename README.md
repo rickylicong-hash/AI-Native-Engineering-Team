@@ -420,11 +420,11 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
   --role chief --action script.growth-check --project .
 ```
 
-Shell-first 下普通命令可直接执行；网关仍用于结构化 build/test/scan/team scripts，动作由 `permissions.json.gateway` 授权。`git add/commit/push` 等写操作仍走角色直接权限（`ask`/`deny`）。新增网关动作先改矩阵，再改网关。
+Shell-first 下普通命令可直接执行；网关仍用于结构化 build/test/scan/team scripts，动作由 `permissions.json.gateway` 授权。`git add/commit/push` 不再由权限 `ask`/`deny` 拦截。新增网关动作先改矩阵，再改网关。
 
 #### 11. 为什么有未提交改动却没提交
 
-Chief 是只读角色，**不能执行 `git add`/`git commit`**。如果它尝试提交，会被权限拒绝；正确动作是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队现在用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。
+Chief 在流程上**不执行 `git add`/`git commit`**。Shell-first strict 后权限不再拒绝，但正确动作仍是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
@@ -438,17 +438,18 @@ DevOps 提交后运行 `--mark` 记录 `state/CHECKPOINT.json`。
 
 - **审查者只读**：`code-reviewer`、`security-auditor` 只能写自己的报告目录，不能改代码。
 - **角色写权限隔离**：PM 只写产品，UX 只写设计，工程师只写代码/单元测试，QA 只写测试，DevOps 只写交付配置。
-- **Shell-first**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1` 和多行命令。限制从“命令白名单”转为“破坏性/发布/密钥 deny + brief ownership + diff 审查 + checkpoint + 会话审计”。
-- **危险命令阻断**：`git reset --hard`、`git clean`、`rm -rf`、`terraform destroy`、`kubectl delete` 等仍默认 deny；`git commit`、`git push`、发布、`kubectl apply`、`terraform apply` 等仍按角色 `ask`/`deny`；`git add -A`/`git add .` 仍 deny。
-- **密钥保护**：`.env`、密钥、`.ssh`、`.aws`、`.npmrc` 等通过 `read` 默认 deny；shell 侧额外拦截常见 `Get-Content/cat/type .env`，但不替代 OS ACL。
-- **生产发布需批准**：L3 不可逆操作必须用户明确同意。
+- **Shell-first strict**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`。
+- **唯一权限边界**：只有破坏性命令 deny：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
+- **不再由权限拦截**：commit/push、publish/deploy、`.env`/密钥、`git add -A` 都不是权限拒绝项；由 brief、ownership、review、checkpoint、会话审计约束。
+- **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有 shell 权限强制。
+- **生产发布需批准**：L3 不可逆操作必须用户明确同意；这是流程要求，不是权限 `ask`。
 - **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成。
-- **Chief 诊断边界**：版本检查、只读 git、`Get-ChildItem`、`Select-Object` 等可直接运行；但 Chief 仍不亲自构建/测试/安装/部署，这些交给 engineer/QA/DevOps；`git add`/`commit`/`push`/`tag` 仍 deny。
-- **Architect/Security 诊断边界**：可做只读检查、grep 和扫描；不得改代码、不得 staging/commit/push；发布/部署仍按角色 deny/ask。
+- **Chief 诊断边界**：版本检查、git、`Get-ChildItem`、构建命令都可直接运行；但流程上仍不亲自构建/测试/安装/部署，交给 engineer/QA/DevOps。
+- **Architect/Security 诊断边界**：可做只读检查、grep 和扫描；不得改代码、不得提交；这是流程约定。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
-- **Git 权限**：只读角色在 shell 中同样不能 `git add`/`commit`/`push`/`tag`；Engineer/DevOps/Writer 的 commit/push/tag 默认 `ask`，QA 为 `deny`（测试产物由 DevOps 提交）；force push/mirror、branch delete、history rewrite 默认 deny。矩阵见 [docs/GIT-POLICY.md](docs/GIT-POLICY.md)，审计：`node scripts/audit-git-permissions.mjs`、`node scripts/audit-team-consistency.mjs`。
-- **发布/部署权限**：`npm publish`、`docker push`、`kubectl apply`、`helm upgrade`、`terraform apply` 只允许 DevOps（`ask`）；Engineer/QA/Writer 为 `deny`。
-- **Checkpoint 提交**：Chief 不执行 `git add`/`commit`；到期时派 DevOps。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark` 更新 `state/CHECKPOINT.json`。
+- **Git 权限**：只保留破坏性 git 命令 deny；commit/push/tag/branch 普通操作 allow。审计：`node scripts/audit-git-permissions.mjs`、`node scripts/audit-team-consistency.mjs`。
+- **发布/部署权限**：不再由 shell 权限拦截；流程上仍建议只由 DevOps 执行，并由用户批准生产发布。
+- **Checkpoint 提交**：流程上 Chief 不执行 `git add`/`commit`，到期时派 DevOps；权限不再强制。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark` 更新 `state/CHECKPOINT.json`。
 
 ---
 

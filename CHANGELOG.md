@@ -3,6 +3,31 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.5.0] - 2026-11-06
+
+### Changed
+
+- **Shell-first strict**: all 10 roles now have exactly one `shell * -> allow` plus 41 destructive-command `deny` rules. `ask = 0`.
+- Removed all non-destructive shell restrictions: read-only role Git guards, `git add -A`/`git add .`, publish/deploy deny/ask, `.env`/`.ssh`/`.aws` shell reads, remote/restore/worktree `ask`.
+- Only destructive commands remain denied: reset/clean/restore/checkout discard, force push/mirror/delete, history rewrite, branch/tag/stash/worktree deletion, `rm -rf`/`Remove-Item -Recurse`, prune/destroy/delete.
+- `permission-lint` now checks default allow, 41 destructive denies, non-destructive allow, and the strict guidance block; 687 checks.
+- `audit-git-permissions` now enforces “no non-destructive shell restriction” per agent.
+- `permission-doctor` only recommends against widening destructive-command denies.
+
+### Risk
+
+- Shell can now commit/push/publish and read `.env`/keys. Role boundaries are process-only and no longer permission-enforced. Use OS ACL/container isolation if hard boundaries are required.
+
+### Verified
+
+- `node scripts/verify.mjs` → 201/201.
+- installed verify → 193/193; installed + OpenCode → 203/203.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 687 checks, 0 failed; `--role chief` → 78 checks, 0 failed.
+- `permission-doctor` matrix → 20/20 cases (commit/push/publish/.env/add -A allow; destructive deny).
+- `sourceHash === installedHash` (`8a1e0dc3...`), version `1.5.0`.
+
 ## [1.4.2] - 2026-11-06
 
 ### Changed

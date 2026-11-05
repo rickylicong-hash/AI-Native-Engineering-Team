@@ -85,373 +85,7 @@ permissions:
   - action: edit
     resource: "*.env.*"
     effect: deny
-  - action: shell
-    resource: "*"
-    effect: allow
-  - action: shell
-    resource: "git status *"
-    effect: allow
-  - action: shell
-    resource: "git diff *"
-    effect: allow
-  - action: shell
-    resource: "git log *"
-    effect: allow
-  - action: shell
-    resource: "git show *"
-    effect: allow
-  - action: shell
-    resource: "git grep *"
-    effect: allow
-  - action: shell
-    resource: "git ls-files *"
-    effect: allow
-  - action: shell
-    resource: "npm audit *"
-    effect: allow
-  - action: shell
-    resource: "npm ls *"
-    effect: allow
-  - action: shell
-    resource: "pnpm audit *"
-    effect: allow
-  - action: shell
-    resource: "pnpm list *"
-    effect: allow
-  - action: shell
-    resource: "yarn audit *"
-    effect: allow
-  - action: shell
-    resource: "pip-audit *"
-    effect: allow
-  - action: shell
-    resource: "uvx pip-audit *"
-    effect: allow
-  - action: shell
-    resource: "safety *"
-    effect: allow
-  - action: shell
-    resource: "pip list *"
-    effect: allow
-  - action: shell
-    resource: "cargo audit *"
-    effect: allow
-  - action: shell
-    resource: "cargo tree *"
-    effect: allow
-  - action: shell
-    resource: "govulncheck *"
-    effect: allow
-  - action: shell
-    resource: "go list *"
-    effect: allow
-  - action: shell
-    resource: "osv-scanner *"
-    effect: allow
-  - action: shell
-    resource: "trivy *"
-    effect: allow
-  - action: shell
-    resource: "grype *"
-    effect: allow
-  - action: shell
-    resource: "syft *"
-    effect: allow
-  - action: shell
-    resource: "semgrep *"
-    effect: allow
-  - action: shell
-    resource: "gitleaks *"
-    effect: allow
-  - action: shell
-    resource: "checkov *"
-    effect: allow
-  - action: shell
-    resource: "tfsec *"
-    effect: allow
-  - action: shell
-    resource: "bandit *"
-    effect: allow
-  - action: shell
-    resource: "dotnet list * package *"
-    effect: allow
-  - action: shell
-    resource: "docker scout *"
-    effect: allow
-  - action: shell
-    resource: "pwd"
-    effect: allow
-  - action: shell
-    resource: "ls *"
-    effect: allow
-  - action: shell
-    resource: "dir *"
-    effect: allow
-  - action: shell
-    resource: "Get-ChildItem *"
-    effect: allow
-  - action: shell
-    resource: "Select-String *"
-    effect: allow
-  - action: shell
-    resource: "Select-Object *"
-    effect: allow
-  - action: shell
-    resource: "Out-String *"
-    effect: allow
-  - action: shell
-    resource: "rg *"
-    effect: allow
-  - action: shell
-    resource: "node *review-check.mjs*"
-    effect: allow
-  - action: shell
-    resource: "Test-Path *"
-    effect: allow
-  # Read-only toolchain diagnostics. No build/test/install/deploy.
-  - action: shell
-    resource: "Write-Output *"
-    effect: allow
-  - action: shell
-    resource: "Write-Host *"
-    effect: allow
-  - action: shell
-    resource: "java -version *"
-    effect: allow
-  - action: shell
-    resource: "java --version *"
-    effect: allow
-  - action: shell
-    resource: "mvn -version *"
-    effect: allow
-  - action: shell
-    resource: "mvn --version *"
-    effect: allow
-  - action: shell
-    resource: "mvn -v *"
-    effect: allow
-  - action: shell
-    resource: "node -v *"
-    effect: allow
-  - action: shell
-    resource: "node --version *"
-    effect: allow
-  - action: shell
-    resource: "npm -v *"
-    effect: allow
-  - action: shell
-    resource: "npm --version *"
-    effect: allow
-  - action: shell
-    resource: "pnpm -v *"
-    effect: allow
-  - action: shell
-    resource: "pnpm --version *"
-    effect: allow
-  - action: shell
-    resource: "yarn -v *"
-    effect: allow
-  - action: shell
-    resource: "yarn --version *"
-    effect: allow
-  - action: shell
-    resource: "bun -v *"
-    effect: allow
-  - action: shell
-    resource: "bun --version *"
-    effect: allow
-  - action: shell
-    resource: "python --version *"
-    effect: allow
-  - action: shell
-    resource: "python3 --version *"
-    effect: allow
-  - action: shell
-    resource: "pip --version *"
-    effect: allow
-  - action: shell
-    resource: "go version *"
-    effect: allow
-  - action: shell
-    resource: "cargo --version *"
-    effect: allow
-  - action: shell
-    resource: "dotnet --version *"
-    effect: allow
-  - action: shell
-    resource: "docker --version *"
-    effect: allow
-  - action: shell
-    resource: "docker compose version *"
-    effect: allow
-  - action: shell
-    resource: "kubectl version --client *"
-    effect: allow
-  - action: shell
-    resource: "terraform version *"
-    effect: allow
-  - action: shell
-    resource: "git --version *"
-    effect: allow
-  - action: shell
-    resource: "Get-Command *"
-    effect: allow
-  - action: shell
-    resource: "where *"
-    effect: allow
-  - action: shell
-    resource: "Select-Object -ExpandProperty *"
-    effect: allow
   # 独立验证：只读构建/测试/扫描；禁止 deploy/release/install/publish/写远端。
-  - action: shell
-    resource: "git -C * status *"
-    effect: allow
-  - action: shell
-    resource: "git -C * diff *"
-    effect: allow
-  - action: shell
-    resource: "git -C * log *"
-    effect: allow
-  - action: shell
-    resource: "git -C * show *"
-    effect: allow
-  - action: shell
-    resource: "git -C * rev-parse *"
-    effect: allow
-  - action: shell
-    resource: "git -C * blame *"
-    effect: allow
-  - action: shell
-    resource: "git -C * ls-files *"
-    effect: allow
-  - action: shell
-    resource: "mvn *test*"
-    effect: allow
-  - action: shell
-    resource: "mvn *verify*"
-    effect: allow
-  - action: shell
-    resource: "mvn *package*"
-    effect: allow
-  - action: shell
-    resource: "mvn *dependency:tree*"
-    effect: allow
-  - action: shell
-    resource: "mvn *dependency-check*"
-    effect: allow
-  - action: shell
-    resource: "mvn *spotbugs*"
-    effect: allow
-  - action: shell
-    resource: "mvn *pmd*"
-    effect: allow
-  - action: shell
-    resource: "mvn *checkstyle*"
-    effect: allow
-  - action: shell
-    resource: "*mvnw* test*"
-    effect: allow
-  - action: shell
-    resource: "*mvnw* verify*"
-    effect: allow
-  - action: shell
-    resource: "*gradlew* test*"
-    effect: allow
-  - action: shell
-    resource: "*gradle* test*"
-    effect: allow
-  - action: shell
-    resource: "npm test *"
-    effect: allow
-  - action: shell
-    resource: "npm run test *"
-    effect: allow
-  - action: shell
-    resource: "npm run lint *"
-    effect: allow
-  - action: shell
-    resource: "npm run typecheck *"
-    effect: allow
-  - action: shell
-    resource: "npx tsc --noEmit *"
-    effect: allow
-  - action: shell
-    resource: "pnpm test *"
-    effect: allow
-  - action: shell
-    resource: "pnpm run test *"
-    effect: allow
-  - action: shell
-    resource: "yarn test *"
-    effect: allow
-  - action: shell
-    resource: "yarn run test *"
-    effect: allow
-  - action: shell
-    resource: "pytest *"
-    effect: allow
-  - action: shell
-    resource: "python -m pytest *"
-    effect: allow
-  - action: shell
-    resource: "python3 -m pytest *"
-    effect: allow
-  - action: shell
-    resource: "go test *"
-    effect: allow
-  - action: shell
-    resource: "go vet *"
-    effect: allow
-  - action: shell
-    resource: "cargo test *"
-    effect: allow
-  - action: shell
-    resource: "cargo clippy *"
-    effect: allow
-  - action: shell
-    resource: "dotnet test *"
-    effect: allow
-  - action: shell
-    resource: "dotnet build *"
-    effect: allow
-  - action: shell
-    resource: "mvn *cyclonedx*"
-    effect: allow
-  - action: shell
-    resource: "mvn *versions:display-dependency-updates*"
-    effect: allow
-  - action: shell
-    resource: "mvn *dependency:analyze*"
-    effect: allow
-  - action: shell
-    resource: "*gradlew* dependencies*"
-    effect: allow
-  - action: shell
-    resource: "*gradle* dependencies*"
-    effect: allow
-  - action: shell
-    resource: "git add -A"
-    effect: deny
-  - action: shell
-    resource: "git add -A *"
-    effect: deny
-  - action: shell
-    resource: "git add --all"
-    effect: deny
-  - action: shell
-    resource: "git add --all *"
-    effect: deny
-  - action: shell
-    resource: "git add ."
-    effect: deny
-  - action: shell
-    resource: "git add . *"
-    effect: deny
-
-  # T-35 team-shell gateway：只允许本角色的统一命令入口。
-  - action: shell
-    resource: "node *team-shell.mjs --role security-auditor *"
-    effect: allow
 
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
@@ -467,160 +101,144 @@ permissions:
     resource: "opencode.jsonc"
     effect: deny
 
-  # T-36 Shell-first：默认 allow；破坏性命令仍 deny，越权写入由 brief + diff + 审计约束。
+  # T-37 Shell-first strict：只有破坏性命令 deny；其余 shell 操作 allow。
   - action: shell
-    resource: "git reset --hard *"
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "git reset --hard*"
     effect: deny
   - action: shell
-    resource: "git clean *"
+    resource: "git clean*"
     effect: deny
   - action: shell
-    resource: "git push --force*"
+    resource: "git checkout --*"
     effect: deny
   - action: shell
-    resource: "git push -f*"
+    resource: "git checkout -f*"
     effect: deny
   - action: shell
-    resource: "git push --mirror *"
+    resource: "git restore*"
     effect: deny
   - action: shell
-    resource: "git push * +*"
+    resource: "git switch -f*"
     effect: deny
   - action: shell
-    resource: "git update-ref -d *"
+    resource: "git switch --discard-changes*"
     effect: deny
   - action: shell
-    resource: "git reflog expire *"
+    resource: "git reset --merge*"
+    effect: deny
+  - action: shell
+    resource: "git branch -D*"
+    effect: deny
+  - action: shell
+    resource: "git branch -d*"
+    effect: deny
+  - action: shell
+    resource: "git tag -d*"
+    effect: deny
+  - action: shell
+    resource: "git tag --delete*"
+    effect: deny
+  - action: shell
+    resource: "git stash clear*"
+    effect: deny
+  - action: shell
+    resource: "git stash drop*"
+    effect: deny
+  - action: shell
+    resource: "git update-ref -d*"
+    effect: deny
+  - action: shell
+    resource: "git reflog expire*"
     effect: deny
   - action: shell
     resource: "git gc --prune*"
     effect: deny
   - action: shell
-    resource: "git branch -D *"
+    resource: "git filter-branch*"
     effect: deny
   - action: shell
-    resource: "git branch -d *"
+    resource: "git filter-repo*"
     effect: deny
   - action: shell
-    resource: "git stash clear *"
+    resource: "git push --force*"
     effect: deny
   - action: shell
-    resource: "git filter-branch *"
+    resource: "git push * --force*"
     effect: deny
   - action: shell
-    resource: "git filter-repo *"
+    resource: "git push -f*"
     effect: deny
   - action: shell
-    resource: "rm -rf *"
+    resource: "git push * -f*"
     effect: deny
   - action: shell
-    resource: "Remove-Item * -Recurse *"
+    resource: "git push --mirror*"
+    effect: deny
+  - action: shell
+    resource: "git push * +*"
+    effect: deny
+  - action: shell
+    resource: "git push --delete*"
+    effect: deny
+  - action: shell
+    resource: "git push * --delete*"
+    effect: deny
+  - action: shell
+    resource: "git worktree remove*"
+    effect: deny
+  - action: shell
+    resource: "rm -rf*"
+    effect: deny
+  - action: shell
+    resource: "rm -r*"
+    effect: deny
+  - action: shell
+    resource: "del /s*"
+    effect: deny
+  - action: shell
+    resource: "del /q /s*"
+    effect: deny
+  - action: shell
+    resource: "rd /s*"
+    effect: deny
+  - action: shell
+    resource: "rd /q /s*"
+    effect: deny
+  - action: shell
+    resource: "Remove-Item * -Recurse*"
+    effect: deny
+  - action: shell
+    resource: "Remove-Item -Recurse*"
     effect: deny
   - action: shell
     resource: "docker system prune*"
     effect: deny
   - action: shell
+    resource: "docker volume prune*"
+    effect: deny
+  - action: shell
+    resource: "docker image prune*"
+    effect: deny
+  - action: shell
     resource: "terraform destroy*"
     effect: deny
   - action: shell
-    resource: "kubectl delete *"
+    resource: "kubectl delete*"
     effect: deny
 
-  # T-36 只读角色：shell 放开后仍禁止 staging/commit/push/tag。
-  - action: shell
-    resource: "git add"
-    effect: deny
-  - action: shell
-    resource: "git add *"
-    effect: deny
-  - action: shell
-    resource: "git commit"
-    effect: deny
-  - action: shell
-    resource: "git commit *"
-    effect: deny
-  - action: shell
-    resource: "git push"
-    effect: deny
-  - action: shell
-    resource: "git push *"
-    effect: deny
-  - action: shell
-    resource: "git tag"
-    effect: deny
-  - action: shell
-    resource: "git tag *"
-    effect: deny
-
-  # T-36 非 DevOps 角色不得发布/部署。
-  - action: shell
-    resource: "npm publish*"
-    effect: deny
-  - action: shell
-    resource: "pnpm publish*"
-    effect: deny
-  - action: shell
-    resource: "yarn publish*"
-    effect: deny
-  - action: shell
-    resource: "cargo publish*"
-    effect: deny
-  - action: shell
-    resource: "twine upload*"
-    effect: deny
-  - action: shell
-    resource: "docker push*"
-    effect: deny
-  - action: shell
-    resource: "kubectl apply*"
-    effect: deny
-  - action: shell
-    resource: "helm upgrade*"
-    effect: deny
-  - action: shell
-    resource: "terraform apply*"
-    effect: deny
-
-  # T-36 Shell-first：常见密钥读取仍 deny；不替代 OS ACL。
-  - action: shell
-    resource: "Get-Content *.env"
-    effect: deny
-  - action: shell
-    resource: "Get-Content *.env *"
-    effect: deny
-  - action: shell
-    resource: "cat *.env"
-    effect: deny
-  - action: shell
-    resource: "cat *.env *"
-    effect: deny
-  - action: shell
-    resource: "type *.env"
-    effect: deny
-  - action: shell
-    resource: "type *.env *"
-    effect: deny
-  - action: shell
-    resource: "Get-Content */.ssh/*"
-    effect: deny
-  - action: shell
-    resource: "cat */.ssh/*"
-    effect: deny
-  - action: shell
-    resource: "Get-Content */.aws/*"
-    effect: deny
-  - action: shell
-    resource: "cat */.aws/*"
-    effect: deny
 ---
 
-## 0. Shell 使用纪律（Shell-first）
+## 0. Shell 使用纪律（Shell-first strict）
 
-- shell 默认允许常用命令、管道和复合命令；优先把它用于构建、测试、运行、版本控制和批量检查。
-- 读单个文件优先用 `read`，列目录优先用 `glob`，搜内容优先用 `grep`；shell 不是唯一入口。
-- 不通过 shell 写入非本角色 owned 的路径，不读取 `.env`/密钥；ownership 仍按 brief 和 `permissions.json` 执行。
-- 破坏性命令、发布/部署仍被 deny；`git commit`/`git push` 仍为 ask；`git add -A`/`git add .` 仍被 deny。
-- 收到 `Permission denied` 时先看是否命中上述保护；不要反复原样重试。
+- shell 默认允许所有普通命令，包括管道、复合命令、`git commit`/`git push`、发布/部署和 `git add -A`。
+- 只有破坏性命令被 deny：reset/clean/restore/force push/history rewrite/删除分支或 worktree/`rm -rf`/`Remove-Item -Recurse`/prune/destroy/delete。
+- 读文件优先 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求。
+- 不通过 shell 写入非本角色 owned 的路径；ownership 由 brief、diff、review、checkpoint 和会话审计约束。
+- `.env`/密钥读取不再由 shell 权限拦截；仍禁止把密钥写入聊天、日志或提交。
+- 收到 `Permission denied` 只可能是破坏性命令；不要为了绕过它扩大 allow。
 
 # 安全审计员（Security Auditor）
 

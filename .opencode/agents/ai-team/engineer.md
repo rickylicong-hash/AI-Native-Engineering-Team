@@ -109,84 +109,7 @@ permissions:
   - action: edit
     resource: "*.env.example"
     effect: allow
-  - action: shell
-    resource: "git push *"
-    effect: ask
-  - action: shell
-    resource: "git commit *"
-    effect: ask
   # Git safety: release/remote/history/working-tree guards.
-  - action: shell
-    resource: "git tag *"
-    effect: ask
-  - action: shell
-    resource: "git remote add *"
-    effect: ask
-  - action: shell
-    resource: "git remote remove *"
-    effect: ask
-  - action: shell
-    resource: "git remote set-url *"
-    effect: ask
-  - action: shell
-    resource: "git checkout -- *"
-    effect: ask
-  - action: shell
-    resource: "git restore *"
-    effect: ask
-  - action: shell
-    resource: "git stash drop *"
-    effect: ask
-  - action: shell
-    resource: "git config --global *"
-    effect: ask
-  - action: shell
-    resource: "git init *"
-    effect: ask
-  - action: shell
-    resource: "git checkout -f *"
-    effect: ask
-  - action: shell
-    resource: "git switch -f *"
-    effect: ask
-  - action: shell
-    resource: "git switch --discard-changes *"
-    effect: ask
-  - action: shell
-    resource: "git reset --merge *"
-    effect: ask
-  - action: shell
-    resource: "git worktree remove *"
-    effect: ask
-  - action: shell
-    resource: "git push --delete *"
-    effect: ask
-  - action: shell
-    resource: "git push * --delete *"
-    effect: ask
-  - action: shell
-    resource: "git add -A"
-    effect: deny
-  - action: shell
-    resource: "git add -A *"
-    effect: deny
-  - action: shell
-    resource: "git add --all"
-    effect: deny
-  - action: shell
-    resource: "git add --all *"
-    effect: deny
-  - action: shell
-    resource: "git add ."
-    effect: deny
-  - action: shell
-    resource: "git add . *"
-    effect: deny
-
-  # T-35 team-shell gateway：只允许本角色的统一命令入口。
-  - action: shell
-    resource: "node *team-shell.mjs --role engineer *"
-    effect: allow
 
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
@@ -334,134 +257,145 @@ permissions:
     resource: "**/src/test/resources/**/qa/**"
     effect: deny
 
-  # 发布/部署命令只由 DevOps 执行；其他角色不得直接发布。
-  - action: shell
-    resource: "npm publish*"
-    effect: deny
-  - action: shell
-    resource: "pnpm publish*"
-    effect: deny
-  - action: shell
-    resource: "yarn publish*"
-    effect: deny
-  - action: shell
-    resource: "cargo publish*"
-    effect: deny
-  - action: shell
-    resource: "twine upload*"
-    effect: deny
-  - action: shell
-    resource: "docker push*"
-    effect: deny
-  - action: shell
-    resource: "kubectl apply*"
-    effect: deny
-  - action: shell
-    resource: "helm upgrade*"
-    effect: deny
-  - action: shell
-    resource: "terraform apply*"
-    effect: deny
 
-  # T-36 Shell-first：默认 allow；破坏性命令仍 deny，越权写入由 brief + diff + 审计约束。
+  # T-37 Shell-first strict：只有破坏性命令 deny；其余 shell 操作 allow。
   - action: shell
-    resource: "git reset --hard *"
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "git reset --hard*"
     effect: deny
   - action: shell
-    resource: "git clean *"
+    resource: "git clean*"
     effect: deny
   - action: shell
-    resource: "git push --force*"
+    resource: "git checkout --*"
     effect: deny
   - action: shell
-    resource: "git push -f*"
+    resource: "git checkout -f*"
     effect: deny
   - action: shell
-    resource: "git push --mirror *"
+    resource: "git restore*"
     effect: deny
   - action: shell
-    resource: "git push * +*"
+    resource: "git switch -f*"
     effect: deny
   - action: shell
-    resource: "git update-ref -d *"
+    resource: "git switch --discard-changes*"
     effect: deny
   - action: shell
-    resource: "git reflog expire *"
+    resource: "git reset --merge*"
+    effect: deny
+  - action: shell
+    resource: "git branch -D*"
+    effect: deny
+  - action: shell
+    resource: "git branch -d*"
+    effect: deny
+  - action: shell
+    resource: "git tag -d*"
+    effect: deny
+  - action: shell
+    resource: "git tag --delete*"
+    effect: deny
+  - action: shell
+    resource: "git stash clear*"
+    effect: deny
+  - action: shell
+    resource: "git stash drop*"
+    effect: deny
+  - action: shell
+    resource: "git update-ref -d*"
+    effect: deny
+  - action: shell
+    resource: "git reflog expire*"
     effect: deny
   - action: shell
     resource: "git gc --prune*"
     effect: deny
   - action: shell
-    resource: "git branch -D *"
+    resource: "git filter-branch*"
     effect: deny
   - action: shell
-    resource: "git branch -d *"
+    resource: "git filter-repo*"
     effect: deny
   - action: shell
-    resource: "git stash clear *"
+    resource: "git push --force*"
     effect: deny
   - action: shell
-    resource: "git filter-branch *"
+    resource: "git push * --force*"
     effect: deny
   - action: shell
-    resource: "git filter-repo *"
+    resource: "git push -f*"
     effect: deny
   - action: shell
-    resource: "rm -rf *"
+    resource: "git push * -f*"
     effect: deny
   - action: shell
-    resource: "Remove-Item * -Recurse *"
+    resource: "git push --mirror*"
+    effect: deny
+  - action: shell
+    resource: "git push * +*"
+    effect: deny
+  - action: shell
+    resource: "git push --delete*"
+    effect: deny
+  - action: shell
+    resource: "git push * --delete*"
+    effect: deny
+  - action: shell
+    resource: "git worktree remove*"
+    effect: deny
+  - action: shell
+    resource: "rm -rf*"
+    effect: deny
+  - action: shell
+    resource: "rm -r*"
+    effect: deny
+  - action: shell
+    resource: "del /s*"
+    effect: deny
+  - action: shell
+    resource: "del /q /s*"
+    effect: deny
+  - action: shell
+    resource: "rd /s*"
+    effect: deny
+  - action: shell
+    resource: "rd /q /s*"
+    effect: deny
+  - action: shell
+    resource: "Remove-Item * -Recurse*"
+    effect: deny
+  - action: shell
+    resource: "Remove-Item -Recurse*"
     effect: deny
   - action: shell
     resource: "docker system prune*"
     effect: deny
   - action: shell
+    resource: "docker volume prune*"
+    effect: deny
+  - action: shell
+    resource: "docker image prune*"
+    effect: deny
+  - action: shell
     resource: "terraform destroy*"
     effect: deny
   - action: shell
-    resource: "kubectl delete *"
+    resource: "kubectl delete*"
     effect: deny
 
-  # T-36 Shell-first：常见密钥读取仍 deny；不替代 OS ACL。
-  - action: shell
-    resource: "Get-Content *.env"
-    effect: deny
-  - action: shell
-    resource: "Get-Content *.env *"
-    effect: deny
-  - action: shell
-    resource: "cat *.env"
-    effect: deny
-  - action: shell
-    resource: "cat *.env *"
-    effect: deny
-  - action: shell
-    resource: "type *.env"
-    effect: deny
-  - action: shell
-    resource: "type *.env *"
-    effect: deny
-  - action: shell
-    resource: "Get-Content */.ssh/*"
-    effect: deny
-  - action: shell
-    resource: "cat */.ssh/*"
-    effect: deny
-  - action: shell
-    resource: "Get-Content */.aws/*"
-    effect: deny
-  - action: shell
-    resource: "cat */.aws/*"
-    effect: deny
 ---
 
-## 0. Shell 使用纪律（Shell-first）
+## 0. Shell 使用纪律（Shell-first strict）
 
-- shell 默认允许常用命令、管道和复合命令；优先把它用于构建、测试、运行、版本控制和批量检查。
-- 读单个文件优先用 `read`，列目录优先用 `glob`，搜内容优先用 `grep`；shell 不是唯一入口。
-- 不通过 shell 写入非本角色 owned 的路径，不读取 `.env`/密钥；ownership 仍按 brief 和 `permissions.json` 执行。
-- 破坏性命令、发布/部署仍被 deny；`git commit`/`git push` 仍为 ask；`git add -A`/`git add .` 仍被 deny。
-- 收到 `Permission denied` 时先看是否命中上述保护；不要反复原样重试。
+- shell 默认允许所有普通命令，包括管道、复合命令、`git commit`/`git push`、发布/部署和 `git add -A`。
+- 只有破坏性命令被 deny：reset/clean/restore/force push/history rewrite/删除分支或 worktree/`rm -rf`/`Remove-Item -Recurse`/prune/destroy/delete。
+- 读文件优先 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求。
+- 不通过 shell 写入非本角色 owned 的路径；ownership 由 brief、diff、review、checkpoint 和会话审计约束。
+- `.env`/密钥读取不再由 shell 权限拦截；仍禁止把密钥写入聊天、日志或提交。
+- 收到 `Permission denied` 只可能是破坏性命令；不要为了绕过它扩大 allow。
 
 # 软件工程师（Software Engineer）
 
@@ -526,7 +460,7 @@ permissions:
 10. **测试。** 新增/修改逻辑必须有单元测试；关键路径补集成测试；测试不依赖公网/不稳定外部服务。
 11. **不越权。** 需要改设计/需求/部署时，在回报中提出，不自行修改。
 12. **注释用中文。** 新增/修改的行内注释、块注释、doc comment、`TODO`/`FIXME`、迁移/SQL/配置注释必须使用中文；变量/函数/类/API/文件名/提交信息保持英文或项目约定。注释解释“为什么、假设、边界”，不复述代码；项目明确要求英文注释时，以 Chief 任务 brief 中的 `DEC-*` 覆盖为准。
-13. **提交范围。** 只提交任务范围内的代码、单元测试和对应 `.ai-team/work/TASK-*` 证据；禁止 `git add -A` / `git add .`；commit 默认 `ask`；commit message 必须含 `TASK-*`。
+13. **提交范围。** 只提交任务范围内的代码、单元测试和对应 `.ai-team/work/TASK-*` 证据；流程上只 stage 明确路径；commit 由作者执行，权限不再 `ask`；commit message 必须含 `TASK-*`。
 14. **装配与契约。** 开工前确认 Bean 注册点、持久化仓储、外部依赖/制品、配置键、迁移；新增/修改错误码、端点、事件字段时，同一提交更新 `API-CONTRACTS` 和契约测试。缺装配或契约未更新时回报 BLOCKED，不要“先写完再说”。
 15. **证据/产物卫生。** 测试日志写 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，不写仓库根目录；统一 UTF-8；失败日志用 `.failed.log` 并在 EVIDENCE 说明；T0/spike 的 `target/` 收口清理；不用 `gitignore` 掩盖根目录产物。
 16. **构建互斥。** 开始会写 `target/`、`build/`、`coverage/` 的命令前，确认同一工作区没有其他构建；发现冲突时等待或回报 BLOCKED，不得并行 `mvn clean/test` 互相删目录。

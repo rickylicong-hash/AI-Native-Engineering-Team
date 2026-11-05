@@ -171,18 +171,17 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 | DevOps | `deploy/**`、`ops/**`、`infra/**`、`terraform/**`、`k8s/**`、`helm/**`、`docker/**`、`.github/**`、CI/Docker/Makefile、`.ai-team/release/**`、`.ai-team/work/TASK-GIT-*EVIDENCE.md` | 业务代码、需求/设计/测试 |
 | Writer | `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.ai-team/docs/**` | 源码、需求/设计/测试/部署 |
 
-权限模型采用“基础 allow + 显式 deny/allow 覆盖”；高风险跨角色路径（QA E2E、发布、状态、密钥）必须显式 deny。项目级 `.opencode/opencode.jsonc` 只能收紧本角色边界，不能放宽到其他角色的 owned paths。
+`edit`/`read` 仍采用“基础 allow + 显式 deny/allow 覆盖”；但 shell 只保留破坏性命令 deny，跨角色写路径不再由 shell 权限强制。项目级 `.opencode/opencode.jsonc` 可以新增破坏性 deny，但不能把 shell 重新收紧成 allowlist。
 
 ### 5.2 Shell
 
-- 所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1` 和多行命令；
-- 读单个文件优先用 `read`，列目录优先用 `glob`，搜内容优先用 `grep`；shell 用于构建/测试/运行/版本控制/批量检查；
-- 破坏性命令（`git reset --hard`、`git clean`、`rm -rf` 等）、发布/部署、`.env`/密钥常见读取仍 `deny`；
-- 只读角色（Chief/PM/UX/Architect/Reviewer/Security）不得通过 shell 执行 `git add`/`commit`/`push`/`tag`；
-- `git add -A`/`git add .` 仍 `deny`；`git commit`/`git push` 仍 `ask`（Engineer/DevOps/Writer）；
-- 权限矩阵：`permissions.json` 是 required/forbidden 单一事实源；`/ai` 与 `/ai-resume` 先跑 `permission-lint --role`；拒绝用 `permission-doctor` 定位；
-- 统一网关：读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs --role <role> --action <action>`；写操作/commit 仍按角色权限直接执行；
-- 所有角色：`.env`/密钥读取 `deny`；shell 侧只做常见命令模式防护，不替代 OS ACL；外部目录由人工/OS 约束。
+- **Shell-first strict（1.5.0）**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`；
+- 只有破坏性命令 `deny`：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
+- `.env`/密钥读取、commit/push、publish/deploy **不再由 shell 权限拦截**；由 brief、ownership、review、checkpoint 和会话审计约束；
+- 只读角色不再有 shell 强制边界；Chief/PM/UX/Architect/Reviewer/Security 不提交是**流程约定**，不是权限保证；
+- 权限矩阵：`permissions.json` 只保留破坏性 `forbidden`；`/ai` 与 `/ai-resume` 先跑 `permission-lint --role`；拒绝用 `permission-doctor` 定位；
+- 统一网关：读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs --role <role> --action <action>`；但普通 shell 不再要求走网关；
+- 残余风险：shell 可以写文件、提交、发布、读取密钥；需要强隔离时用 OS ACL 或容器只读挂载。
 
 ### 5.3 生产发布
 

@@ -95,23 +95,23 @@ Permission denied: shell
 
 **原因（1.4.1 及以前）**：只读角色 shell 默认 deny；复合命令、管道和 `2>&1` 会被直接拒绝。1.4.2 起改为 Shell-first：所有角色 shell 默认 allow，复合命令不再默认拒绝。
 
-**1.4.2 仍会被拒的常见情况**：
+**1.5.0 仍会被拒的只有破坏性命令**：
 
-- `git add -A` / `git add .`；
-- `git reset --hard`、`git clean`、`rm -rf`、`Remove-Item -Recurse`；
-- `npm publish`、`docker push`、`kubectl apply`、`helm upgrade`、`terraform apply`（非 DevOps）；
-- `Get-Content/cat/type .env` 等常见密钥读取；
-- 只读角色执行 `git add`/`commit`/`push`/`tag`。
+- `git reset --hard*`、`git clean*`、`git restore*`、`git checkout --*`、`git checkout -f*`；
+- force push/mirror/delete、history rewrite、删除分支/tag/stash/worktree；
+- `rm -rf*`、`Remove-Item -Recurse*`、`docker * prune*`、`terraform destroy*`、`kubectl delete*`。
+
+commit/push、publish/deploy、`.env`/密钥、`git add -A` 都**不再**被权限拒绝。
 
 **处理**：
 
-1. 先确认版本 ≥ `1.4.2`：
+1. 先确认版本 ≥ `1.5.0`：
 
 ```bash
 node scripts/version.mjs --update
 ```
 
-2. 用 `permission-doctor` 看最终匹配规则；不要为了绕过安全边界扩大 `node *`/`git *`：
+2. 用 `permission-doctor` 看最终匹配规则；不要为了绕过破坏性 deny 扩大 `node *`/`git *`：
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.mjs" `
@@ -124,17 +124,17 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.m
 cmd /c "java -version 2>&1"
 ```
 
-**项目外目录**：`read`/`edit` 仍受 `external_directory` 约束；shell 不受该规则保护，Shell-first 下由 OS 权限和人工审查约束。不要用 shell 读取 `.env`/密钥。
+**项目外目录**：`read`/`edit` 仍受 `external_directory` 约束；shell 不受该规则保护，Shell-first 下由 OS 权限和人工审查约束。
 
-### 3.3 `git add 权限受限` / 有未提交改动但没人提交
+### 3.3 有未提交改动但没人提交
 
 **现象**：
 
-- HANDOFF 写着 “Wave X 未提交（git add 权限受限）”；
+- HANDOFF 写着 “Wave X 未提交”；
 - 工作区有几十个文件，但一直没人提交；
-- `git add` 被拒绝。
+- 旧会话可能记录 “git add 权限受限”（1.4.x 及以前）。
 
-**原因**：Chief 是只读角色，**不能执行 `git add`/`git commit`**。正确动作不是绕过，也不是把未提交状态记进 HANDOFF 就继续，而是调度 `ai-team/devops-engineer` 做 checkpoint。旧会话常见错误是 Chief 自己尝试 `git add`，被拒后放弃。
+**原因**：1.5.0 起 `git add`/`git commit` 权限已 allow。正确动作仍是流程上由 DevOps 做 checkpoint；Chief 不应自己提交，但不再是权限拒绝。
 
 **处理**：
 
@@ -142,7 +142,7 @@ cmd /c "java -version 2>&1"
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-- 到期 → 建 `TASK-GIT-*`，brief 列出明确路径，派 DevOps 提交；**brief 里不得写 `git add -A`**。
+- 到期 → 建 `TASK-GIT-*`，brief 列出明确路径，派 DevOps 提交；流程建议不要写 `git add -A`。
 - 只提交精选 `.ai-team` 路径；不提交 `work/**` 原始日志、截图、tmp、未脱敏安全报告。
 - 提交后 DevOps 运行 `checkpoint-check --mark`；若 HEAD 含原始日志/密钥/构建产物，`--mark` 会拒绝，先修正再标记。
 - 用户明确要求暂不提交 → 在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
@@ -171,35 +171,35 @@ Shell mvn -v                                                  Permission denied
 - `git -C ...`、`Get-Content`、`mvn -v` 等旧版未匹配；
 - 模型被拒后反复换写法重试，放大成“大量 Permission denied”。
 
-**1.4.2 Shell-first 处理**：
+**1.5.0 Shell-first strict 处理**：
 
 - 所有角色 shell 默认 allow；以上命令现在都应直接通过；
-- 只有破坏性命令、发布/部署、`.env`/密钥、只读角色 `git add/commit/push/tag`、`git add -A`/`git add .` 仍会被拒；
-- 仍被拒时用 `permission-doctor` 看最终规则，不要为了绕过安全边界扩大 `node *`/`git *`；
+- 只有破坏性命令仍会被拒；commit/push/publish/`.env`/`git add -A` 不再由权限拦截；
+- 仍被拒时用 `permission-doctor` 看最终规则，不要为了绕过破坏性 deny 扩大 `node *`/`git *`；
 - `read`/`glob`/`grep` 仍是读文件的首选，但不是权限强制要求。
 
 ## 4. 一直弹权限确认
 
-原因：规则没匹配到，默认 `ask`。
+1.5.0 起 shell 不再配置 `ask`。如果仍弹确认，通常是旧会话仍在用旧配置。
 
 处理：
 
 1. 看提示里的 action/resource；
-2. Shell-first 下 shell 默认 allow；如果仍弹确认，通常是 `git commit`/`git push`/发布/部署等 `ask` 规则，确认即可；
-3. 如果是 `deny`，先看是否命中破坏性命令、只读角色 `git add/commit/push/tag`、`git add -A` 或密钥读取；不要为了消除提示而扩大 `node *`/`git *`；
-4. 检查是否有前面的 deny 覆盖了后面的 allow（最后匹配生效，allow 要放后面）；
+2. 确认已安装 1.5.0：`node scripts/version.mjs --check`；
+3. 重开 `/ai-resume` 或新会话，让 OpenCode 重新加载 agent 配置；
+4. 如果新会话仍弹 `ask`，用 `permission-doctor` 检查是否有旧的 `ask` 规则；
 5. 项目级可覆盖：项目 `.opencode/opencode.jsonc` 的 `agents`。
 
-## 5. 读取 `.env` 被拒
+## 5. 读取 `.env` 被拒（read 工具）
 
-这是**故意设计**。团队不允许读密钥。
+`read` 工具仍对 `.env`、密钥、`.ssh`、`.aws` 默认 deny。这是工具层保护，不是 shell 权限。
 
-处理：
+1.5.0 起 shell 读取 `.env` 不再被权限拦截，但仍不建议：
 
 - 读 `.env.example` / `.env.sample` / `.env.template`；
 - 需要新变量：改 `.env.example` 并说明；
 - 需要真实密钥：由用户在本地/Secret Manager 配置，不交给 agent；
-- 不要把密钥贴进聊天。
+- 不要把密钥贴进聊天、日志或提交。
 
 ## 6. 技能没有出现在可用列表
 

@@ -281,16 +281,15 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" -
 - 归档后主文件保留索引与归档导航，不删除历史；
 - 复盘、交接、门禁前运行 `growth-check`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
 
-### 3.5 Shell 与 brief 预检（1.3.1；1.4.2 Shell-first）
+### 3.5 Shell 与 brief 预检（1.3.1；1.5.0 Shell-first strict）
 
 **Shell 策略：**
 
-- 所有角色 shell 默认允许常用命令、管道、`;`、`&&`、`||`、`2>&1` 和多行命令；
-- 读单个文件优先用 `read`，列目录优先用 `glob`，搜内容优先用 `grep`；shell 用于构建、测试、运行、版本控制和批量检查；
-- 破坏性命令（`git reset --hard`、`git clean`、`rm -rf` 等）、发布/部署、`.env`/密钥常见读取仍 deny；
-- `git commit`/`git push` 仍为 ask；`git add -A`/`git add .` 仍 deny；
-- 只读角色（Chief/PM/UX/Architect/Reviewer/Security）不得通过 shell 执行 `git add`/`commit`/`push`/`tag`；
-- 被 `permission.rejected` 时先看是否命中上述保护，不要靠换写法绕过。
+- 所有角色 shell 默认允许所有普通命令，包括管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`git push`、发布/部署和 `git add -A`；
+- 读单个文件优先用 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求；
+- 只有破坏性命令 deny：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
+- `.env`/密钥、commit/push、publish/deploy 不再由 shell 权限拦截；仍按 brief 和流程约束；
+- 收到 `Permission denied` 只可能是破坏性命令；不要为了绕过它扩大 allow。
 
 **Brief 预检：**
 
@@ -351,10 +350,10 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.m
 
 规则：
 
-- 新脚本/命令默认已由 shell-first 覆盖；只有破坏性/发布/密钥/只读角色写操作需要 deny；
+- 新脚本/命令默认已由 shell-first 覆盖；只有破坏性命令需要 deny；
 - `permission-lint` 必须 PASS，才允许安装或开始 `/ai` / `/ai-resume`；
-- `ask` 视为可用（需要确认），`deny`/`none` 才是安全边界；
-- 不要为了绕过安全 deny 扩大 `node *`/`git *`；复合命令不再默认拒绝。
+- shell 不再使用 `ask`；出现 `ask` 说明配置过期；
+- 不要为了绕过破坏性 deny 扩大 `node *`/`git *`；复合命令允许。
 
 ### 3.8 统一命令网关（1.4.0）
 
@@ -382,7 +381,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 - 角色只能使用 `permissions.json` 的 `gateway` 动作；
 - 不支持任意脚本名/任意 shell 参数；测试类、模块、revision 有格式校验；
-- `git add`/`commit`/`push` 等写操作仍按角色权限直接执行（`ask`），网关不代理；
+- `git add`/`commit`/`push` 等写操作不再由 shell 权限拦截；仍按 brief、ownership 和 checkpoint 流程执行；
 - 每次调用写 `.ai-team/work/team-shell-logs/TEAM-SHELL.log`；
 - 新增动作：先改 `permissions.json` 的 `gateway`，再改 `team-shell.mjs`，然后 `permission-lint`；
 - 直接的 `node *script.mjs*` allow 为兼容保留；新命令/新脚本一律走 gateway，后续版本再移除直接 allow。

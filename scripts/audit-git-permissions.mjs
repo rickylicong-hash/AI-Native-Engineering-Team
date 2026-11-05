@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 /**
- * Audit git shell permissions for every ai-team agent.
+ * Audit shell permissions for every ai-team agent.
+ *
+ * Policy (1.5.0 Shell-first strict):
+ *   - shell default is allow;
+ *   - only destructive commands are denied;
+ *   - no read-only role, publish, secret, bulk-add, or ask rules remain.
  *
  * Usage:
  *   node scripts/audit-git-permissions.mjs
  *   node scripts/audit-git-permissions.mjs --json
  *
- * Exit code 0 = all expected rules present; 1 = gaps found.
+ * Exit code 0 = policy matches; 1 = gaps found.
  */
 
 import fs from "node:fs";
@@ -17,89 +22,48 @@ const args = process.argv.slice(2);
 const json = args.includes("--json");
 const agentsDir = path.resolve(".opencode", "agents", "ai-team");
 
-const readOnlyRoles = new Set([
-  "chief.md",
-  "product-manager.md",
-  "ux-designer.md",
-  "system-architect.md",
-  "code-reviewer.md",
-  "security-auditor.md",
-]);
-
-const writeRoles = new Set([
-  "engineer.md",
-  "qa-engineer.md",
-  "devops-engineer.md",
-  "technical-writer.md",
-]);
-
-// QA writes tests and reports but does not commit; DevOps commits its output.
-const nonCommittingWriteRoles = new Set(["qa-engineer.md"]);
-
-const nonCommitRules = [
-  ["git commit *", "deny"],
-  ["git push *", "deny"],
-  ["git tag *", "deny"],
-];
-
-const commonWriteRules = [
-  ["git commit *", "ask"],
-  ["git push *", "ask"],
-  ["git tag *", "ask"],
-  ["git push --force*", "deny"],
-  ["git push -f*", "deny"],
-  ["git reset --hard *", "deny"],
-  ["git clean *", "deny"],
-  ["git branch -D *", "deny"],
-  ["git branch -d *", "deny"],
-  ["git remote add *", "ask"],
-  ["git remote remove *", "ask"],
-  ["git remote set-url *", "ask"],
-  ["git checkout -- *", "ask"],
-  ["git restore *", "ask"],
-  ["git stash clear *", "deny"],
-  ["git stash drop *", "ask"],
-  ["git update-ref -d *", "deny"],
-  ["git reflog expire *", "deny"],
-  ["git gc --prune*", "deny"],
-  ["git config --global *", "ask"],
-  ["git checkout -f *", "ask"],
-  ["git switch -f *", "ask"],
-  ["git switch --discard-changes *", "ask"],
-  ["git reset --merge *", "ask"],
-  ["git worktree remove *", "ask"],
-  ["git push --mirror *", "deny"],
-  ["git push --delete *", "ask"],
-  ["git push * --delete *", "ask"],
-  ["git push * +*", "deny"],
-];
-
-const roleExtraRules = {
-  "engineer.md": [["git init *", "ask"]],
-  "qa-engineer.md": [
-    ["git init *", "deny"],
-    ["git add *", "deny"],
-    ["git rm *", "deny"],
-    ["git mv *", "deny"],
-    ["git stage *", "deny"],
-    ["git apply *", "deny"],
-    ["git am *", "deny"],
-  ],
-  "devops-engineer.md": [],
-  "technical-writer.md": [["git init *", "ask"], ["git apply *", "deny"], ["git am *", "deny"]],
-};
-
-const readOnlyForbidden = [
-  "git add",
-  "git add *",
-  "git commit",
-  "git commit *",
-  "git push",
-  "git push *",
-  "git tag",
-  "git tag *",
-  "git branch -D *",
-  "git reset --hard *",
+const destructive = [
+  "git reset --hard*",
+  "git clean*",
+  "git checkout --*",
+  "git checkout -f*",
+  "git restore*",
+  "git switch -f*",
+  "git switch --discard-changes*",
+  "git reset --merge*",
+  "git branch -D*",
+  "git branch -d*",
+  "git tag -d*",
+  "git tag --delete*",
+  "git stash clear*",
+  "git stash drop*",
+  "git update-ref -d*",
+  "git reflog expire*",
+  "git gc --prune*",
+  "git filter-branch*",
+  "git filter-repo*",
+  "git push --force*",
+  "git push * --force*",
+  "git push -f*",
+  "git push * -f*",
+  "git push --mirror*",
+  "git push * +*",
+  "git push --delete*",
+  "git push * --delete*",
+  "git worktree remove*",
+  "rm -rf*",
+  "rm -r*",
+  "del /s*",
+  "del /q /s*",
+  "rd /s*",
+  "rd /q /s*",
+  "Remove-Item * -Recurse*",
+  "Remove-Item -Recurse*",
+  "docker system prune*",
+  "docker volume prune*",
+  "docker image prune*",
+  "terraform destroy*",
+  "kubectl delete*",
 ];
 
 function parseShellRules(file) {
@@ -109,48 +73,27 @@ function parseShellRules(file) {
     .map((m) => ({ resource: m[1], effect: m[2] }));
 }
 
-function lastEffect(rules, resource) {
-  const matches = rules.filter((r) => r.resource === resource);
-  return matches.length ? matches[matches.length - 1].effect : null;
-}
-
-function hasRule(rules, resource, effect) {
-  return lastEffect(rules, resource) === effect;
-}
-
 const files = fs.readdirSync(agentsDir).filter((f) => f.endsWith(".md")).sort();
 const results = [];
 let failures = 0;
 
 for (const file of files) {
-  const allRules = parseShellRules(path.join(agentsDir, file));
-  const rules = allRules.filter((r) => r.resource.includes("git"));
-  const shellAllow = hasRule(allRules, "*", "allow");
+  const rules = parseShellRules(path.join(agentsDir, file));
   const missing = [];
-
-  if (readOnlyRoles.has(file)) {
-    if (!shellAllow) missing.push("missing shell * allow");
-    for (const forbidden of readOnlyForbidden) {
-      const effect = lastEffect(rules, forbidden);
-      if (effect !== "deny") {
-        missing.push(`read-only role ${forbidden} -> ${effect ?? "none"}`);
-      }
+  const defaultRule = rules.find((r) => r.resource === "*");
+  if (!defaultRule || defaultRule.effect !== "allow") {
+    missing.push("missing shell * -> allow");
+  }
+  for (const resource of destructive) {
+    if (!rules.some((r) => r.resource === resource && r.effect === "deny")) {
+      missing.push(`missing destructive deny: ${resource}`);
     }
-  } else if (writeRoles.has(file)) {
-    const expected = nonCommittingWriteRoles.has(file)
-      ? [
-          ...commonWriteRules.filter(([resource]) => !["git commit *", "git push *", "git tag *"].includes(resource)),
-          ...nonCommitRules,
-          ...(roleExtraRules[file] ?? []),
-        ]
-      : [...commonWriteRules, ...(roleExtraRules[file] ?? [])];
-    for (const [resource, effect] of expected) {
-      if (!hasRule(rules, resource, effect)) {
-        missing.push(`missing ${resource} -> ${effect} (last match: ${lastEffect(rules, resource) ?? "none"})`);
-      }
-    }
-  } else {
-    missing.push("unknown role: not in read-only or write role list");
+  }
+  const extras = rules
+    .filter((r) => !(r.resource === "*" && r.effect === "allow") && !destructive.includes(r.resource))
+    .map((r) => `${r.effect}:${r.resource}`);
+  if (extras.length) {
+    missing.push(`non-destructive shell restriction: ${extras.join(", ")}`);
   }
 
   const status = missing.length ? "FAIL" : "PASS";
@@ -162,7 +105,7 @@ for (const file of files) {
 }
 
 if (json) {
-  console.log(JSON.stringify({ results, failures }, null, 2));
+  console.log(JSON.stringify({ results, failures, destructive: destructive.length }, null, 2));
 } else {
   console.log(`\n${files.length} agents checked, ${failures} failed.`);
 }
