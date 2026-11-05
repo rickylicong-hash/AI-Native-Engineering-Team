@@ -285,7 +285,7 @@ const workflowDir = path.join(paths.skills, "ai-team-workflow");
 if (fs.existsSync(workflowDir)) {
   const expected = [
     "PROJECT.md", "STATUS.md", "TASKS.md", "HANDOFF.md", "PRD.md",
-    "ARCHITECTURE.md", "ADR.md", "REVIEW.md", "TEST-REPORT.md", "SECURITY-REPORT.md", "RELEASE-PLAN.md",
+    "ARCHITECTURE.md", "ADR.md", "REVIEW.md", "TEST-REPORT.md", "SECURITY-REPORT.md", "RELEASE-PLAN.md", "GROWTH.md",
   ];
   for (const t of expected) {
     addCheck(`workflow template ${t}`, fs.existsSync(path.join(workflowDir, "templates", t)));

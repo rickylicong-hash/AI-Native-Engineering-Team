@@ -106,7 +106,7 @@ flowchart LR
 | `/ai-resume` | 从 `HANDOFF.md` 恢复并继续 |
 | `/ai-handoff` | 写入 HANDOFF，生成新会话首条指令（不自动开会话） |
 | `/ai-hotfix <问题>` | T1 快速修复 + 回归 + 复盘 |
-| `/ai-retro [范围]` | 复盘与团队改进提案 |
+| `/ai-retro [范围]` | 复盘与团队改进提案（每 10 个 done / 门禁前 / 事故后） |
 | `/ai-docs [范围]` | README/API/运维/CHANGELOG，并验证命令 |
 
 所有命令默认进入 `ai-team/chief`。也可以直接选择 agent：`ai-team/chief`。
@@ -371,6 +371,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 4. 再走 `publish` 流程。
 
 更完整的维护者说明见 [INSTALL.md](INSTALL.md#51-团队自身迭代维护者)。
+
+#### 7. `team/GROWTH.md` 什么时候创建
+
+不是等项目结束，也不是等 G8。任一条件到期就创建/追加：
+
+- 第 10 个、第 20 个、第 30 个…… `done` 任务完成时；
+- T3/T4 进入 G5、G7、G8 前；
+- P0/P1 事故、hotfix、回滚后；
+- 同类问题第 2 次出现；
+- `/ai-handoff` 前，如果上述任一到期；
+- 用户运行 `/ai-retro`。
+
+检查命令（随 `ai-team-workflow` skill 安装）：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\retro-check.mjs" --project .
+```
+
+到期未复盘，团队不得开始新的功能任务，也不得把门禁标为通过。轻量复盘 10–20 行即可；G8 做完整复盘。
 
 ---
 

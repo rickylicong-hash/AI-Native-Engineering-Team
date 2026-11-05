@@ -3,6 +3,35 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.4] - 2026-11-05
+
+### Added
+
+- Mandatory retro cadence, triggered by delivery progress instead of release only:
+  - first 10 `done` tasks, then every 10 more;
+  - T3/T4 before G5, G7 and G8;
+  - P0/P1 incidents, hotfixes and rollbacks;
+  - the same failure pattern appearing twice;
+  - before `/ai-handoff` when any trigger is due;
+  - `/ai-retro`.
+- `ai-team-workflow/scripts/retro-check.mjs`: deterministic `done` counting from `TASKS.md`, comparison with `GROWTH.md` frontmatter, gate/incident triggers, JSON output and exit codes.
+- `ai-team-workflow/templates/GROWTH.md`: append-only retro format with `last_retro`, `last_gate`, `tasks_at_last_retro`, `next_due_at`.
+- Retro check wired into `/ai`, `/ai-resume`, `/ai-status`, `/ai-handoff`, `/ai-retro`, Chief's startup checklist and gate rules.
+- `STATUS.md` and `HANDOFF.md` now carry a `Retro:` line.
+
+### Changed
+
+- `team/GROWTH.md` is created at the first due event (10 done), not only at G8; a due retro blocks new feature work and gate approval.
+- Lightweight retro (10–20 lines) at cadence/gate/incident; full retro at G8.
+- One-off issues go to `RISKS.md`; only patterns with ≥2 evidence occurrences become growth proposals.
+- `GIT-POLICY.md` checkpoint now also fires after a retro is written; GROWTH is part of the curated `.ai-team` snapshot.
+- Updated `docs/WORKFLOW.md`, `docs/TEAM.md`, `QUALITY-GATES.md`, README and the `/ai-retro` command.
+
+### Verified
+
+- `node .opencode/skills/ai-team-workflow/scripts/retro-check.mjs --project D:\Development\riccon-ai` → due, 29 done, GROWTH missing, and flags the stale `PROJECT.md` stage (G1 vs STATUS G4).
+- `node scripts/verify.mjs` → all checks pass.
+
 ## [1.2.3] - 2026-11-05
 
 ### Added

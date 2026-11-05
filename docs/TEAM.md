@@ -43,6 +43,8 @@ flowchart TB
 
 A = 批准；R = 负责执行；C = 咨询；I = 知会。
 
+**复盘节奏**：Chief 负责；每 10 个 `done`、T3/T4 进入 G5/G7/G8 前、P0/P1 事故后、交接前到期时必须先写 `.ai-team/team/GROWTH.md`。到期未复盘，门禁不算通过。见 `docs/WORKFLOW.md` 7.2。
+
 ## 3. 角色卡
 
 ### 3.1 Chief / Delivery Lead

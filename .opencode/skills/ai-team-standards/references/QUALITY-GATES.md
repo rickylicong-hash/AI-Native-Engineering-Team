@@ -99,6 +99,16 @@
 - [ ] 证据写入 `work/TASK-*-EVIDENCE.md`；
 - [ ] 代码审查请求已提交。
 
+## 复盘检查（G5/G7/G8 前，T3/T4）
+
+- [ ] `retro-check` 未到期，或已补 `team/GROWTH.md`；
+- [ ] `tasks_at_last_retro` 与 `TASKS.md` 的 `done` 数一致；
+- [ ] 问题有 ≥2 次证据；一次性问题在 `RISKS.md`；
+- [ ] 提案不直接改 `.opencode/**`；
+- [ ] `STATUS.md` 的 `Retro:` 行已更新。
+
+> 到期未做，门禁不得标记通过，也不得开始新的功能任务。
+
 ## G5 Verify
 
 ### Code Review
@@ -162,8 +172,8 @@
 - [ ] 错误率/延迟/饱和度；
 - [ ] 事故/异常处理；
 - [ ] 用户反馈/支持；
-- [ ] 复盘：做得好/问题/改进；
-- [ ] `team/GROWTH.md`；
+- [ ] 完整复盘：做得好/问题/改进/指标；
+- [ ] `team/GROWTH.md` 已追加并更新 frontmatter；
 - [ ] 遗留项进入 backlog/风险；
 - [ ] `HANDOFF.md` 更新。
 

@@ -12,16 +12,16 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 179, passed: 179, failed: 0, warnings: 0
+checks: 180, passed: 180, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
 覆盖：
 
 - 10 个 agent：frontmatter、mode、权限结构、manifest、Chief 调度权限、审查者只读；
-- 11 个 command：description、agent 引用、body、参数、manifest；
+- 12 个 command：description、agent 引用、body、参数、manifest；
 - 4 个 skill：SKILL.md、name/description、引用文件、manifest；
-- 11 个 workflow 模板；
+- 12 个 workflow 模板（含 GROWTH）；
 - 无绝对路径/stack-specific 泄漏（warning 级）。
 
 ## 2. OpenCode 识别验证
@@ -70,7 +70,7 @@ Dry-run：
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -DryRun
 ```
 
-结果：列出 10 个 agent、11 个 command、4 个 skill，未改文件。
+结果：列出 10 个 agent、12 个 command、4 个 skill，未改文件。
 
 实际安装：
 
@@ -195,7 +195,7 @@ node scripts/version.mjs --update
 结果：
 
 ```text
-源验证 179/179 → 安装 10 agents / 12 commands / 4 skills
+源验证 180/180 → 安装 10 agents / 12 commands / 4 skills
 → 安装后验证 189/189（含 OpenCode 10 个 agent）
 → 写 marker
 → status: up-to-date
@@ -240,6 +240,31 @@ not-installed→ 2
 unknown      → 3
 ```
 
+### 5.5 复盘检查（1.2.4）
+
+```powershell
+node .opencode\skills\ai-team-workflow\scripts\retro-check.mjs --project D:\Development\riccon-ai
+```
+
+结果（补录前）：
+
+```text
+track:    T4   stage: G4
+tasks:    done 29, last retro 0, next due 10
+growth:   missing
+due:      YES (first-10)
+warning:  PROJECT.md stage (G1) 与 STATUS.md stage (G4) 不一致；以 STATUS.md 为准
+```
+
+补录 `team/GROWTH.md` 后：
+
+```text
+tasks:    done 29, last retro 29, next due 39
+due:      no
+```
+
+说明：脚本能从 `TASKS.md` 统计 `done`（含 `done（待确认）`）、与 GROWTH frontmatter 比较、识别 G5/G7/G8 门禁，并提示状态漂移。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -269,7 +294,8 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.4 已再次验证 `sourceHash === installedHash`。
+- 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。

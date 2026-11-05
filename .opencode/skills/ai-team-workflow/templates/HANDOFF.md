@@ -7,6 +7,7 @@
 - 未完成：
 - 关键决策：
 - 阻塞/风险：
+- Retro：not due / done YYYY-MM-DD / DUE — 先补
 - 下一条指令：
 - 必读文件：
   - `.ai-team/state/STATUS.md`

@@ -5,6 +5,7 @@
 - Overall: 0%
 - Updated: YYYY-MM-DD
 - Last gate: —
+- Retro: not due (done 0, next 10)
 
 ## In progress
 

@@ -38,6 +38,8 @@ Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定�
 
 ## 3. 门禁 G0–G8
 
+> T3/T4 在 G4→G5、G6→G7、G7→G8 前，以及每完成 10 个任务、P0/P1 事故后，先执行 3.1 的复盘检查。到期未做，门禁不算通过，也不开始新的功能任务。
+
 ### G0 Intake
 
 **Owner:** Chief
@@ -146,9 +148,51 @@ Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定�
 
 - 发布后健康检查/监控窗口；
 - 事故/异常处理；
-- 复盘（`team/GROWTH.md`）；
+- 完整复盘（`team/GROWTH.md`）；
 - 遗留项进入 backlog/风险；
 - `HANDOFF.md` 更新。
+
+### 3.1 复盘节奏（Retro Cadence，强制）
+
+复盘不是发布后的可选项。满足任一条件即**到期**，产物统一追加到 `.ai-team/team/GROWTH.md`：
+
+| 触发 | 时点 | 类型 |
+|---|---|---|
+| 首次 10 个 done | 第 10 个任务完成时 | 轻量 |
+| 每新增 10 个 done | 第 20/30/40… 个任务完成时 | 轻量 |
+| 门禁切换 | T3/T4 进入 G5、G7、G8 前 | 轻量；G8 为完整 |
+| 事故/回滚 | P0/P1 事故、hotfix、rollback 后同一会话 | 轻量 |
+| 重复问题 | 同类问题第 2 次出现 | 轻量 |
+| 交接 | `/ai-handoff` 前，若上述任一到期 | 轻量 |
+| 用户 | `/ai-retro` | 按范围 |
+
+**计数口径：**
+
+- 只数 `state/TASKS.md` 表格中状态列以 `done` 开头的行（含 `done（待确认）`）；
+- `superseded` 不算；返工行（`-R1`/`-R2`）算，因为它们代表真实完成的工作；
+- 同一 TASK-ID 只算一次；
+- 最近一次复盘的任务数写入 `team/GROWTH.md` frontmatter 的 `tasks_at_last_retro`。
+
+**硬规则：**
+
+1. 到期未复盘 → **不得开始新的功能任务，不得把门禁标为通过**；先做轻量复盘（10–20 行即可）。
+2. 首次到期时创建 `team/GROWTH.md`；未到期不创建空文件。
+3. 复盘追加新条目，不覆盖历史；只更新 frontmatter 的 `last_retro`、`last_gate`、`tasks_at_last_retro`、`next_due_at`。
+4. 改进提案必须有 ≥2 次证据；一次性问题写 `RISKS.md`，不写 GROWTH。
+5. 只写提案，不改 `.opencode/**`；团队变更需用户批准。
+6. 轻量复盘三段：保留什么 / 哪里疼（证据）/ 一个最小改动。完整复盘（G8）另加指标与 per-role 评估。
+
+**检查命令（随本 skill 安装）：**
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\retro-check.mjs" --project .
+```
+
+```bash
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/retro-check.mjs" --project .
+```
+
+退出码：`0` 未到期，`1` 到期，`2` 没有 `.ai-team`，`3` 解析失败。路径不存在时，按上面的计数口径手工统计 `TASKS.md`；设置了 `XDG_CONFIG_HOME` 时，把 `~/.config/opencode` 换成 `$XDG_CONFIG_HOME/opencode`。
 
 ## 4. 目录与产物
 
@@ -240,6 +284,7 @@ owner: ai-team/chief
 - Stage: G4 Build
 - Overall: 45%
 - Last gate: G3 Plan — 通过（2026-01-01）
+- Retro: not due (done 9, next 10) / due / done 2026-01-01
 
 ## In progress
 | TASK | Owner | 状态 | 证据 |
@@ -261,7 +306,7 @@ owner: ai-team/chief
 ```markdown
 | ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |
 |---|---|---|---|---|---|---|
-| TASK-0001 | ... | engineer | TASK-0000 | todo/doing/review/qa/done/blocked | AC-1.. | path |
+| TASK-0001 | ... | engineer | TASK-0000 | todo/doing/review/qa/done/done（待确认）/blocked/changes_requested/superseded | AC-1.. | path |
 ```
 
 ### 5.4 ID 规范
@@ -287,6 +332,7 @@ owner: ai-team/chief
 - 未完成：
 - 关键决策：
 - 阻塞/风险：
+- Retro：not due / done YYYY-MM-DD / DUE — 先补
 - 下一条指令：
 - 必读文件：
 
@@ -308,6 +354,7 @@ owner: ai-team/chief
 - 上下文接近 70%，或已发生 compaction；
 - 阶段门禁切换（G1→G2、G2→G3、G4→G5、G6→G7 等）；
 - 每完成 10 个任务，或一个 workstream 结束；
+- **复盘到期**（见 3.1）；先补复盘，再写 HANDOFF，不要把复盘债务交给下一个会话；
 - 长任务超过当前会话可承载，需要拆到下一个会话；
 - 用户说“先到这里/下次继续/暂停”；
 - 状态文件与聊天/文件现状不一致。

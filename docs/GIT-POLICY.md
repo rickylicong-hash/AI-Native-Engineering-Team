@@ -70,7 +70,7 @@
 | 架构 / ADR / 契约 | System Architect | **DevOps** | Architect 只写，不 commit |
 | QA 报告 / 缺陷 | QA Engineer | **DevOps** | QA 只写，不 commit |
 | 安全报告 / 威胁模型 | Security Auditor | **DevOps** | 脱敏后提交；Security 只写，不 commit |
-| 状态 / 任务 / 决策 / 风险 / HANDOFF | Chief | **DevOps** | Chief 只写，不 commit |
+| 状态 / 任务 / 决策 / 风险 / HANDOFF / GROWTH | Chief | **DevOps** | Chief 只写，不 commit；复盘条目按门禁/10 任务节奏提交 |
 | 发布 / 回滚 / runbook | DevOps | **DevOps** | 自己提交 |
 
 规则：
@@ -97,7 +97,7 @@ Checkpoint 触发：
 
 - 阶段门禁切换；
 - 里程碑/发布；
-- 每 10 个任务；
+- 每 10 个任务，或复盘写入 `team/GROWTH.md` 后；
 - Chief 写 HANDOFF 时；
 - 用户要求。
 

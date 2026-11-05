@@ -209,7 +209,7 @@ Chief：
 
 - 健康检查/监控窗口；
 - 事故/异常；
-- 复盘/GROWTH；
+- 完整复盘/GROWTH（含指标与 per-role 评估）；
 - 遗留项；
 - HANDOFF。
 
@@ -307,6 +307,23 @@ Roles: product-manager, ux-designer, qa-engineer
 Co-authored-by: ai-team/product-manager <ai-team@local>
 Co-authored-by: ai-team/qa-engineer <ai-team@local>
 ```
+
+### 7.2 复盘节奏
+
+复盘写入 `.ai-team/team/GROWTH.md`，由 Chief 写、DevOps 在 checkpoint 时提交。到期条件：
+
+| 触发 | 时点 |
+|---|---|
+| 首次 10 个 `done` | 第 10 个任务完成时 |
+| 每新增 10 个 `done` | 20/30/40… |
+| 门禁切换 | T3/T4 进入 G5、G7、G8 前 |
+| 事故/回滚 | P0/P1、hotfix、rollback 后 |
+| 重复问题 | 同类问题第 2 次出现 |
+| 交接 | `/ai-handoff` 前，若上述到期 |
+
+计数口径：`TASKS.md` 状态列以 `done` 开头的行；`superseded` 不算，返工行算，同一 TASK-ID 只算一次。最近计数写入 GROWTH frontmatter 的 `tasks_at_last_retro`。
+
+硬规则：到期未复盘，不开始新的功能任务，不把门禁标为通过。轻量复盘 10–20 行即可；G8 做完整复盘。检查命令见 `ai-team-workflow` 3.1。
 
 ## 8. 并行规则
 
