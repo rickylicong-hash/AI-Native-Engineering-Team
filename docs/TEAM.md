@@ -168,7 +168,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 | Reviewer | `.ai-team/reviews/**` | 其他一切（尤其源码） |
 | QA | `tests/**`、`e2e/**`、`qa/**`、测试文件、`.ai-team/qa/**` | 生产代码、需求/设计/部署 |
 | Security | `.ai-team/security/**` | 其他一切 |
-| DevOps | `deploy/**`、`ops/**`、`infra/**`、`terraform/**`、`k8s/**`、`helm/**`、`docker/**`、`.github/**`、CI/Docker/Makefile、`.ai-team/release/**` | 业务代码、需求/设计/测试 |
+| DevOps | `deploy/**`、`ops/**`、`infra/**`、`terraform/**`、`k8s/**`、`helm/**`、`docker/**`、`.github/**`、CI/Docker/Makefile、`.ai-team/release/**`、`.ai-team/work/TASK-GIT-*EVIDENCE.md` | 业务代码、需求/设计/测试 |
 | Writer | `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.ai-team/docs/**` | 源码、需求/设计/测试/部署 |
 
 权限是“默认拒绝 + 最小允许”；如项目目录结构与约定不同，Chief 可通过项目级 `.opencode/opencode.jsonc` 覆盖，而不是让成员越权。
