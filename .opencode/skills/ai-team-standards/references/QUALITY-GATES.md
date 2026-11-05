@@ -104,6 +104,9 @@
 - [ ] 无硬编码密钥/调试代码；
 - [ ] 无越权修改；
 - [ ] 证据写入 `work/TASK-*-EVIDENCE.md`；
+- [ ] 根目录无 `*.log`、`target-*`、`*.tmp`、`*.class`；日志在 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；
+- [ ] 证据日志 UTF-8；失败日志用 `.failed.log` 且有原因/后续通过证据；
+- [ ] T0/spike 的 `target/` 已清理，无误落盘 `io/org/com` 编译目录；
 - [ ] 代码审查请求已提交。
 
 ## 复盘检查（G5/G7/G8 前，T3/T4）
@@ -119,6 +122,7 @@
 ## 提交检查（G5/G7/G8 前，或交接前）
 
 - [ ] `checkpoint-check` 未到期，或已由 DevOps 完成 checkpoint；
+- [ ] `artifact-check` 无 error（根目录产物/误落盘编译目录）；T3/T4 用 `--strict` 无 warning；
 - [ ] checkpoint 有 `TASK-GIT-*`、brief 明确路径、`work/TASK-GIT-*EVIDENCE.md`；
 - [ ] 工作区未提交文件 < 20，或已提交精选路径；
 - [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark` 更新；
@@ -131,6 +135,7 @@
 
 - [ ] `state-check` 无 error：`PROJECT.md` 与 `STATUS.md` 的 track/stage 一致；
 - [ ] `HANDOFF.md` 的 Git/Baseline 等于最近代码 checkpoint；其后的纯文档提交不报 warning；
+- [ ] `state-check` 无 artifact error：根目录无 `*.log`/`target-*`/`*.class`，证据编码可读；
 - [ ] `STATUS.md` 有 `Retro:` / `Checkpoint:` 行；
 - [ ] `TASKS.md` 不再新增 `done（...）`；存量迁移到 `review`/`qa`。
 
@@ -147,6 +152,9 @@
 - [ ] 契约 diff 已审查，G4 期间的变更走 ADR/DEC；
 - [ ] `API-CONTRACTS` 与错误码/事件枚举恒等，无未登记差异；
 - [ ] 修复/回归任务有 P1 closure 表（原 P1、修复点、复现、回归）；
+- [ ] reviewer brief 允许独立执行测试/扫描；无 shell 有 `RISK-*` + 补偿证据；
+- [ ] reviewer 报告记录实际执行/未能执行的命令；
+- [ ] 证据日志可读（UTF-8 或文本摘要）；UTF-16/二进制不能作为 P1/安全项唯一依据；
 - [ ] 安全基础；
 - [ ] 测试有效（断言/确定性/异常覆盖）；
 - [ ] 可维护性；
@@ -158,6 +166,7 @@
 
 - [ ] 覆盖矩阵完整；
 - [ ] 全量基线唯一（命令/总数/skipped/commit），排除项有批准；
+- [ ] skipped/flaky 有原因、owner、`RISK-*`/`DEF-*`；重跑通过不能单独关闭 P1/安全项；
 - [ ] 单元/集成/契约/E2E 按 Track 执行；
 - [ ] 性能/可访问性按 Track；
 - [ ] 缺陷有复现/级别/证据；
@@ -177,6 +186,7 @@
 - [ ] CI/CD 权限/secrets；
 - [ ] Critical/High 关闭；
 - [ ] Medium 修复计划或书面接受；
+- [ ] 安全证据日志 UTF-8/可读；不可读证据不能作为放行依据；
 - [ ] 报告写入 `security/**`；
 - [ ] 放行结论。
 

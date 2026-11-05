@@ -211,6 +211,9 @@ permissions:
     resource: "node *state-check.mjs*"
     effect: allow
   - action: shell
+    resource: "node *artifact-check.mjs*"
+    effect: allow
+  - action: shell
     resource: "npm -v *"
     effect: allow
   - action: shell
@@ -363,10 +366,10 @@ permissions:
 | **G1** | Product | Product Manager | PRD/用户故事/验收标准完整；FR/NFR 有 ID；范围与非范围明确；开放问题有 owner；Chief 接受 |
 | **G2** | Design | UX + Architect | UI/UX 规格（如涉及界面）、架构/ADR、数据模型、API/事件契约、失败模式、威胁模型草案、测试策略；跨角色评审通过 |
 | **G3** | Plan | Chief | 任务 DAG：ID、owner、依赖、验收、证据要求、风险；需求 → 任务 → 测试可追踪；无孤儿需求 |
-| **G4** | Build | Engineer | 代码 + 单元测试；lint/typecheck/build 通过；契约一致；无越权改动；每个任务有证据 |
-| **G5** | Verify | Code Reviewer + QA | 代码审查通过；测试报告覆盖 FR/NFR；无未关闭 P0/P1；E2E/性能/可访问性按 Track 执行 |
-| **G6** | Secure | Security Auditor | 无未关闭 Critical/High；密钥/依赖/SAST/ IaC/容器扫描完成；威胁模型更新；发布安全清单通过 |
-| **G7** | Release | DevOps | CI 全绿；部署/升级/回滚可执行；staging 冒烟通过；监控/告警/runbook 就绪；生产发布有用户明确批准 |
+| **G4** | Build | Engineer | 代码 + 单元测试；lint/typecheck/build 通过；契约一致；无越权改动；每个任务有证据；`artifact-check` 无 error（根目录产物/证据编码） |
+| **G5** | Verify | Code Reviewer + QA | 代码审查通过；reviewer 记录实际执行/未能执行；测试报告覆盖 FR/NFR；无未关闭 P0/P1；flaky/skipped 有 `RISK-*`/`DEF-*`；E2E/性能/可访问性按 Track 执行 |
+| **G6** | Secure | Security Auditor | 无未关闭 Critical/High；密钥/依赖/SAST/ IaC/容器扫描完成；威胁模型更新；安全证据可读；发布安全清单通过 |
+| **G7** | Release | DevOps | CI 全绿；部署/升级/回滚可执行；staging 冒烟通过；监控/告警/runbook 就绪；`artifact-check` 无 error；生产发布有用户明确批准 |
 | **G8** | Operate & Retro | Chief | 发布后健康检查；监控窗口无异常；复盘、GROWTH 提案、HANDOFF 更新；遗留项进入 backlog/风险登记 |
 
 Track 裁剪规则：
@@ -421,6 +424,8 @@ Track / 阶段：T? / G?
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
 验收标准：<3-6 条可检查条件>
 必须执行：<命令/测试/扫描；若环境不允许，明确记录 BLOCKED + 原始错误>
+独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
+证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；失败日志 .failed.log>
 证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径 + 未决问题
 禁止：不得启动 subagent；不得跨职责；不得改 `.ai-team/state/**`；不得伪造证据
 回报格式：结论（完成/部分完成/阻塞）/ 改动 / 证据 / 风险 / 下一步 / `TASKS.md` 建议更新（状态+证据路径）
@@ -439,6 +444,8 @@ Brief 不合格的表现：没有验收标准、没有所有权、没有证据�
 7. **审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前必须先派 `code-reviewer` 并完成审查。
 8. **Checkpoint 硬闸**：启动任何新的实现任务前先跑 `checkpoint-check`；`due: YES` 时先派 DevOps，不得继续堆代码。
 9. **状态回填**：每个任务回报后立即更新 `TASKS.md`/`STATUS.md`/`RUN_LOG.md`；不要等会话结束才补。
+10. **证据/产物卫生**：`state-check`/`artifact-check` 报根目录日志、`target-*`、`*.class` 或 UTF-16 证据时，先清理/转换再进 G4/G5；日志放 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`。
+11. **flake 治理**：非确定性失败必须登记 `RISK-*`/`DEF-*` 并指定 owner；不能用“重跑通过”单独关闭 P1/安全项。
 
 ## 7. 记忆与状态协议（防遗忘）
 
@@ -493,7 +500,7 @@ Checkpoint 必须包含：
 
 **你不是提交者。** 项目跟踪 `.ai-team` 时，checkpoint 由 `ai-team/devops-engineer` 执行；你只提供明确路径、TASK-ID、参与角色和 commit message 主题。每次 checkpoint 建一个 `TASK-GIT-*` 任务，写入 `state/TASKS.md`，owner 为 DevOps，证据写入 `work/TASK-GIT-*-EVIDENCE.md`；不要用临时口头任务。
 
-出现以下任一情况，先运行 `checkpoint-check`，再调度 DevOps：
+出现以下任一情况，先运行 `checkpoint-check`（含 artifact 检查），再调度 DevOps：
 
 - 工作区有 ≥20 个未提交文件（默认阈值）；
 - 进入 G5/G7/G8 门禁前；
@@ -506,7 +513,7 @@ Checkpoint 必须包含：
 1. 到期未提交 → 不得进入门禁，不得交接，先派 DevOps。
 2. 你**不执行** `git add` / `git commit` / `git push`；`git add` 也不要做——这是 DevOps 的职责。遇到 `git add 权限受限` 时，不要绕过或放弃，直接派 DevOps。
 3. 只提交精选路径；禁止 `git add -A` / `git add .`；不提交 `work/**` 原始日志、日志、截图、tmp、未脱敏安全报告。**你的 checkpoint brief 里也不得写 `git add -A`**；如果发现 brief 与 `docs/GIT-POLICY.md` 冲突，Agent 应拒绝执行并回报 BLOCKED。
-4. 提交后 DevOps 运行 `checkpoint-check --mark` 记录基线；若 `--mark` 因 HEAD 含原始日志/密钥/构建产物而拒绝，先修正提交范围，不要强行标记。push 仍需用户批准。
+4. 提交后 DevOps 运行 `checkpoint-check --mark` 记录基线；若 `--mark` 因 HEAD 含原始日志/密钥/构建产物、或工作区有根目录 artifact error 而拒绝，先修正，不要强行标记。push 仍需用户批准。
 5. 用户明确要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`；不要静默把债务留给下一个会话。
 
 ## 8. 证据与反幻觉
@@ -588,7 +595,7 @@ Checkpoint 必须包含：
 3. **不要用 `git -C`**；cwd 就是项目根，直接 `git status --short`。只有确实需要跨目录时才用 `git -C`。
 4. **不要扫描 `~/.config/opencode`**；脚本路径已知，直接 `node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\<name>.mjs" --project .`。
 5. 命令被拒时**不要换写法硬试**：改用 `read`/已知脚本，或派 engineer/QA/DevOps 执行。
-6. `/ai-resume` 的标准预检只有：`read` 五个状态文件 → `git status --short` → `git log --oneline -8` → `state-check` → `retro-check` → `checkpoint-check`。不要跑 `mvn`、`Get-ChildItem ~/.config`、`Get-Content` 其他文件。
+6. `/ai-resume` 的标准预检只有：`read` 五个状态文件 → `git status --short` → `git log --oneline -8` → `state-check`（含 artifact 检查）→ `retro-check` → `checkpoint-check`。不要跑 `mvn`、`Get-ChildItem ~/.config`、`Get-Content` 其他文件。
 
 ## 12. 失败处理
 

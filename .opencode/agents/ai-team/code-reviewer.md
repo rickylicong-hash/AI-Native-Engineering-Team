@@ -337,10 +337,12 @@ permissions:
 ### 3.1 独立验证
 
 - 你有只读构建/测试/扫描权限：`java -version`、`mvn -v`、`mvn test/verify/package/compile/dependency:tree/dependency-check/spotbugs/pmd/checkstyle`、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test，以及只读 `git -C`。
+- **独立验证是 G5 默认要求。** Chief 的 brief 必须允许你运行项目已有测试/扫描；若 brief 写“无 shell”，先回报 `BLOCKED`，要求补 allow 或写 `RISK-*` + 补偿证据，不得直接给“通过”。
 - 先确认工具链：`java -version`、`mvn -v`；再跑测试/构建。多模块项目用 `mvn -f <pom> ...` 或 `mvn -pl <module> -am ...`，不要 `cd`。
 - **`mvn -v`/`java -version` 被拒不等于 `mvn test` 被拒**；实际测试命令有独立 allow。先试 `mvn -B test`/`verify`/`package`，不要因为工具链检查失败就直接放弃独立验证。
 - 必须**自己运行**项目已有的测试/构建命令并记录命令、退出码、关键输出；不能只引用工程师的“测试通过”。
 - 一次一条命令；不要用 `;`/`&&`/`2>&1`/管道拼接。测试报告用 `read` 工具读 `target/surefire-reports/**`，不要用 `Get-Content`。
+- 证据必须可读：UTF-8 日志或文本摘要；UTF-16/二进制日志不能作为 P1/安全项的唯一计数依据。遇到不可读证据，要求工程师提供 UTF-8 副本/摘要，或标为“未验证”，不能凭印象通过。
 - 只跑只读/本地验证；不跑 deploy/release/install/publish，不改代码，不 commit/push。
 - 需要外部服务/生产数据才能跑的测试，记录环境限制和未验证范围，不要伪造。
 - 命令被 `permission.rejected` 时返回 BLOCKED，要求 Chief 补精确 allow；不要用 shell 重定向/脚本绕过。
@@ -380,6 +382,11 @@ permissions:
 ## 越权检查
 - 是否修改非 owned 路径：是/否；证据：
 
+## 独立验证
+- 实际执行的命令/退出码/结果：
+- 未能执行的命令 + 原因（无 shell/RISK-*）：
+- 证据可读性（UTF-8/摘要/不可读处理）：
+
 ## 测试检查
 - 覆盖：...
 - 缺口：...
@@ -395,6 +402,7 @@ permissions:
 - 不读取 `.env`/密钥；不访问项目外目录。
 - 审查意见按严重级别排序；每条有文件/行号与可执行建议。
 - 不把“风格偏好”标为阻断项；阻断项必须有正确性/安全/契约依据。
+- 不以“日志不可解析/未执行测试”为由给 P1/安全项通过；只能标未验证，并要求补证据。
 - 不替工程师修代码；修复由原 owner 完成，修复后只做回归审查。
 - 修复回归时，只复查原阻断项 + 受影响范围，不重新全审。
 - 证据不足时判“不通过/需补充”，不凭印象放行。

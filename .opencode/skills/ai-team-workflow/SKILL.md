@@ -223,6 +223,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 3. 只提交精选路径，禁止 `git add -A` / `git add .`；不提交 `work/**`、日志、截图、tmp、未脱敏安全报告。
 4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
 5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
+6. `checkpoint-check` 同时扫描根目录产物（`*.log`、`target-*`、`*.class` 等）和证据编码；有 error 时 `--mark` 拒绝。先把日志移到 `logs/` 或 `.ai-team/work/<TASK>-logs/`，不要用 `.gitignore` 掩盖。
 
 ### 3.3 状态一致性检查
 
@@ -237,9 +238,17 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - `PROJECT.md` 的 track/stage 与 `STATUS.md` 是否一致；
 - `STATUS.md` 是否有 `Retro:` / `Checkpoint:` 行；
 - `HANDOFF.md` 的 Git commit 是否等于当前 HEAD；
-- `TASKS.md` 是否还在用 `done（...）` 旧状态。
+- `TASKS.md` 是否还在用 `done（...）` 旧状态；
+- 根目录是否有 `*.log`、`target-*`、`*.tmp`、`*.class`、`io/org/com` 误落盘目录；
+- `logs/**` 与 `.ai-team/work/**` 的证据日志是否为 UTF-16/不可解析编码。
 
-有 error（stage/track 不一致）时，**不得交接、不得把门禁标为通过**；先修正状态文件。`--strict` 会把 warning 也变成失败。
+`state-check` 已内置 artifact 检查；也可单独运行：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\artifact-check.mjs" --project .
+```
+
+有 error（stage/track 不一致、根目录产物、不可读证据等）时，**不得交接、不得把门禁标为通过**；先修正状态文件或清理产物。`--strict` 会把 warning 也变成失败。
 
 ## 4. 目录与产物
 
@@ -308,6 +317,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
   team/
     GROWTH.md
 ```
+
+项目根目录的原始日志统一放 `logs/<date>/TASK-<id>-<step>-<timestamp>.log`；该目录加入项目 `.gitignore`，不要写仓库根目录。
 
 不是每个 Track 都创建全部文件；按需创建，避免空文件。
 
@@ -439,6 +450,8 @@ Track / 阶段：
 约束：
 验收标准：
 必须执行：
+独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
+证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；统一 UTF-8；失败日志 .failed.log>
 证据要求：
 禁止：
 回报格式：
@@ -476,7 +489,13 @@ Track / 阶段：
 - 退出码必须真实；失败就是失败；
 - 输出摘要保留关键行，不粘贴整屏；
 - 截图可补充，但不能替代命令；
-- 环境不允许时写 `BLOCKED` + 原始错误 + 影响 + 建议。
+- 环境不允许时写 `BLOCKED` + 原始错误 + 影响 + 建议；
+- 原始日志写到 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，禁止写仓库根目录；
+- 证据日志统一 UTF-8；PowerShell 5.1 用 `Out-File -Encoding utf8`，不要用 `*>` 默认生成 UTF-16；
+- 失败日志命名为 `*.failed.log`，并在 EVIDENCE 中写失败原因、是否已修复、后续通过证据；
+- T0/spike 的 `target/` 构建产物在任务收口清理；根目录 `io/org/com` 等只有 `.class` 的目录视为误落盘；
+- 非确定性测试失败（deadlock/timeout/网络/顺序）先登记 `RISK-*`/`DEF-*`，写明 owner 与关闭条件；重跑通过不能单独关闭 P1/安全项；
+- 审查员必须能解析证据；UTF-16/二进制日志不能作为 P1/安全项的唯一依据，需提供 UTF-8 副本或文本摘要。
 
 ## 8. 角色交接契约
 
@@ -508,7 +527,10 @@ Track / 阶段：
 - 为了流程而流程（T1 强行全套 PRD）；
 - 为了速度跳过审查/测试；
 - 多个 agent 同时改同一文件；
-- 把“没有报错”当“通过”。
+- 把“没有报错”当“通过”；
+- 把日志/临时文件写在仓库根目录；
+- 用 UTF-16 或不可解析日志作为唯一证据；
+- 用“重跑通过”关闭 flake。
 
 ## 10. 模板
 

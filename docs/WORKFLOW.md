@@ -267,9 +267,20 @@ Track / 阶段：T3 / G4
 - 测试跳过/mock 冒充集成；
 - 截图替代可复现命令；
 - 审查无文件/行号；
-- 部署无健康检查/回滚。
+- 部署无健康检查/回滚；
+- 把日志/临时文件写在仓库根目录；
+- 用 UTF-16/二进制日志作为唯一证据；
+- 用“重跑通过”关闭 flake。
 
 修复/回归任务额外要求：`work/TASK-*-EVIDENCE.md` 附 P1 closure 表（原 P1、修复点、复现命令、回归结果），并说明是否引入新的同类 P1；没有这张表，G5 不通过。
+
+证据与产物规则：
+
+- 原始日志放 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，禁止写仓库根目录；
+- 统一 UTF-8；PowerShell 5.1 用 `Out-File -Encoding utf8`，不要用 `*>` 默认生成 UTF-16；
+- 失败日志命名 `*.failed.log`，并在 EVIDENCE 写失败原因、是否已修复、后续通过证据；
+- T0/spike 的 `target/` 构建产物在任务收口清理；根目录 `io/org/com` 等只有 `.class` 的目录视为误落盘；
+- 非确定性测试失败先登记 `RISK-*`/`DEF-*`，写明 owner 与关闭条件；重跑通过不能单独关闭 P1/安全项。
 
 ## 7. 状态协议
 
@@ -347,7 +358,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。`checkpoint-check` 会同时扫描根目录产物和证据编码；有 artifact error 时 `--mark` 拒绝。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -357,7 +368,7 @@ DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。Chief 不得自
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
 ```
 
-检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git/Baseline commit、`TASKS.md` 的 `done（...）` 旧状态。`Baseline` 只写最近代码 checkpoint；其后的纯文档/`.ai-team` 提交不报 warning。stage/track 不一致时先修正状态文件，不得交接或把门禁标为通过。
+检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git/Baseline commit、`TASKS.md` 的 `done（...）` 旧状态，以及根目录临时产物和证据编码。`Baseline` 只写最近代码 checkpoint；其后的纯文档/`.ai-team` 提交不报 warning。stage/track 不一致或存在 artifact error 时先修正，不得交接或把门禁标为通过。
 
 ### 7.5 设计与契约前置
 
@@ -366,6 +377,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-07 装配清单**：任务 brief 必须写 Bean 注册点、持久化仓储、外部依赖/制品、配置键、迁移；缺项即 BLOCKED。
 - **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
 - **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
+
+### 7.6 证据与 flake 治理（P-15..P-17）
+
+- **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
+- **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
+- **P-17 审查独立复现**：reviewer brief 默认授予测试/扫描 shell；无 shell 必须写 `RISK-*` + 补偿证据。证据必须可读（UTF-8 或文本摘要），UTF-16/二进制日志不能作为 P1/安全项唯一依据。reviewer 报告必须写“实际执行/未能执行”的命令。
 
 ## 8. 并行规则
 

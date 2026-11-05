@@ -5,8 +5,11 @@
  * 只读检查：不会执行 git add/commit。到期时应由 Chief 调度
  * ai-team/devops-engineer 做精选提交，Chief 自己不得提交。
  *
+ * 同时扫描根目录临时产物与证据编码；artifact error 会使 checkpoint 到期，
+ * 并让 --mark 拒绝。--strict 还会把 artifact warning 视为到期。
+ *
  * 用法：
- *   node checkpoint-check.mjs [--project <dir>] [--json] [--quiet]
+ *   node checkpoint-check.mjs [--project <dir>] [--json] [--quiet] [--strict]
  *   node checkpoint-check.mjs --handoff          # 交接前强制检查
  *   node checkpoint-check.mjs --mark             # 提交成功后记录基线
  *   node checkpoint-check.mjs --max-files 20     # 自定义文件阈值
@@ -22,6 +25,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
+import { checkArtifacts } from "./artifact-check.mjs";
 
 const args = process.argv.slice(2);
 const getArg = (name, fallback = null) => {
@@ -36,6 +40,7 @@ const quiet = hasFlag("--quiet");
 const handoff = hasFlag("--handoff");
 const mark = hasFlag("--mark");
 const force = hasFlag("--force");
+const strict = hasFlag("--strict");
 const maxFiles = Number.parseInt(getArg("--max-files", "20"), 10) || 20;
 
 const stateDir = path.join(project, ".ai-team", "state");
@@ -144,6 +149,17 @@ const branchResult = git(["rev-parse", "--abbrev-ref", "HEAD"]);
 const branch = branchResult.status === 0 ? branchResult.stdout.trim() : "unknown";
 const headViolations = head.status === 0 ? auditHead() : [];
 
+// P-15/P-17：被 .gitignore 忽略的日志不会被 git status 看到，必须单独扫描根目录。
+let artifactResult = { errors: [], warnings: [], scanned: 0, truncated: false };
+let artifactReadError = "";
+try {
+  artifactResult = checkArtifacts(project);
+} catch (error) {
+  artifactReadError = `artifact check failed: ${error.message}`;
+}
+const artifactErrors = artifactResult.errors;
+const artifactWarnings = artifactResult.warnings;
+
 const reasons = [];
 if (changed > 0) {
   if (handoff) reasons.push("handoff");
@@ -154,6 +170,8 @@ if (changed > 0) {
   if (fs.existsSync(checkpointFile) && done - last >= 10) reasons.push(`tasks-${done}-last-${last}`);
 }
 if (headViolations.length > 0) reasons.push("head-noncompliant");
+if (artifactErrors.length > 0) reasons.push(`artifacts-${artifactErrors.length}`);
+if (strict && artifactWarnings.length > 0) reasons.push(`artifact-warnings-${artifactWarnings.length}`);
 if (force) reasons.push("forced");
 
 if (mark) {
@@ -166,6 +184,18 @@ if (mark) {
   if (headViolations.length > 0) {
     const message = `HEAD ${headCommit} contains ${headViolations.length} forbidden path(s); do not mark it as a clean baseline:\n- ${headViolations.join("\n- ")}`;
     if (json) console.log(JSON.stringify({ ok: false, error: message, violations: headViolations }, null, 2));
+    else console.log(`ERROR  ${message}`);
+    process.exit(3);
+  }
+  if (artifactErrors.length > 0) {
+    const message = `working tree has ${artifactErrors.length} artifact hygiene error(s); clean them before marking a checkpoint:\n- ${artifactErrors.slice(0, 10).map((issue) => `${issue.code}: ${issue.path}`).join("\n- ")}`;
+    if (json) console.log(JSON.stringify({ ok: false, error: message, artifacts: artifactResult }, null, 2));
+    else console.log(`ERROR  ${message}`);
+    process.exit(3);
+  }
+  if (strict && artifactWarnings.length > 0) {
+    const message = `working tree has ${artifactWarnings.length} artifact warning(s) under --strict; fix or omit --strict only with a documented risk`;
+    if (json) console.log(JSON.stringify({ ok: false, error: message, artifacts: artifactResult }, null, 2));
     else console.log(`ERROR  ${message}`);
     process.exit(3);
   }
@@ -201,6 +231,14 @@ if (json) {
     stage,
     checkpoint: fs.existsSync(checkpointFile) ? path.relative(project, checkpointFile).replace(/\\/g, "/") : null,
     headViolations,
+    strict,
+    artifacts: {
+      errors: artifactErrors,
+      warnings: artifactWarnings,
+      scanned: artifactResult.scanned,
+      truncated: artifactResult.truncated,
+      readError: artifactReadError,
+    },
     warnings: warning ? [warning] : [],
   }, null, 2));
 } else if (!quiet) {
@@ -210,6 +248,16 @@ if (json) {
   console.log(`stage:    ${stage}`);
   console.log(`tasks:    done ${done}, last checkpoint ${last} (${lastAt}${lastCommit ? ` @ ${lastCommit}` : ""})`);
   console.log(`changed:  ${changed} files (modified ${modified}, untracked ${untracked})`);
+  console.log(`artifacts: ${artifactErrors.length} error(s), ${artifactWarnings.length} warning(s), ${artifactResult.scanned} evidence file(s) scanned`);
+  if (artifactReadError) console.log(`warning:  ${artifactReadError}`);
+  for (const issue of artifactErrors.slice(0, 5)) {
+    console.log(`  ERROR [${issue.code}] ${issue.path}: ${issue.message}; ${issue.suggestion}`);
+  }
+  if (artifactErrors.length > 5) console.log(`  ... and ${artifactErrors.length - 5} more artifact error(s)`);
+  for (const issue of artifactWarnings.slice(0, 3)) {
+    console.log(`  WARN  [${issue.code}] ${issue.path}: ${issue.message}`);
+  }
+  if (artifactWarnings.length > 3) console.log(`  ... and ${artifactWarnings.length - 3} more artifact warning(s)`);
   console.log(`due:      ${due ? "YES" : "no"}${due ? ` (${reasons.join(", ")})` : ""}`);
   if (warning) console.log(`warning:  ${warning}`);
   if (headViolations.length > 0) {

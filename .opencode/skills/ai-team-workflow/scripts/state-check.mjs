@@ -6,7 +6,8 @@
  *   - PROJECT.md frontmatter 的 track/stage 与 STATUS.md 是否一致；
  *   - STATUS.md 是否包含 Retro / Checkpoint 行；
  *   - HANDOFF.md 记录的 Git commit 是否与当前 HEAD 一致；
- *   - TASKS.md 是否还在使用 `done（...）` 这类非标准完成状态。
+ *   - TASKS.md 是否还在使用 `done（...）` 这类非标准完成状态；
+ *   - 根目录临时产物与证据编码（调用 artifact-check）。
  *
  * 用法：
  *   node state-check.mjs [--project <dir>] [--json] [--strict]
@@ -22,6 +23,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
+import { checkArtifacts } from "./artifact-check.mjs";
 
 const args = process.argv.slice(2);
 const getArg = (name, fallback = null) => {
@@ -42,6 +44,7 @@ const handoffFile = path.join(stateDir, "HANDOFF.md");
 
 const errors = [];
 const warnings = [];
+let artifactSummary = null;
 
 function read(file) {
   return fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
@@ -164,6 +167,22 @@ try {
       warnings.push(`${legacy.length} task(s) use non-standard done(...) status: ${legacy.join(", ")}`);
     }
   }
+
+  // P-15/P-17：根目录产物与证据可读性也属于状态一致性的一部分。
+  const artifacts = checkArtifacts(project);
+  artifactSummary = {
+    errors: artifacts.errors.length,
+    warnings: artifacts.warnings.length,
+    scanned: artifacts.scanned,
+    truncated: artifacts.truncated,
+  };
+  for (const issue of artifacts.errors) {
+    errors.push(`artifact ${issue.code}: ${issue.path}: ${issue.message}; ${issue.suggestion}`);
+  }
+  if (artifacts.warnings.length > 0) {
+    const sample = artifacts.warnings.slice(0, 3).map((issue) => `${issue.code} ${issue.path}`).join("; ");
+    warnings.push(`${artifacts.warnings.length} artifact warning(s): ${sample}${artifacts.warnings.length > 3 ? " ..." : ""}`);
+  }
 } catch (error) {
   const message = `could not read state: ${error.message}`;
   if (json) console.log(JSON.stringify({ ok: false, error: message }, null, 2));
@@ -174,7 +193,7 @@ try {
 const failed = errors.length > 0 || (strict && warnings.length > 0);
 
 if (json) {
-  console.log(JSON.stringify({ ok: !failed, errors, warnings, strict }, null, 2));
+  console.log(JSON.stringify({ ok: !failed, errors, warnings, strict, artifacts: artifactSummary }, null, 2));
 } else {
   console.log("AI Team state check");
   console.log(`project:  ${project}`);

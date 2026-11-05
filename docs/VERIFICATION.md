@@ -403,6 +403,29 @@ result: PASS
 
 fixture：baseline 后纯文档提交 PASS；baseline 后代码提交 FAIL。
 
+### 5.14 证据/产物与 flake 治理（1.2.16）
+
+- P-15：新增 `artifact-check.mjs`，检查根目录 `*.log`、`target-*`、`*.tmp`、`*.class`、`io/org/com` 误落盘目录；`state-check`/`checkpoint-check` 已接线，artifact error 会让 checkpoint 到期并阻止 `--mark`；
+- 证据日志统一放 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；UTF-16 证据产生 warning，`--strict` 失败；失败日志用 `.failed.log`；
+- P-16：QA 报告新增 `Flaky/skipped`；非确定性失败必须有 `RISK-*`/`DEF-*`、owner、关闭条件，重跑通过不能单独关闭 P1/安全项；
+- P-17：brief 新增 `独立验证`/`证据位置`；reviewer 默认执行测试/扫描，无 shell 必须 `RISK-*` + 补偿证据；`REVIEW.md` 新增“实际执行/未能执行/证据可读性”；
+- 安全审计新增“不可读证据不能作为关闭 Critical/High 的唯一依据”。
+
+验证：
+
+```text
+node scripts/verify.mjs                 -> 193/193
+node scripts/verify.mjs --root "$HOME\.config\opencode" --installed -> 185/185
+node scripts/verify.mjs --root "$HOME\.config\opencode" --installed --opencode -> 195/195
+node scripts/audit-team-consistency.mjs -> 135 checks, 0 failed
+node scripts/audit-git-permissions.mjs  -> 10 agents, 0 failed
+artifact-check fixture                   -> root log/stray class FAIL; archived TASK-* PASS; UTF-16 warning + strict FAIL
+state-check fixture                      -> root log ERROR
+checkpoint-check fixture                 -> root log due + --mark blocked
+```
+
+riccon-ai 的 `artifact-check` 当前为 0 error；历史 70+ 个 UTF-16 `.txt` 证据只产生 warning，不强制改写旧证据；新日志必须 UTF-8。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -432,7 +455,7 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.15 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.16 将再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
 - 一致性审计：通过（124 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14）。

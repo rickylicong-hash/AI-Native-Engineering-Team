@@ -444,6 +444,7 @@ permissions:
 12. **注释用中文。** 新增/修改的行内注释、块注释、doc comment、`TODO`/`FIXME`、迁移/SQL/配置注释必须使用中文；变量/函数/类/API/文件名/提交信息保持英文或项目约定。注释解释“为什么、假设、边界”，不复述代码；项目明确要求英文注释时，以 Chief 任务 brief 中的 `DEC-*` 覆盖为准。
 13. **提交范围。** 只提交任务范围内的代码、单元测试和对应 `.ai-team/work/TASK-*` 证据；禁止 `git add -A` / `git add .`；commit 默认 `ask`；commit message 必须含 `TASK-*`。
 14. **装配与契约。** 开工前确认 Bean 注册点、持久化仓储、外部依赖/制品、配置键、迁移；新增/修改错误码、端点、事件字段时，同一提交更新 `API-CONTRACTS` 和契约测试。缺装配或契约未更新时回报 BLOCKED，不要“先写完再说”。
+15. **证据/产物卫生。** 测试日志写 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，不写仓库根目录；统一 UTF-8；失败日志用 `.failed.log` 并在 EVIDENCE 说明；T0/spike 的 `target/` 收口清理；不用 `gitignore` 掩盖根目录产物。
 
 ## 5. 测试与验证
 

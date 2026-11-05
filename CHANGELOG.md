@@ -3,6 +3,25 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.16] - 2026-11-05
+
+### Added
+
+Closed the evidence-quality and test-reliability gaps found during the TASK-0038 log cleanup:
+
+- **P-15 artifact hygiene**: new `artifact-check.mjs` flags root-level `*.log`, `target-*`, temp files, stray `.class` dirs and unreadable evidence. `state-check` and `checkpoint-check` run it; artifact errors make checkpoints due and `--mark` refuses. Logs must live in `logs/<date>/TASK-<id>-<step>-<timestamp>.log` or `.ai-team/work/<TASK>-logs/`; failed logs use `.failed.log`; T0/spike `target/` is cleaned at task close.
+- **P-16 flake governance**: non-deterministic failures require a `RISK-*`/`DEF-*`, owner and closure criteria. A rerun alone cannot close a P1/security item; QA reports must list skipped/flaky tests; G5/G6 and the test-report template enforce this.
+- **P-17 reviewer independence**: task brief now has `独立验证` and `证据位置` fields. Reviewers must run the project’s tests/scans by default; a no-shell brief must carry a `RISK-*` plus compensating evidence. UTF-16/binary logs cannot be the sole basis for closing a P1/security item; the review template records commands actually executed and evidence readability.
+
+### Verified
+
+- `node scripts/verify.mjs` → 193/193.
+- installed verify → 185/185; installed + OpenCode → 195/195.
+- `node scripts/audit-team-consistency.mjs` → 135 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `artifact-check` fixture: root log and stray class dir fail; archived `TASK-*` log passes; UTF-16 evidence warns and fails `--strict`.
+- `state-check` fixture: root log is an error; `checkpoint-check` fixture: root log makes checkpoint due and blocks `--mark`.
+
 ## [1.2.15] - 2026-11-05
 
 ### Added

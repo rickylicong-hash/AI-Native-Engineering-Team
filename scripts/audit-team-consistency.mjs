@@ -95,13 +95,18 @@ check("GROWTH template", fs.existsSync(path.join(skillsDir, "ai-team-workflow", 
 check("retro-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "retro-check.mjs")));
 check("checkpoint-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "checkpoint-check.mjs")));
 check("state-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")));
+check("artifact-check script", fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "artifact-check.mjs")));
+const stateCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs"));
+check("state-check integrates artifact-check", stateCheckText.includes('from "./artifact-check.mjs"'), "missing artifact-check import");
+const checkpointCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "checkpoint-check.mjs"));
+check("checkpoint-check integrates artifact-check", checkpointCheckText.includes('from "./artifact-check.mjs"'), "missing artifact-check import");
 
 for (const file of agentFiles) {
   const text = read(path.join(agentsDir, file));
   const rules = parseRules(text);
   const shellRules = rules.filter((r) => r.action === "shell");
 
-  for (const script of ["retro-check", "checkpoint-check", "state-check"]) {
+  for (const script of ["retro-check", "checkpoint-check", "state-check", "artifact-check"]) {
     if (text.includes(script)) {
       const shellMatches = rules.filter((r) => (r.action === "shell" || r.action === "*") && r.resource === "*");
       const shellEnabled = shellMatches.length > 0 && shellMatches[shellMatches.length - 1].effect === "allow";
@@ -227,7 +232,7 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填"]) {
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "证据/产物卫生", "flake 治理"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
 const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));
@@ -235,6 +240,17 @@ check(
   "review template checks contract same commit",
   reviewTemplate.includes("契约更新是否与实现同一提交"),
   "missing contract/implementation same-commit check",
+);
+check(
+  "review template checks independent verification",
+  reviewTemplate.includes("## 独立验证") && reviewTemplate.includes("证据可读性"),
+  "missing reviewer independent verification/evidence readability section",
+);
+const testReportTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "TEST-REPORT.md"));
+check(
+  "test report tracks flaky/skipped",
+  testReportTemplate.includes("Flaky/skipped"),
+  "missing flake tracking in test report",
 );
 
 // 命令里引用但团队不存在的脚本路径。

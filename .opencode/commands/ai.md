@@ -13,7 +13,7 @@ $ARGUMENTS
 2. 自动判定 Track（T0–T4）与当前门禁，写入 `state/PROJECT.md` 和 `state/STATUS.md`。
 3. **检查复盘是否到期**：运行 `retro-check`（见 `ai-team-workflow` 3.1）。若到期，先用 `/ai-retro` 的轻量流程写 `team/GROWTH.md`，再开始新功能任务。
 4. **检查提交状态**：运行 `checkpoint-check`。若到期（≥20 个未提交文件、门禁/交接、或 10 个任务未 checkpoint），先调度 `ai-team/devops-engineer` 做精选提交；你不得自己 `git add`/`git commit`。
-5. **检查状态一致性**：运行 `state-check`。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`，再开始新任务。
+5. **检查状态一致性**：运行 `state-check`（内置 artifact 检查）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；根目录日志/临时产物或 UTF-16 证据先清理，再开始新任务。
 6. 按 Track 调度产品、UX、架构、工程、审查、测试、安全、部署、文档。
 7. 除非 L3 不可逆决策，不要反问；做最佳实践假设并记录到 `state/DECISIONS.md`。
 8. 持续执行直到 Definition of Done 或真正阻塞，不要以“下一步建议”提前结束。
