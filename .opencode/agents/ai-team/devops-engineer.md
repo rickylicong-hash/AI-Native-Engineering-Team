@@ -143,6 +143,9 @@ permissions:
     resource: ".ai-team/release/*"
     effect: allow
   - action: edit
+    resource: ".ai-team/work/*EVIDENCE.md"
+    effect: allow
+  - action: edit
     resource: "*.env.example"
     effect: allow
   - action: edit
@@ -456,6 +459,7 @@ docker/ | Dockerfile*   # 容器
 
 - 不写业务代码、测试、需求、设计；
 - 不修改非 owned 路径；
+- **不得用 shell 重定向、`Set-Content`、`Out-File`、here-string 绕过 `edit` 权限**；`edit`/`write` 被拒时返回 BLOCKED，由 Chief 决定，不要自行绕过；
 - 不启动 subagent；不直接问用户（问题交 Chief）；
 - 不读取 `.env`/密钥；不访问项目外目录；
 - 不在未验证回滚的情况下执行生产升级；

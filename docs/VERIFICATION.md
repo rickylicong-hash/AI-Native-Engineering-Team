@@ -338,6 +338,22 @@ Get-ChildItem C:\Users\...\.config\opencode ...  Permission denied
 - `mvn -v` 未授权 → 增加 `mvn -v *`（Chief/Architect/Security）；
 - `~/.config/opencode` 扫描触发 external_directory → 提示不要扫描，直接使用已知脚本路径。
 
+### 5.10 DevOps 写证据权限（1.2.8）
+
+DevOps 执行 `TASK-GIT-011` 时被拒：
+
+```text
+Write to .ai-team/work/TASK-GIT-011-EVIDENCE.md   Permission denied: edit
+```
+
+原因：DevOps 的 edit allowlist 只有 `.ai-team/release/*`，没有 `.ai-team/work/*`，但 checkpoint 流程要求写 `work/TASK-GIT-*-EVIDENCE.md`。修复：
+
+- 增加 `edit .ai-team/work/*EVIDENCE.md -> allow`；
+- DevOps/QA/Writer prompt 明确禁止用 shell 重定向/`Set-Content`/here-string 绕过 edit 权限，被拒时返回 BLOCKED；
+- `audit-team-consistency` 增加检查（87 项）；
+- `GIT-POLICY` 记录 shell 写绕过为残余风险；
+- `install.ps1` 改为“备份复制 + 文件级同步”，不再移动 `agents/ai-team` 目录；修复 OpenCode 运行中 `publish` 报 `MoveDirectoryItemIOError` 的问题。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -367,11 +383,12 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.7 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.8 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（86 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口）。
+- 一致性审计：通过（87 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口）。
 - 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
+- DevOps 证据写入：通过（1.2.8 允许 `work/*EVIDENCE.md` 并禁止 shell 绕过）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
 - 已知平台限制：嵌套编排需 `experimental.subagent_depth ≥ 2`；正常顶层使用不需要。

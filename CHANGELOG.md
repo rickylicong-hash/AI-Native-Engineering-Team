@@ -3,6 +3,22 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.8] - 2026-11-05
+
+### Fixed
+
+- DevOps was denied `edit` on `.ai-team/work/TASK-GIT-*-EVIDENCE.md` even though the checkpoint policy requires DevOps to write that evidence. Added `edit .ai-team/work/*EVIDENCE.md -> allow`.
+- The denied DevOps agent worked around the edit permission with a PowerShell here-string/`Set-Content` via shell. That bypass is now explicitly forbidden in the DevOps/QA/Writer prompts (“edit/write 被拒时返回 BLOCKED，不要用 shell 绕过”), and documented as a residual risk in `GIT-POLICY.md`.
+- `audit-team-consistency.mjs` now checks that DevOps can write `work/*EVIDENCE.md` without shell bypass (87 checks).
+- **Installer no longer moves `agents/ai-team` or skill directories**: on Windows, a running OpenCode service holds read handles and `Move-Item` fails with `MoveDirectoryItemIOError`. The installer now copies a backup and syncs files one by one, so `publish` can run while OpenCode is open.
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/verify.mjs --installed` → 184/184.
+- `node scripts/audit-team-consistency.mjs` → 87 checks, 0 failed.
+- `node scripts/version.mjs --update` succeeded while OpenCode was running.
+
 ## [1.2.7] - 2026-11-05
 
 ### Fixed

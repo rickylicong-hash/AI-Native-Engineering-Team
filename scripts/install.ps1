@@ -43,7 +43,9 @@ function Backup-Path {
   if (-not (Test-Path -LiteralPath $Path)) { return }
   if ($DryRun) { Write-Host "[dry-run] backup $Path -> $Destination"; return }
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Destination) | Out-Null
-  Move-Item -LiteralPath $Path -Destination $Destination -Force
+  # Copy instead of move: OpenCode may keep agent/skill files open on Windows,
+  # which makes renaming the directory fail with MoveDirectoryItemIOError.
+  Copy-Item -LiteralPath $Path -Destination $Destination -Recurse -Force
   Write-Host "backup: $Destination"
 }
 
@@ -54,8 +56,15 @@ function Copy-Tree {
     Write-Host "[dry-run] copy $From -> $To"
     return
   }
-  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $To) | Out-Null
-  Copy-Item -LiteralPath $From -Destination $To -Recurse -Force
+  New-Item -ItemType Directory -Force -Path $To | Out-Null
+  # Sync file by file; overwriting an individual file works even when the
+  # running OpenCode service holds a read handle on the directory.
+  Get-ChildItem -LiteralPath $From -Recurse -File | ForEach-Object {
+    $relative = $_.FullName.Substring($From.Length).TrimStart([char[]]@('\', '/'))
+    $dest = Join-Path $To $relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dest) | Out-Null
+    Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
+  }
 }
 
 $configRoot = Resolve-ConfigRoot -Override $Target

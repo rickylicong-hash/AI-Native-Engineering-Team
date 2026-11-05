@@ -130,6 +130,13 @@ for (const resource of [
   check(`chief resume allow ${resource}`, hasEffective(chiefRules, "shell", resource, "allow"), "missing allow rule");
 }
 
+const devopsRules = parseRules(read(path.join(agentsDir, "devops-engineer.md")));
+check(
+  "devops can write work evidence",
+  hasEffective(devopsRules, "edit", ".ai-team/work/*EVIDENCE.md", "allow"),
+  "DevOps must be able to write work/TASK-*-EVIDENCE.md without shell bypass",
+);
+
 // 命令里引用但团队不存在的脚本路径。
 for (const file of commandFiles) {
   const text = read(path.join(commandsDir, file));

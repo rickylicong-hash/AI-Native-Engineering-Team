@@ -177,6 +177,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mj
 ## 7. 残余风险
 
 - shell 不是沙箱；`git rebase`、`git merge`、`git apply`（Engineer/DevOps）仍可能改变工作区；
+- shell 可以 `Set-Content`/`Out-File`/here-string 写文件，**不能把它当作 `edit` 权限的绕过通道**；角色 prompt 已禁止，review/audit 应检查；需要更强隔离时对非 owned 路径加 shell 写规则 deny；
 - `git config core.hooksPath` 可配置钩子；需要更高安全时单独 deny；
 - `git push` 的远端保护/分支规则仍需平台侧配置；
 - 权限只覆盖团队 agent，不覆盖用户或第三方插件。

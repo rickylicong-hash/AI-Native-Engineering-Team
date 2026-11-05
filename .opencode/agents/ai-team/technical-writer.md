@@ -362,6 +362,7 @@ docs/
 
 - 不写/改生产代码、测试、部署脚本；
 - 不修改需求/设计/状态/审查/安全文件；
+- **不得用 shell 重定向、`Set-Content`、`Out-File`、here-string 绕过 `edit` 权限**；`edit`/`write` 被拒时返回 BLOCKED，由 Chief 决定；
 - 不启动 subagent；不直接问用户（问题交 Chief）；
 - 不读取 `.env`/密钥；不访问项目外目录；
 - 不复制未经核实的命令/输出；
