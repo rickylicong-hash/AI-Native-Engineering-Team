@@ -133,12 +133,6 @@ permissions:
   - action: shell
     resource: "git push *"
     effect: ask
-  - action: shell
-    resource: "npm publish *"
-    effect: ask
-  - action: shell
-    resource: "docker push *"
-    effect: ask
   # Git safety: release/remote/history/working-tree guards.
   - action: shell
     resource: "git tag *"
@@ -218,6 +212,53 @@ permissions:
   - action: shell
     resource: "git push * +*"
     effect: deny
+  # 代理指令/项目配置只能由用户或授权维护者修改。
+  - action: edit
+    resource: "AGENTS.md"
+    effect: deny
+  - action: edit
+    resource: "CLAUDE.md"
+    effect: deny
+  - action: edit
+    resource: "opencode.json"
+    effect: deny
+  - action: edit
+    resource: "opencode.jsonc"
+    effect: deny
+  # ADR 由架构师负责；Writer 只做文档化，不改决策。
+  - action: edit
+    resource: "docs/adr/*"
+    effect: deny
+
+  # 发布/部署命令只由 DevOps 执行；其他角色不得直接发布。
+  - action: shell
+    resource: "npm publish *"
+    effect: deny
+  - action: shell
+    resource: "pnpm publish *"
+    effect: deny
+  - action: shell
+    resource: "yarn publish *"
+    effect: deny
+  - action: shell
+    resource: "cargo publish *"
+    effect: deny
+  - action: shell
+    resource: "twine upload *"
+    effect: deny
+  - action: shell
+    resource: "docker push *"
+    effect: deny
+  - action: shell
+    resource: "kubectl apply *"
+    effect: deny
+  - action: shell
+    resource: "helm upgrade *"
+    effect: deny
+  - action: shell
+    resource: "terraform apply *"
+    effect: deny
+
 ---
 
 # 技术文档工程师（Technical Writer）

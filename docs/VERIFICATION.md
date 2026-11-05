@@ -368,6 +368,20 @@ Write to .ai-team/work/TASK-GIT-011-EVIDENCE.md   Permission denied: edit
 - 1.2.11 补齐工具链/输出检查：`java -version`、`mvn -v`、`mvn *compile*`、`Get-ChildItem`、`Test-Path`、`Get-Command`、`Select-Object`、`Write-Output`；审计增至 95 项；
 - 1.2.12 根据 `REV-0010` 修正行为误区：`mvn -v` 被拒不等于 `mvn test` 被拒；补充 `Select-String`/`rg`/`Test-Path`，要求先试实际 test/verify/package 再报 BLOCKED；审计 96 项。
 
+### 5.12 全成员权限审计（1.2.13）
+
+发现并修复：
+
+- Engineer 因保留源码宽 `edit` 权限，可越权编辑 docs/README/CHANGELOG/deploy/ops/.github/.ai-team/tasks/qa/e2e 等；已加显式 deny；
+- 10 个 agent 都可编辑 `AGENTS.md`/`CLAUDE.md`/`opencode.json*`；已全部 deny；
+- QA 可 `git add/rm/mv/stage`；已 deny；
+- Writer 可编辑 `docs/adr/*`；已 deny，ADR 归 Architect；
+- Engineer/QA/Writer 可 `npm publish`/`docker push`/`kubectl apply`/`helm upgrade`/`terraform apply`（ask）；已改为 deny，仅 DevOps 保留 ask；
+- Chief 缺少 V1 `task` 权限；已补 deny/allow；
+- Security 删除重复 `npm ls`/`pnpm list`，补充 `Select-Object`/`Out-String`。
+
+审计 107 项，0 失败。
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -397,9 +411,9 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.12 已再次验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.2.13 已再次验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（96 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口）。
+- 一致性审计：通过（107 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权）。
 - 成长提案落地：通过（P-01/P-02/P-04/P-05/P-06 已转为模板/脚本/门禁；P-03 待项目执行清理）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。
 - DevOps 证据写入：通过（1.2.8 允许 `work/*EVIDENCE.md` 并禁止 shell 绕过）。

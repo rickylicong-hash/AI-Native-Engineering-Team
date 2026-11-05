@@ -142,33 +142,6 @@ permissions:
   - action: shell
     resource: "git commit *"
     effect: ask
-  - action: shell
-    resource: "npm publish *"
-    effect: ask
-  - action: shell
-    resource: "pnpm publish *"
-    effect: ask
-  - action: shell
-    resource: "yarn publish *"
-    effect: ask
-  - action: shell
-    resource: "cargo publish *"
-    effect: ask
-  - action: shell
-    resource: "twine upload *"
-    effect: ask
-  - action: shell
-    resource: "docker push *"
-    effect: ask
-  - action: shell
-    resource: "kubectl apply *"
-    effect: ask
-  - action: shell
-    resource: "helm upgrade *"
-    effect: ask
-  - action: shell
-    resource: "terraform apply *"
-    effect: ask
   # Git safety: release/remote/history/working-tree guards.
   - action: shell
     resource: "git tag *"
@@ -242,6 +215,168 @@ permissions:
   - action: shell
     resource: "git push * +*"
     effect: deny
+  # 代理指令/项目配置只能由用户或授权维护者修改。
+  - action: edit
+    resource: "AGENTS.md"
+    effect: deny
+  - action: edit
+    resource: "CLAUDE.md"
+    effect: deny
+  - action: edit
+    resource: "opencode.json"
+    effect: deny
+  - action: edit
+    resource: "opencode.jsonc"
+    effect: deny
+
+  # 非 Engineer owned 路径；防止 base allow 越权。
+  - action: edit
+    resource: "docs/*"
+    effect: deny
+  - action: edit
+    resource: "README.md"
+    effect: deny
+  - action: edit
+    resource: "README.*.md"
+    effect: deny
+  - action: edit
+    resource: "CHANGELOG.md"
+    effect: deny
+  - action: edit
+    resource: "CONTRIBUTING.md"
+    effect: deny
+  - action: edit
+    resource: "SECURITY.md"
+    effect: deny
+  - action: edit
+    resource: "CODE_OF_CONDUCT.md"
+    effect: deny
+  - action: edit
+    resource: "LICENSE"
+    effect: deny
+  - action: edit
+    resource: "deploy/*"
+    effect: deny
+  - action: edit
+    resource: "ops/*"
+    effect: deny
+  - action: edit
+    resource: "infra/*"
+    effect: deny
+  - action: edit
+    resource: "terraform/*"
+    effect: deny
+  - action: edit
+    resource: "k8s/*"
+    effect: deny
+  - action: edit
+    resource: "helm/*"
+    effect: deny
+  - action: edit
+    resource: "docker/*"
+    effect: deny
+  - action: edit
+    resource: ".github/*"
+    effect: deny
+  - action: edit
+    resource: ".gitlab-ci.yml"
+    effect: deny
+  - action: edit
+    resource: "Jenkinsfile"
+    effect: deny
+  - action: edit
+    resource: "Dockerfile*"
+    effect: deny
+  - action: edit
+    resource: "docker-compose*"
+    effect: deny
+  - action: edit
+    resource: "compose*.yml"
+    effect: deny
+  - action: edit
+    resource: "compose*.yaml"
+    effect: deny
+  - action: edit
+    resource: ".dockerignore"
+    effect: deny
+  - action: edit
+    resource: ".gitignore"
+    effect: deny
+  - action: edit
+    resource: ".gitattributes"
+    effect: deny
+  - action: edit
+    resource: ".editorconfig"
+    effect: deny
+  - action: edit
+    resource: ".gitmodules"
+    effect: deny
+  - action: edit
+    resource: ".git-blame-ignore-revs"
+    effect: deny
+  - action: edit
+    resource: "Makefile"
+    effect: deny
+  - action: edit
+    resource: "scripts/deploy*"
+    effect: deny
+  - action: edit
+    resource: "scripts/release*"
+    effect: deny
+  - action: edit
+    resource: ".ai-team/docs/*"
+    effect: deny
+  - action: edit
+    resource: ".ai-team/tasks/*"
+    effect: deny
+  - action: edit
+    resource: ".ai-team/README.md"
+    effect: deny
+  - action: edit
+    resource: "design/*"
+    effect: deny
+  - action: edit
+    resource: "mockups/*"
+    effect: deny
+  - action: edit
+    resource: "prototypes/*"
+    effect: deny
+  - action: edit
+    resource: "qa/*"
+    effect: deny
+  - action: edit
+    resource: "e2e/*"
+    effect: deny
+
+  # 发布/部署命令只由 DevOps 执行；其他角色不得直接发布。
+  - action: shell
+    resource: "npm publish *"
+    effect: deny
+  - action: shell
+    resource: "pnpm publish *"
+    effect: deny
+  - action: shell
+    resource: "yarn publish *"
+    effect: deny
+  - action: shell
+    resource: "cargo publish *"
+    effect: deny
+  - action: shell
+    resource: "twine upload *"
+    effect: deny
+  - action: shell
+    resource: "docker push *"
+    effect: deny
+  - action: shell
+    resource: "kubectl apply *"
+    effect: deny
+  - action: shell
+    resource: "helm upgrade *"
+    effect: deny
+  - action: shell
+    resource: "terraform apply *"
+    effect: deny
+
 ---
 
 # 软件工程师（Software Engineer）

@@ -281,6 +281,20 @@ permissions:
   - action: shell
     resource: "git push * +*"
     effect: deny
+  # 代理指令/项目配置只能由用户或授权维护者修改。
+  - action: edit
+    resource: "AGENTS.md"
+    effect: deny
+  - action: edit
+    resource: "CLAUDE.md"
+    effect: deny
+  - action: edit
+    resource: "opencode.json"
+    effect: deny
+  - action: edit
+    resource: "opencode.jsonc"
+    effect: deny
+
 ---
 
 # DevOps / 交付工程师（DevOps Engineer）

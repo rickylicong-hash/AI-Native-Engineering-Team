@@ -168,6 +168,55 @@ check(
   "security cannot run Maven OWASP dependency-check",
 );
 
+const engineerRules = parseRules(read(path.join(agentsDir, "engineer.md")));
+for (const resource of ["docs/*", "deploy/*", "qa/*", ".ai-team/tasks/*", "AGENTS.md"]) {
+  check(
+    `engineer denied edit ${resource}`,
+    hasEffective(engineerRules, "edit", resource, "deny"),
+    "Engineer can edit another role's owned path via the base allow rule",
+  );
+}
+
+const writerRules = parseRules(read(path.join(agentsDir, "technical-writer.md")));
+check(
+  "writer denied edit docs/adr",
+  hasEffective(writerRules, "edit", "docs/adr/*", "deny"),
+  "Writer should not change architecture decisions",
+);
+
+const releaseResources = [
+  "npm publish *",
+  "pnpm publish *",
+  "yarn publish *",
+  "cargo publish *",
+  "twine upload *",
+  "docker push *",
+  "kubectl apply *",
+  "helm upgrade *",
+  "terraform apply *",
+];
+for (const role of ["engineer.md", "qa-engineer.md", "technical-writer.md"]) {
+  const rules = parseRules(read(path.join(agentsDir, role)));
+  const missing = releaseResources.filter((resource) => !hasEffective(rules, "shell", resource, "deny"));
+  check(
+    `${role} release commands denied`,
+    missing.length === 0,
+    missing.join(", "),
+  );
+}
+
+const chiefRulesAll = parseRules(read(path.join(agentsDir, "chief.md")));
+check(
+  "chief task deny all",
+  hasEffective(chiefRulesAll, "task", "*", "deny"),
+  "V1 task permission can bypass subagent restrictions",
+);
+check(
+  "chief task allow ai-team",
+  hasEffective(chiefRulesAll, "task", "ai-team/*", "allow"),
+  "Chief cannot dispatch team via V1 task action",
+);
+
 // 命令里引用但团队不存在的脚本路径。
 for (const file of commandFiles) {
   const text = read(path.join(commandsDir, file));

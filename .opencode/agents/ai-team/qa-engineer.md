@@ -139,18 +139,6 @@ permissions:
   - action: shell
     resource: "git push *"
     effect: deny
-  - action: shell
-    resource: "docker push *"
-    effect: ask
-  - action: shell
-    resource: "kubectl apply *"
-    effect: ask
-  - action: shell
-    resource: "helm upgrade *"
-    effect: ask
-  - action: shell
-    resource: "terraform apply *"
-    effect: ask
   # Git safety: release/remote/history/working-tree guards.
   - action: shell
     resource: "git tag *"
@@ -230,6 +218,67 @@ permissions:
   - action: shell
     resource: "git push * +*"
     effect: deny
+  # 代理指令/项目配置只能由用户或授权维护者修改。
+  - action: edit
+    resource: "AGENTS.md"
+    effect: deny
+  - action: edit
+    resource: "CLAUDE.md"
+    effect: deny
+  - action: edit
+    resource: "opencode.json"
+    effect: deny
+  - action: edit
+    resource: "opencode.jsonc"
+    effect: deny
+
+  # QA 的任务证据摘要（不包含原始日志）。
+  - action: edit
+    resource: ".ai-team/work/*EVIDENCE.md"
+    effect: allow
+  # QA 不 stage、不删除/移动文件；提交由 DevOps 负责。
+  - action: shell
+    resource: "git add *"
+    effect: deny
+  - action: shell
+    resource: "git rm *"
+    effect: deny
+  - action: shell
+    resource: "git mv *"
+    effect: deny
+  - action: shell
+    resource: "git stage *"
+    effect: deny
+
+  # 发布/部署命令只由 DevOps 执行；其他角色不得直接发布。
+  - action: shell
+    resource: "npm publish *"
+    effect: deny
+  - action: shell
+    resource: "pnpm publish *"
+    effect: deny
+  - action: shell
+    resource: "yarn publish *"
+    effect: deny
+  - action: shell
+    resource: "cargo publish *"
+    effect: deny
+  - action: shell
+    resource: "twine upload *"
+    effect: deny
+  - action: shell
+    resource: "docker push *"
+    effect: deny
+  - action: shell
+    resource: "kubectl apply *"
+    effect: deny
+  - action: shell
+    resource: "helm upgrade *"
+    effect: deny
+  - action: shell
+    resource: "terraform apply *"
+    effect: deny
+
 ---
 
 # 测试工程师（QA Engineer）

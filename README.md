@@ -417,6 +417,7 @@ DevOps 提交后运行 `--mark` 记录 `state/CHECKPOINT.json`。
 - **Architect/Security 只读诊断**：同样的工具链版本检查 + `Get-Command` + `Select-Object -ExpandProperty`；不开放 `Sort-Object`/`Measure-Object`、外部目录读写、构建/部署。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
 - **Git 权限**：只读角色不 commit/push/tag；Engineer/DevOps/Writer 的 commit/push/tag 默认 `ask`，QA 为 `deny`（测试产物由 DevOps 提交）；force push/mirror、branch delete、history rewrite 默认 deny。矩阵见 [docs/GIT-POLICY.md](docs/GIT-POLICY.md)，审计：`node scripts/audit-git-permissions.mjs`、`node scripts/audit-team-consistency.mjs`。
+- **发布/部署权限**：`npm publish`、`docker push`、`kubectl apply`、`helm upgrade`、`terraform apply` 只允许 DevOps（`ask`）；Engineer/QA/Writer 为 `deny`。
 - **Checkpoint 提交**：Chief 不执行 `git add`/`commit`；到期时派 DevOps。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark` 更新 `state/CHECKPOINT.json`。
 
 ---

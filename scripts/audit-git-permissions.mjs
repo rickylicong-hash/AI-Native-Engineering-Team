@@ -76,7 +76,15 @@ const commonWriteRules = [
 
 const roleExtraRules = {
   "engineer.md": [["git init *", "ask"]],
-  "qa-engineer.md": [["git init *", "deny"], ["git apply *", "deny"], ["git am *", "deny"]],
+  "qa-engineer.md": [
+    ["git init *", "deny"],
+    ["git add *", "deny"],
+    ["git rm *", "deny"],
+    ["git mv *", "deny"],
+    ["git stage *", "deny"],
+    ["git apply *", "deny"],
+    ["git am *", "deny"],
+  ],
   "devops-engineer.md": [],
   "technical-writer.md": [["git init *", "ask"], ["git apply *", "deny"], ["git am *", "deny"]],
 };

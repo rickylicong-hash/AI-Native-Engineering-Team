@@ -178,7 +178,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - Chief/PM/UX/Architect：只读 git 与列目录；
 - Reviewer：只读 git；
 - Security：只读 git + 安全扫描器；
-- Engineer/QA/DevOps/Writer：允许构建/测试/部署相关命令，但危险命令 deny，发布/推送 ask；
+- Engineer/QA/DevOps/Writer：允许构建/测试；发布/部署命令只允许 DevOps（`ask`），其他角色 `deny`；
 - 所有角色：`.env`/密钥读取 deny；外部目录 ask/deny。
 
 ### 5.3 生产发布

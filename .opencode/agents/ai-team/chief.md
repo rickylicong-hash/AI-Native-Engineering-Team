@@ -22,6 +22,16 @@ permissions:
   - action: subagent
     resource: "explore"
     effect: allow
+  # V1 兼容：旧客户端用 task 而不是 subagent。
+  - action: task
+    resource: "*"
+    effect: deny
+  - action: task
+    resource: "ai-team/*"
+    effect: allow
+  - action: task
+    resource: "explore"
+    effect: allow
   - action: question
     resource: "*"
     effect: allow
@@ -282,6 +292,20 @@ permissions:
   - action: shell
     resource: "Out-String *"
     effect: allow
+  # 代理指令/项目配置只能由用户或授权维护者修改。
+  - action: edit
+    resource: "AGENTS.md"
+    effect: deny
+  - action: edit
+    resource: "CLAUDE.md"
+    effect: deny
+  - action: edit
+    resource: "opencode.json"
+    effect: deny
+  - action: edit
+    resource: "opencode.jsonc"
+    effect: deny
+
 ---
 
 # AI Native 工程团队总负责人（Chief / Delivery Lead）

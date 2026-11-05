@@ -194,6 +194,12 @@ permissions:
     resource: "Select-String *"
     effect: allow
   - action: shell
+    resource: "Select-Object *"
+    effect: allow
+  - action: shell
+    resource: "Out-String *"
+    effect: allow
+  - action: shell
     resource: "rg *"
     effect: allow
   - action: shell
@@ -420,12 +426,20 @@ permissions:
   - action: shell
     resource: "*gradle* dependencies*"
     effect: allow
-  - action: shell
-    resource: "npm ls *"
-    effect: allow
-  - action: shell
-    resource: "pnpm list *"
-    effect: allow
+  # 代理指令/项目配置只能由用户或授权维护者修改。
+  - action: edit
+    resource: "AGENTS.md"
+    effect: deny
+  - action: edit
+    resource: "CLAUDE.md"
+    effect: deny
+  - action: edit
+    resource: "opencode.json"
+    effect: deny
+  - action: edit
+    resource: "opencode.jsonc"
+    effect: deny
+
 ---
 
 # 安全审计员（Security Auditor）

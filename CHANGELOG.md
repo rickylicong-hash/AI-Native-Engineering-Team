@@ -3,6 +3,31 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.2.13] - 2026-11-05
+
+### Fixed
+
+Full permission audit across all 10 agents:
+
+- **Engineer over-permission**: because Engineer keeps a broad `edit` allow for source code, it could also edit docs, README/CHANGELOG, deploy/ops/infra/terraform/k8s/helm/docker, `.github`, Dockerfile/compose/Makefile, `.ai-team/tasks`, `.ai-team/docs`, `.ai-team/README`, `design`, `mockups`, `prototypes`, `qa`, `e2e`. Added explicit denies for all non-owned paths.
+- **Agent instruction files**: every agent could edit `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `opencode.jsonc` through the base allow. Added edit denies to all 10 agents.
+- **QA could stage changes**: QA was non-committing but could `git add`/`git rm`/`git mv`/`git stage`. Added deny rules; QA now truly cannot stage.
+- **Writer could edit ADRs**: `docs/*` allowed Writer to edit `docs/adr/*`; added deny so ADRs remain Architect-owned.
+- **Non-DevOps release permissions**: Engineer/QA/Writer could run `npm publish`, `docker push`, `kubectl apply`, `helm upgrade`, `terraform apply` with `ask`. They are now `deny`; only DevOps keeps `ask`.
+- **Chief V1 compatibility**: added `task` deny/allow rules mirroring `subagent`, so `task` cannot bypass the read-only subagent policy.
+- **Duplicates removed**: Security had duplicate `npm ls *` and `pnpm list *`; release ask/deny duplicates in Engineer/QA/Writer cleaned up.
+- **Security output checks**: added `Select-Object`/`Out-String` for read-only scan output.
+
+### Added
+
+- `audit-team-consistency.mjs` now checks Engineer edit scope, Writer ADR ownership, Chief `task` rules, and release-command denials (107 checks).
+
+### Verified
+
+- `node scripts/verify.mjs` → 192/192.
+- `node scripts/audit-team-consistency.mjs` → 107 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+
 ## [1.2.12] - 2026-11-05
 
 ### Fixed

@@ -14,7 +14,7 @@
 | Code Reviewer | 只读：`status` / `diff` / `log` / `show` / `rev-parse` / `blame` / `ls-files` | 不 commit/push/tag |
 | Security Auditor | 只读：`status` / `diff` / `log` / `show` / `grep` / `ls-files` | 不 commit/push/tag |
 | Engineer | 读写：commit/push/tag 均 `ask`；危险历史/工作区操作 deny/ask | 可初始化普通仓库（`git init` ask） |
-| QA Engineer | 读写：**不 commit/push/tag（`deny`）**；`apply`/`am`/`init` deny | 测试产物由 DevOps checkpoint 提交 |
+| QA Engineer | 读写：**不 commit/push/tag/add/rm/mv（`deny`）**；`apply`/`am`/`init` deny | 测试产物由 DevOps checkpoint 提交 |
 | DevOps Engineer | 读写：commit/push/tag 均 `ask`；仓库初始化 owner | `git init` 允许；remote 变更 ask |
 | Technical Writer | 读写：commit/push/tag 均 `ask`；`apply`/`am` deny | 只改文档 |
 
