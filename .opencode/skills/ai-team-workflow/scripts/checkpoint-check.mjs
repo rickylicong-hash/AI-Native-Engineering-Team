@@ -153,6 +153,7 @@ if (changed > 0) {
   // CHECKPOINT.json 被误判为“从未提交”。
   if (fs.existsSync(checkpointFile) && done - last >= 10) reasons.push(`tasks-${done}-last-${last}`);
 }
+if (headViolations.length > 0) reasons.push("head-noncompliant");
 if (force) reasons.push("forced");
 
 if (mark) {

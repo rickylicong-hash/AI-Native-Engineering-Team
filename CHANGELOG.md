@@ -18,7 +18,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 ### Added
 
 - `scripts/audit-team-consistency.mjs`: 80 checks for manifest/command/skill references, script permissions, QA commit posture, `external_directory`, and required templates/scripts.
-- `checkpoint-check.mjs`: file/task/gate/handoff triggers, `--mark` baseline, HEAD audit for `.ai-team/work/**.txt`, logs, secrets and build output.
+- `checkpoint-check.mjs`: file/task/gate/handoff triggers, `--mark` baseline, HEAD audit that marks a non-compliant commit as due and rejects raw work logs, secrets and build output.
 - `verify.mjs` now checks every `.mjs` syntax and runs both audits (190 checks).
 
 ### Verified

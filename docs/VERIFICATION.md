@@ -274,7 +274,7 @@ branch:   master @ ebb16df
 stage:    G4
 tasks:    done 29, last checkpoint 0 (never)
 changed:  3 files (modified 0, untracked 3)
-due:      no
+due:      YES (head-noncompliant)
 warning:  HEAD ebb16df contains 16 forbidden path(s) (raw logs, secrets, build output); --mark will refuse it
 ```
 
