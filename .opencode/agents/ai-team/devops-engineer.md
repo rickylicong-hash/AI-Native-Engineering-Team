@@ -313,6 +313,10 @@ permissions:
     resource: "git add . *"
     effect: deny
 
+  # T-33：checkpoint 前若 GROWTH 变更，运行只读 growth-check。
+  - action: shell
+    resource: "node *growth-check.mjs*"
+    effect: allow
   # 代理指令/项目配置只能由用户或授权维护者修改。
   - action: edit
     resource: "AGENTS.md"

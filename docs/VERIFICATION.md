@@ -546,6 +546,24 @@ review-check fixture:      strict command + exit pass
 audit-state:               riccon-ai 152 sessions, watermark written
 ```
 
+### 5.20 ai-resume 权限修复（1.3.2）
+
+- 新会话 Chief 执行 `/ai-resume` 时 `growth-check.mjs` 连续 3 次 `permission.rejected`；原因不是脚本错误，而是 1.3.1 新增脚本没有加入 Chief 的 shell allowlist。
+- Chief 增加 `growth-check`、`brief-lint`、`review-check`、`audit-state` 的 `node *...mjs*` allow；Reviewer/Security 增加 `review-check`；DevOps 增加 `growth-check`。
+- Chief 增加绝对路径 `Get-Content */.ai-team/{state,tasks,team}/*` allow；文件读取仍优先 `read`。
+- 新增一致性检查：Chief 必须能运行四个新脚本、Reviewer/Security 必须能运行 `review-check`、DevOps 必须能运行 `growth-check`。
+- 新会话的 `Get-Content D:\...\RUN_LOG.md` 被拒属于预期边界；Chief 随后用 `grep`/`read` 完成，未影响状态。
+
+验证：
+
+```text
+source verify:             197/197
+installed verify:          189/189
+installed + OpenCode:      199/199
+audit-team-consistency:    237 checks, 0 failed
+audit-git-permissions:     10 agents, 0 failed
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -575,9 +593,9 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.1 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.3.2 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（230 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口）。
+- 一致性审计：通过（237 项；修掉 Chief 脚本权限、QA 提交矛盾、external_directory 缺失、checkpoint 未接线、resume 只读命令缺口、DevOps 证据写入缺口、审查员独立验证缺口、Engineer 越权编辑、发布命令越权、重复规则、HANDOFF 自引用、增长台账缺口、复合 shell 与 git add -A 缺口、新脚本 allowlist 缺口）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
 - 成长处置：通过（`GROWTH.md` 提案处置索引 22/22 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
 - Resume 权限噪声：通过（1.2.7 补齐 Chief 只读命令并明确命令风格）。

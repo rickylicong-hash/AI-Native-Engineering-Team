@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.3.2] - 2026-11-06
+
+### Fixed
+
+- **Chief could not run the new 1.3.1 scripts**: `/ai-resume` called `growth-check` but the Chief shell allowlist only covered `retro-check` / `checkpoint-check` / `state-check` / `artifact-check`. Added allow rules for `growth-check`, `brief-lint`, `review-check`, and `audit-state`.
+- **Reviewer/Security could not validate their own reports**: added `node *review-check.mjs*` to both roles.
+- **DevOps could not run the GROWTH pre-checkpoint check**: added `node *growth-check.mjs*` explicitly.
+- **Chief absolute-path state reads**: added `Get-Content */.ai-team/{state,tasks,team}/*` while keeping the `read` tool as the default.
+
+### Verified
+
+- `node scripts/verify.mjs` → 197/197.
+- installed verify → 189/189; installed + OpenCode → 199/199.
+- `node scripts/audit-team-consistency.mjs` → 237 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- Fixture: Chief effective config contains the four new script allows; reviewer/security contain `review-check`; DevOps contains `growth-check`.
+
 ## [1.3.1] - 2026-11-06
 
 ### Added

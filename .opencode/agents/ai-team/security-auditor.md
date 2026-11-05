@@ -203,6 +203,9 @@ permissions:
     resource: "rg *"
     effect: allow
   - action: shell
+    resource: "node *review-check.mjs*"
+    effect: allow
+  - action: shell
     resource: "Test-Path *"
     effect: allow
   # Read-only toolchain diagnostics. No build/test/install/deploy.

@@ -164,6 +164,15 @@ permissions:
     resource: "Get-Content .ai-team/team/*"
     effect: allow
   - action: shell
+    resource: "Get-Content */.ai-team/state/*"
+    effect: allow
+  - action: shell
+    resource: "Get-Content */.ai-team/tasks/*"
+    effect: allow
+  - action: shell
+    resource: "Get-Content */.ai-team/team/*"
+    effect: allow
+  - action: shell
     resource: "Get-Content .ai-team/*.md"
     effect: allow
   - action: shell
@@ -212,6 +221,18 @@ permissions:
     effect: allow
   - action: shell
     resource: "node *artifact-check.mjs*"
+    effect: allow
+  - action: shell
+    resource: "node *growth-check.mjs*"
+    effect: allow
+  - action: shell
+    resource: "node *brief-lint.mjs*"
+    effect: allow
+  - action: shell
+    resource: "node *review-check.mjs*"
+    effect: allow
+  - action: shell
+    resource: "node *audit-state.mjs*"
     effect: allow
   - action: shell
     resource: "npm -v *"

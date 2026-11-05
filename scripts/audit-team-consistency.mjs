@@ -172,6 +172,11 @@ check(
   hasEffective(devopsRules, "edit", ".ai-team/work/TASK-GIT-*EVIDENCE.md", "allow"),
   "DevOps must be able to write TASK-GIT-*EVIDENCE.md without shell bypass",
 );
+check(
+  "devops can run growth-check",
+  hasEffective(devopsRules, "shell", "node *growth-check.mjs*", "allow"),
+  "DevOps cannot validate GROWTH dispositions before checkpoint",
+);
 
 const reviewerRules = parseRules(read(path.join(agentsDir, "code-reviewer.md")));
 check(
@@ -203,6 +208,13 @@ check(
   hasEffective(securityRules, "shell", "mvn *dependency-check*", "allow"),
   "security cannot run Maven OWASP dependency-check",
 );
+for (const [role, rules] of [["code-reviewer", reviewerRules], ["security-auditor", securityRules]]) {
+  check(
+    `${role} can run review-check`,
+    hasEffective(rules, "shell", "node *review-check.mjs*", "allow"),
+    `${role} cannot validate its own report`,
+  );
+}
 
 const qaText = read(path.join(agentsDir, "qa-engineer.md"));
 const qaRules = parseRules(qaText);
@@ -346,6 +358,13 @@ check(
 );
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
+for (const script of ["growth-check", "brief-lint", "review-check", "audit-state"]) {
+  check(
+    `chief can run ${script}`,
+    hasEffective(chiefRules, "shell", `node *${script}.mjs*`, "allow"),
+    `Chief cannot run ${script} during resume/handoff`,
+  );
+}
 for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "技能：", "构建互斥", "状态自检", "growth-check", "brief-lint", "review-check", "audit-state", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
