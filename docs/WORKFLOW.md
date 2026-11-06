@@ -418,7 +418,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
 - **T-34 权限矩阵与预检**：`permissions.json` 只保留破坏性 shell forbidden；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝。
-- **T-35 统一命令网关**：`team-shell.mjs --role <role> --action <action>` 执行 git 读取、构建/测试、扫描和团队脚本；动作由 `permissions.json.gateway` 授权；不经过 shell；普通 shell 不再强制走网关。
+- **T-35 可选结构化执行器**：`team-shell.mjs --role <role> --action <action>` 可用于 git 读取、构建/测试、扫描和团队脚本，提供参数校验与结构化日志；gateway 只在通过它调用时生效，不是权限边界；简单命令直接 shell。
 - **T-36 Shell-first strict（1.6.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
 - **T-37 证据脱敏（P-27）**：`secret-check` 扫描 qa/work/release/security/logs；`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token。
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。

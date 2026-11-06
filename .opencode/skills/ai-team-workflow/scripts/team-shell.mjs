@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 /**
- * AI Team 统一命令网关（1.4.0）。
+ * AI Team 可选结构化执行器（1.4.0；1.8.0 从“统一网关”降级为可选）。
  *
- * 目标：把 agent 的 shell 调用收敛为“角色 + 动作”，由网关用参数数组执行，
- * 不经过 shell；权限只维护 permissions.json 的 gateway 列表。
+ * 用途：把常用的构建/测试/扫描/团队脚本调用收敛为“角色 + 动作”，用参数
+ * 数组执行，不经过 shell；提供参数校验、跨平台命令映射和结构化审计日志。
+ *
+ * 边界：不是权限边界或沙箱。Shell-first 下普通命令可直接执行；permissions.json
+ * 的 gateway 只在通过本脚本调用时生效。只有需要参数校验/统一日志/跨平台映射
+ * 时才使用；简单命令直接执行即可。
  *
  * 用法：
  *   node team-shell.mjs --role chief --action script.growth-check --project .
@@ -45,8 +49,9 @@ if (hasFlag("--help") || !role || !action) {
            scan.dependency|scan.secrets|scan.sast
            script.state-check|script.retro-check|script.checkpoint-check|script.artifact-check
            script.growth-check|script.audit-state|script.permission-lint
-  options: --module <name> --test <class> --rev <rev> --strict --status`);
-  process.exit(role && action ? 0 : 2);
+  options: --module <name> --test <class> --rev <rev> --strict --status
+  note:    optional structured runner; direct shell commands are allowed under Shell-first`);
+  process.exit(hasFlag("--help") ? 0 : 2);
 }
 
 const matrix = loadMatrix();

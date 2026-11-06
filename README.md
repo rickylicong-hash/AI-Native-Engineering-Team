@@ -216,7 +216,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.7.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.8.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -417,16 +417,16 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --
 
 下次审计只处理 `last_audited_session_created_ms` / `last_audited_session_updated_ms` / `last_audited_message_ms` 之后的会话和消息；不要重复分析全部历史。
 
-#### 10. 统一命令网关
+#### 10. 可选结构化执行器
 
-读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs`：
+`team-shell.mjs` 不是权限边界或强制入口。Shell-first 下普通命令可直接执行；需要参数校验、跨平台构建映射或统一审计日志时再用它：
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
   --role chief --action script.growth-check --project .
 ```
 
-Shell-first 下普通命令可直接执行；网关仍用于结构化 build/test/scan/team scripts，动作由 `permissions.json.gateway` 授权。`git add/commit/push` 不再由权限 `ask`/`deny` 拦截。新增网关动作先改矩阵，再改网关。
+`permissions.json.gateway` 只在通过 `team-shell` 调用时生效；新脚本默认直接可执行，不必注册 gateway。`git add/commit/push` 也不由权限 `ask`/`deny` 拦截。
 
 #### 11. 为什么有未提交改动却没提交
 

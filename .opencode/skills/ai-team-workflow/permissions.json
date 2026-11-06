@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "description": "Shell is allow by default. Only shellDestructiveDeny is restricted at agent level; roles list team-shell gateway actions.",
+  "description": "Shell is allow by default. Only shellDestructiveDeny is restricted at agent level; gateway action lists are optional and only apply when using team-shell.mjs.",
   "shellDestructiveDeny": [
     "git reset --hard*",
     "git clean*",

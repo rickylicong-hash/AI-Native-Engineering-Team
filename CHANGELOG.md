@@ -3,6 +3,24 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.0] - 2026-11-06
+
+### Changed
+
+- **`team-shell.mjs` downgraded from mandatory gateway to optional structured runner**: it provides parameter validation, cross-platform build mapping and structured logs, but is not a permission boundary. Direct shell commands are allowed under Shell-first; `permissions.json.gateway` only applies when calling `team-shell`.
+- `/ai` and `/ai-resume` now run `permission-lint.mjs` directly instead of validating the gateway through the gateway.
+- New scripts are directly executable by default; gateway registration is only needed when parameter validation, unified logging or cross-platform mapping is required.
+- README, SKILL, TEAM, WORKFLOW, QUALITY-GATES, `permissions.json`, `permission-lint` and `audit-team-consistency` wording updated to remove mandatory-gateway language.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- installed verify → 187/187; installed + OpenCode → 197/197.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `sourceHash === installedHash` (`c14718e2...`), version `1.8.0`.
+
 ## [1.7.0] - 2026-11-06
 
 ### Added

@@ -72,9 +72,9 @@ for (const role of roles) {
   const agentText = fs.readFileSync(file, "utf8");
   const spec = matrix.roles[role] || {};
   check(
-    `${role} has gateway actions`,
-    Array.isArray(spec.gateway) && spec.gateway.length > 0,
-    "permissions.json role has no gateway actions",
+    `${role} gateway action list shape`,
+    spec.gateway === undefined || Array.isArray(spec.gateway),
+    "gateway must be an array when present (optional structured runner)",
   );
   check(
     `${role} has shell-first guidance`,

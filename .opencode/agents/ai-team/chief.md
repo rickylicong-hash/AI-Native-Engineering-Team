@@ -307,7 +307,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 16. **状态自检**：每批编辑 `.ai-team/state/**` 后立即运行 `state-check`；交接前要求 0 error、0 重复 TASK-ID；发现重复行先修状态，不得继续派单。
 17. **审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；没有实际命令/退出码时只能记 `RISK-*`，不得关闭 P1/安全项。
 18. **审计水位**：每次全量会话审计结束后运行 `audit-state.mjs --mark`，记录审计时间与已覆盖的会话/消息最大时间戳；下次审计从水位之后开始。
-19. **权限矩阵**：新增脚本/命令时先更新 `ai-team-workflow/permissions.json` 的 required/forbidden，再改 agent 权限；`permission-lint` 必须 PASS。禁止用扩大 `node *`/`git *` 绕过。
+19. **权限矩阵**：新增/修改脚本时先判断是否需要 `team-shell` gateway；直接 shell 脚本默认已允许，只有需要参数校验/结构化日志/跨平台映射时才更新 `permissions.json`。`permission-lint` 必须 PASS；禁止用扩大 `node *`/`git *` 绕过。
 20. **证据脱敏（P-27）**：任何 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 写入 `qa/**`、`work/**`、`release/**`、`security/**` 前必须掩码；提交前跑 `secret-check.mjs`，发现明文先 `--fix`。历史已提交的明文需用户决定轮换/接受/改写，不得用“未推送”作为默认前提。
 21. **升级后新会话（P-29）**：`version.mjs --update` 成功后必须新开 OpenCode 会话或重启；旧会话可能仍用旧权限缓存。普通命令被 `Permission denied` 时先查版本，不要扩 allow。
 22. **checkpoint 自动同步（P-26）**：优先用 `checkpoint-check --mark --sync-docs`，自动更新 `HANDOFF` 的 Git/Baseline 与 `STATUS` 的 Checkpoint；随后跑 `state-check`，不要把纯文档同步再派给 DevOps。

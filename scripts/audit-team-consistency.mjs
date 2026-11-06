@@ -225,9 +225,9 @@ if (permissionMatrix) {
   );
   for (const role of matrixRoles) {
     check(
-      `gateway actions declared for ${role}`,
-      Array.isArray(permissionMatrix.roles[role].gateway) && permissionMatrix.roles[role].gateway.length > 0,
-      "missing gateway action list",
+      `gateway action list shape for ${role}`,
+      permissionMatrix.roles[role].gateway === undefined || Array.isArray(permissionMatrix.roles[role].gateway),
+      "gateway must be an array when present (optional structured runner)",
     );
   }
 }

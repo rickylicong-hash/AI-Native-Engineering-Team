@@ -368,9 +368,9 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\permission-doctor.m
 - shell 不再使用 `ask`；出现 `ask` 说明配置过期；
 - 不要为了绕过破坏性 deny 扩大 `node *`/`git *`；复合命令允许。
 
-### 3.8 统一命令网关（1.4.0）
+### 3.8 可选结构化执行器（1.4.0；1.8.0 从统一网关降级）
 
-读取/构建/测试/扫描/团队脚本优先走 `team-shell.mjs`；它把“角色 + 动作”映射为参数数组，不经过 shell。
+`team-shell.mjs` 是可选的：把常用构建/测试/扫描/团队脚本调用映射为参数数组，不经过 shell；提供参数校验、跨平台映射和结构化日志。它不是权限边界，简单命令直接执行即可。
 
 ```powershell
 # 团队脚本
@@ -392,12 +392,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 规则：
 
-- 角色只能使用 `permissions.json` 的 `gateway` 动作；
+- 通过 `team-shell` 调用时，只能使用 `permissions.json` 的 `gateway` 动作；直接 shell 不受此限制；
 - 不支持任意脚本名/任意 shell 参数；测试类、模块、revision 有格式校验；
 - `git add`/`commit`/`push` 等写操作不再由 shell 权限拦截；仍按 brief、ownership 和 checkpoint 流程执行；
 - 每次调用写 `.ai-team/work/team-shell-logs/TEAM-SHELL.log`；
-- 新增动作：先改 `permissions.json` 的 `gateway`，再改 `team-shell.mjs`，然后 `permission-lint`；
-- Shell-first 下普通 `node *script.mjs*` 已由 `shell * -> allow` 覆盖；gateway 不是执行前提，但团队脚本仍建议走 `team-shell`，以获得参数校验和结构化日志。
+- 新脚本默认直接可执行；只有需要参数校验/统一日志/跨平台映射时，才在 `permissions.json` 的 `gateway` 注册并修改 `team-shell.mjs`，然后跑 `permission-lint`；
+- Shell-first 下普通 `node *script.mjs*` 已由 `shell * -> allow` 覆盖；简单命令不要为了“走网关”而多一层封装。
 
 ### 3.9 跨项目团队优化（1.7.0）
 
