@@ -3,6 +3,39 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.6.0] - 2026-11-06
+
+### Added
+
+- **Brief generator (`brief-new.mjs`, P-24)**: produces the standard brief skeleton with `脚本参数` ("以 `<script> --help` 实跑为准") and `契约影响` (section/field references only), so Chief no longer hand-copies CLI flags or contract definitions.
+- **Brief lint hardening (P-24/P-25)**: `brief-lint` now requires `脚本参数`, `契约影响`, `证据位置` with UTF-8, and all existing role-specific fields.
+- **Checkpoint doc sync (`checkpoint-check --sync-docs`, P-26)**: after `--mark`, updates HANDOFF `Git`/`Baseline` and STATUS `Checkpoint` automatically; `--mark --sync-docs` does both in one step.
+- **Evidence redaction (`secret-check.mjs`, P-27)**: scans `qa/**`, `work/**`, `release/**`, `security/**` and `logs/**` for plaintext `Set-Cookie`/`Authorization`/Cookie/password/token; `--fix` replaces values with `<redacted len=NN sha256=...>`. `artifact-check`, `state-check`, `checkpoint-check --mark`, and `review-check` now block plaintext credentials.
+- **Version handshake (P-29)**: `version.mjs --update` prints `RESTART REQUIRED`; `/ai` and `/ai-resume` warn that old sessions may still use cached permissions.
+
+### Changed
+
+- All agent shell guidance now requires UTF-8 logs and evidence redaction; non-destructive `Permission denied` should be investigated as an old-session/version issue, not bypassed by widening allows.
+- Test/review/security templates now include a redaction check.
+- Documentation updated for brief generation, checkpoint sync, secret scan, and restart-after-update.
+
+### Risk
+
+- Same as 1.5.1: agents can edit files, commit, publish, and read secrets; only destructive shell commands are denied. Role boundaries remain process conventions.
+
+### Verified
+
+- `node scripts/verify.mjs` → 189/189.
+- installed verify → 181/181; installed + OpenCode → 191/191.
+- `node scripts/audit-team-consistency.mjs` → 177 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed; `--role chief` → 57 checks, 0 failed.
+- `brief-new` + `brief-lint` fixture → PASS (QA and reviewer).
+- `secret-check` fixture → 3 findings → 0 after `--fix`; riccon-ai 360 files → 0 findings.
+- `checkpoint-check --mark --sync-docs` fixture → HANDOFF/STATUS synced; `state-check` PASS.
+- `version.mjs --update` printed `RESTART REQUIRED`.
+- `sourceHash === installedHash` (`af44686d...`), version `1.6.0`.
+
 ## [1.5.1] - 2026-11-06
 
 ### Changed

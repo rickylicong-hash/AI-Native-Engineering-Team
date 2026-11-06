@@ -51,6 +51,7 @@
 ## 6. 证据
 
 - 命令 + 退出码 + 报告路径：
+- 脱敏（Set-Cookie/Authorization/Cookie/口令/token 已掩码；secret-check findings=0）：
 
 ## 7. 独立验证
 

@@ -5,6 +5,7 @@ agent: ai-team/chief
 
 恢复项目：
 
+0. **版本/会话一致性**：如果本轮安装/更新过团队（`version.mjs --update`），必须新开 OpenCode 会话后再恢复；旧会话可能仍使用旧权限缓存。非破坏性命令被 `Permission denied` 时，先查版本，不要扩大 allow。
 1. 读取 `.ai-team/state/HANDOFF.md`、`STATUS.md`、`TASKS.md`、`DECISIONS.md`、`RISKS.md`。
 1.1 **先跑权限预检**：`node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" --role chief --action script.permission-lint --project .`。失败时不要继续恢复；用 `permission-doctor.mjs` 定位缺失规则并报告 BLOCKED。
 2. 核对工作区 `git status --short` 与文件现状；发现与记忆不一致时，以文件和 git 证据为准并记录差异。
@@ -12,7 +13,7 @@ agent: ai-team/chief
    - 新脚本/命令优先走 `team-shell.mjs`（见 `ai-team-workflow` 3.8）；写操作/commit 仍按角色权限直接执行。
    - 不要用 `;`/`&&`/`2>&1`/`echo` 拼接；不要 `git -C`；不要扫描 `~/.config/opencode`；不要跑 `mvn`；读文件用 `read` 工具。
 3. **先检查复盘是否到期**（`retro-check` / `ai-team-workflow` 3.1）。到期则先按 `/ai-retro` 轻量流程写 `team/GROWTH.md`，再继续编码或门禁。
-4. **检查提交状态**（`checkpoint-check`）。到期则先调度 `ai-team/devops-engineer` 做精选 checkpoint；你不得自己 `git add`/`git commit`。
+4. **检查提交状态**（`checkpoint-check`）。到期则先调度 `ai-team/devops-engineer` 做精选 checkpoint；DevOps 提交后用 `--mark --sync-docs` 同步 HANDOFF/STATUS；你不得自己 `git add`/`git commit`。
 5. **检查状态一致性**（`state-check`，含 artifact 检查）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git/Baseline 必须等于最近代码 checkpoint，纯文档提交允许落后；根目录产物或不可读证据先清理。
 5.1 **检查成长处置**（`growth-check`）：提案索引有缺失状态时先补 `team/GROWTH.md`；本轮处置未回填不得继续。优先用 `team-shell.mjs --role chief --action script.growth-check --project .`。
 6. 用一行复述：当前 Track/门禁、最近决策、未完成动作、下一步。

@@ -216,7 +216,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 提交成功后由 DevOps 运行：
 
 ```powershell
-node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project . --mark
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project . --mark --sync-docs
 ```
 
 规则：
@@ -227,7 +227,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
 5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
 6. `checkpoint-check` 同时扫描根目录产物（`*.log`、`target-*`、`*.class` 等）和证据编码；有 error 时 `--mark` 拒绝。先把日志移到 `logs/` 或 `.ai-team/work/<TASK>-logs/`，不要用 `.gitignore` 掩盖。
-7. **checkpoint 收口（P-18）**：`--mark` 只更新 `CHECKPOINT.json`；Chief 必须在同一轮把 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit，提交纯文档同步后运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。若本次包含 `GROWTH.md` 变更，先运行 `growth-check`，有缺失处置状态时退回 Chief。
+7. **checkpoint 收口（P-18/P-26）**：优先用 `checkpoint-check --mark --sync-docs`；它会把 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit。随后提交纯文档同步并运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。若本次包含 `GROWTH.md` 变更，先运行 `growth-check`，有缺失处置状态时退回 Chief。
 
 ### 3.3 状态一致性检查
 
@@ -281,7 +281,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" -
 - 归档后主文件保留索引与归档导航，不删除历史；
 - 复盘、交接、门禁前运行 `growth-check`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
 
-### 3.5 Shell 与 brief 预检（1.3.1；1.5.0 Shell-first strict）
+### 3.5 Shell 与 brief 预检（1.3.1；1.6.0 Shell-first strict）
 
 **Shell 策略：**
 
@@ -289,16 +289,20 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" -
 - 读单个文件优先用 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求；
 - 只有破坏性命令 deny：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
 - `.env`/密钥、commit/push、publish/deploy 不再由 shell 权限拦截；仍按 brief 和流程约束；
-- 收到 `Permission denied` 只可能是破坏性命令；不要为了绕过它扩大 allow。
+- 写日志/证据必须 UTF-8：PowerShell 5.1 下 `Tee-Object`、`*>` 可能生成 UTF-16；统一用 `Out-File -Encoding utf8`（或 `$PSDefaultParameterValues['Out-File:Encoding']='utf8'`）；
+- 证据中的 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 必须脱敏；提交前跑 `secret-check.mjs`；
+- 收到 `Permission denied` 时：若命令不是破坏性操作，先检查是否旧会话/旧版本（`version.mjs`），新开会话；不要为了绕过它扩大 allow。
 
-**Brief 预检：**
+**Brief 生成 + 预检：**
 
 ```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" `
+  --task TASK-xxxx --agent ai-team/qa-engineer --out .ai-team/tasks/TASK-xxxx-BRIEF.md
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" `
   --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/qa-engineer
 ```
 
-缺字段时不得派发 subagent。Reviewer/Security 缺 `独立验证`/`P2 处置`、QA 缺 `测试路径` 时，`brief-lint` 直接失败。
+缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
 
 **报告门禁：**
 
@@ -307,7 +311,16 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\review-check.mjs" `
   --report .ai-team/reviews/REV-xxxx-TASK-xxxx.md --kind review --strict
 ```
 
-Review/Security 报告必须有 `## 独立验证`、实际命令和退出码；只有 `RISK-*` 的报告不能关闭 P1/安全项。
+Review/Security 报告必须有 `## 独立验证`、实际命令和退出码；只有 `RISK-*` 的报告不能关闭 P1/安全项。报告自身也不得含明文 Cookie/Authorization/口令/token；`review-check` 会调用 secret 扫描。
+
+**证据脱敏：**
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project .
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project . --fix
+```
+
+`artifact-check` / `state-check` / `checkpoint-check --mark` 已内置同一扫描；明文凭据会阻断。
 
 ### 3.6 会话审计水位（1.3.1）
 
@@ -332,7 +345,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" `
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\audit-state.mjs" --project . --status
 ```
 
-### 3.7 权限矩阵与诊断（1.4.2）
+### 3.7 权限矩阵与诊断（1.6.0）
 
 权限的单一事实源是 `skills/ai-team-workflow/permissions.json`；shell 默认 allow，新增安全边界时优先加到矩阵/agent 的 deny，而不是逐条补 allow。
 
@@ -580,20 +593,23 @@ owner: ai-team/chief
 
 ```text
 角色：
+技能：ai-team-workflow
 任务 ID：
 Track / 阶段：
 目标：
 背景与输入：
 所有权：
 约束：
+契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制字段定义>
 验收标准：
 必须执行：
+脚本参数：以 `<script> --help` 实跑为准；不手抄参数
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；统一 UTF-8；失败日志 .failed.log>
 测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
 构建隔离：<共享工作区串行 / 独立 worktree <path>；并行构建或审查必填>
 P2 处置：<修改后通过时必填；每个有实际风险的 P2 → TASK-* / RISK-* / 明确接受>
-证据要求：
+证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径 + 未决问题；敏感值必须脱敏
 禁止：
 回报格式：
 ```
@@ -632,8 +648,9 @@ P2 处置：<修改后通过时必填；每个有实际风险的 P2 → TASK-* /
 - 截图可补充，但不能替代命令；
 - 环境不允许时写 `BLOCKED` + 原始错误 + 影响 + 建议；
 - 原始日志写到 `logs/<date>/TASK-<id>-<step>-<timestamp>.log` 或 `.ai-team/work/<TASK>-logs/`，禁止写仓库根目录；
-- 证据日志统一 UTF-8；PowerShell 5.1 用 `Out-File -Encoding utf8`，不要用 `*>` 默认生成 UTF-16；
-- `logs/**` 下的 UTF-16 是 error（审查工具会拒绝读取）；用 `artifact-check --fix` 转换；`.ai-team/work/**` 的历史 UTF-16 是 warning，可用 `--fix-all` 批量迁移；
+- 证据日志统一 UTF-8；PowerShell 5.1 下 `Tee-Object`、`*>` 可能生成 UTF-16，统一用 `Out-File -Encoding utf8`（或 `$PSDefaultParameterValues['Out-File:Encoding']='utf8'`）；
+- 证据中的 `Set-Cookie`、`Authorization`、`Cookie`、口令、一次性 token 必须脱敏为 `<redacted len=.. sha256=..>`；提交前跑 `secret-check.mjs`，发现明文先 `--fix`；不得把原始凭据贴进聊天/报告；
+- `logs/**` 下的 UTF-16 是 error（审查工具会拒绝读取）；用 `artifact-check --fix` 转换；`.ai-team/work/**` 的历史 UTF-16 是 warning，可用 `--fix-all` 批量迁移；`artifact-check` / `state-check` / `checkpoint-check --mark` 也会阻断明文凭据；
 - 失败日志命名为 `*.failed.log`，并在 EVIDENCE 中写失败原因、是否已修复、后续通过证据；
 - T0/spike 的 `target/` 构建产物在任务收口清理；根目录 `io/org/com` 等只有 `.class` 的目录视为误落盘；
 - 非确定性测试失败（deadlock/timeout/网络/顺序）先登记 `RISK-*`/`DEF-*`，写明 owner 与关闭条件；重跑通过不能单独关闭 P1/安全项；

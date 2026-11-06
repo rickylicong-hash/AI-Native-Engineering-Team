@@ -9,6 +9,7 @@
  *   - 根目录下只有 .class 的 io/org/com 包目录视为误落盘；
  *   - logs/** 下的 .log/.txt 必须是 UTF-8；UTF-16 是 error，审查工具会拒绝读取；
  *   - .ai-team/work/** 下的历史 UTF-16 是 warning，可用 --fix-all 批量迁移；
+ *   - qa/work/release/security/logs 中的明文 Cookie/Authorization/口令/token 是 error；
  *   - logs/** 文件名建议包含 TASK- 前缀，便于追溯。
  *
  * 用法：
@@ -27,6 +28,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { scanSecrets } from "./secret-check.mjs";
 
 const DEFAULT_MAX_EVIDENCE_FILES = 500;
 const SKIP_DIRS = new Set([".git", "node_modules", "target", "dist", "build", ".idea", ".vscode", ".mvn"]);
@@ -258,7 +260,27 @@ export function checkArtifacts(project, options = {}) {
   const warnings = [];
   checkRootArtifacts(root, errors, warnings);
   const evidence = checkEvidence(root, errors, warnings, maxFiles);
-  return { errors, warnings, scanned: evidence.scanned, truncated: evidence.truncated };
+  // P-27：证据中的明文 Cookie / Authorization / 口令 / token 直接阻断。
+  const secrets = scanSecrets(root, { maxFiles });
+  for (const finding of secrets.findings) {
+    errors.push({
+      code: "credential-plaintext",
+      path: finding.file,
+      message: `疑似明文凭据 (${finding.kind}) 行 ${finding.line}`,
+      suggestion: "运行 secret-check --fix，或手工替换为 <redacted len=.. sha256=..>；不要提交明文",
+    });
+  }
+  return {
+    errors,
+    warnings,
+    scanned: evidence.scanned,
+    truncated: evidence.truncated,
+    secrets: {
+      findings: secrets.findings.length,
+      scanned: secrets.scanned,
+      truncated: secrets.truncated,
+    },
+  };
 }
 
 function runCli() {

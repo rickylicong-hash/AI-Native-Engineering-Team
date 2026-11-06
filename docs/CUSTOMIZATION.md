@@ -72,7 +72,7 @@ permissions:
 
 - `*` 必须加引号（YAML alias）；
 - 路径匹配是整路径，`*` 可跨 `/`；Windows 反斜杠会归一化；
-- shell 规则匹配原始命令文本；1.5.1 Shell-first strict 下只有破坏性命令 deny；
+- shell 规则匹配原始命令文本；1.6.0 Shell-first strict 下只有破坏性命令 deny；
 - 最后匹配生效；破坏性 deny 放在 allow 后面；
 - 不要给审查者 `edit` 源码权限；
 - `.env`/密钥的 `read` 也已 `allow`（覆盖 base ask）；仍禁止泄露。

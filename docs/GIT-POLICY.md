@@ -1,6 +1,6 @@
 # Git 权限策略（GIT POLICY）
 
-> **1.5.1 Shell-first strict**：每个角色只有 42 条 shell 规则（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；commit/push/tag/publish/.env 都不再被拦截。
+> **1.6.0 Shell-first strict**：每个角色只有 42 条 shell 规则（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；commit/push/tag/publish/.env 都不再被拦截。
 >
 > 注意：shell 权限是**破坏性操作护栏**，不是沙箱；它不防越权或密钥读取。
 
@@ -115,9 +115,9 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 
 到期条件：未提交文件 ≥20、进入 G5/G7/G8、`--handoff`、已有 `CHECKPOINT.json` 基线后每 10 个 `done`、或用户要求。
 
-每次 checkpoint 建一个 `TASK-GIT-*` 任务（owner: DevOps）并写入 `state/TASKS.md`；brief 列出明确路径，流程上不要用 `git add -A` / `git add .`（权限已不再拒绝）。完成后写 `work/TASK-GIT-*-EVIDENCE.md`，运行 `checkpoint-check --mark`，再更新 `TASKS.md` / `RUN_LOG.md`。
+每次 checkpoint 建一个 `TASK-GIT-*` 任务（owner: DevOps）并写入 `state/TASKS.md`；brief 列出明确路径，流程上不要用 `git add -A` / `git add .`（权限已不再拒绝）。完成后写 `work/TASK-GIT-*-EVIDENCE.md`，运行 `checkpoint-check --mark --sync-docs`，再更新 `TASKS.md` / `RUN_LOG.md`。
 
-DevOps 提交成功后运行 `--mark` 更新 `state/CHECKPOINT.json`。**流程上 Chief 不执行 `git add`/`git commit`/`git push`**；权限已不再拒绝，但正确动作仍是派 DevOps。
+DevOps 提交成功后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并同步 HANDOFF/STATUS；证据中的明文凭据会阻断 `--mark`。**流程上 Chief 不执行 `git add`/`git commit`/`git push`**；权限已不再拒绝，但正确动作仍是派 DevOps。
 
 ## 5. 只读角色流程红线（权限不强制）
 
@@ -178,7 +178,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mj
 
 ## 8. 残余风险
 
-- shell 不是沙箱；1.5.1 下 `git add/commit/push/tag` 也是 allow，`Set-Content`/`Out-File`/here-string 可写文件；**agent 级 `edit` 限制已移除**，只能靠 prompt、review、checkpoint、会话审计；需要更强隔离时用 OS ACL 或容器只读挂载；
+- shell 不是沙箱；1.6.0 下 `git add/commit/push/tag` 也是 allow，`Set-Content`/`Out-File`/here-string 可写文件；**agent 级 `edit` 限制已移除**，只能靠 prompt、review、checkpoint、会话审计；需要更强隔离时用 OS ACL 或容器只读挂载；
 - `git config core.hooksPath` 可配置钩子；需要更高安全时单独 deny；
 - `git push` 的远端保护/分支规则仍需平台侧配置；
 - 权限只覆盖团队 agent，不覆盖用户或第三方插件。

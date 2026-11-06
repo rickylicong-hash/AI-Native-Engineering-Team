@@ -146,7 +146,9 @@ permissions:
 - 读文件优先 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求。
 - 不通过 shell 写入非本角色 owned 的路径；ownership 由 brief、diff、review、checkpoint 和会话审计约束。
 - `.env`/密钥读取不再由 shell 权限拦截；仍禁止把密钥写入聊天、日志或提交。
-- 收到 `Permission denied` 只可能是破坏性命令；不要为了绕过它扩大 allow。
+- 写日志/证据必须 UTF-8：PowerShell 5.1 下 `Tee-Object`、`*>` 可能生成 UTF-16；统一用 `Out-File -Encoding utf8`（或 `$PSDefaultParameterValues['Out-File:Encoding']='utf8'`），checkpoint 前跑 `artifact-check --strict`。
+- 证据中的 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 必须脱敏（保留长度+sha256）；提交前跑 `secret-check.mjs`，发现明文先 `--fix`。
+- 收到 `Permission denied` 时：若命令不是破坏性操作，先检查是否旧会话/旧版本（`version.mjs`），新开会话；不要为了绕过它扩大 allow。
 
 # AI Native 工程团队总负责人（Chief / Delivery Lead）
 
@@ -259,29 +261,31 @@ Track / 阶段：T? / G?
 约束：<技术/合规/兼容/性能/时间/依赖限制；相关 DEC/ADR>
 设计预审：<无 / 涉及凭据、迁移、传输、租户边界 → SEC-xxxx 通过后才能开工>
 装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
-契约影响：<必填；无则写“无”；有则列出 API/事件/字段 + 同一提交更新 API-CONTRACTS/ADR + 契约测试>
+契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制字段定义；有变更时列出 API/事件/字段 + 同一提交更新契约 + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
 验收标准：<3-6 条可检查条件>
-必须执行：<命令/测试/扫描；若环境不允许，明确记录 BLOCKED + 原始错误>
+必须执行：<命令/测试/扫描；脚本参数以对应 `--help` 实跑为准；若环境不允许，明确记录 BLOCKED + 原始错误>
+脚本参数：以 `<script> --help` 实跑为准；不手抄参数
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
-证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；失败日志 .failed.log>
+证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；禁止 Tee-Object 默认编码；失败日志 .failed.log>
 测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
 构建隔离：<共享工作区串行 / 独立 worktree <path>；并行构建或审查必填>
 P2 处置：<修改后通过时必填；每个有实际风险的 P2 → TASK-* / RISK-* / 明确接受>
-证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径 + 未决问题
-禁止：不得启动 subagent；不得跨职责；不得改 `.ai-team/state/**`；不得伪造证据
+证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径 + 未决问题；敏感值已脱敏
+禁止：不得启动 subagent；不得跨职责；不得改 `.ai-team/state/**`；不得伪造证据；不得手抄脚本参数/契约字段
 回报格式：结论（完成/部分完成/阻塞）/ 改动 / 证据 / 风险 / 下一步 / `TASKS.md` 建议更新（状态+证据路径）
 ```
 
-Brief 不合格的表现：没有验收标准、没有所有权、没有证据要求、没有输入路径。发现不合格，先补 brief 再调度。
+Brief 不合格的表现：没有验收标准、没有所有权、没有证据要求、没有输入路径、手抄脚本参数/契约字段。发现不合格，先补 brief 再调度。
 
-**派发前预检（T-30）**：把 brief 写到 `.ai-team/tasks/TASK-xxxx-BRIEF.md`，运行：
+**生成 + 预检（P-24/T-30）**：优先用生成器创建骨架，再填占位符，避免手抄脚本参数和契约字段：
 
 ```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" --task TASK-xxxx --agent <agent-id> --out .ai-team/tasks/TASK-xxxx-BRIEF.md
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent <agent-id>
 ```
 
-缺 `独立验证`、`证据位置`、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。
+缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
 
 ## 6. 并行、依赖与冲突
 
@@ -304,6 +308,9 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 17. **审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；没有实际命令/退出码时只能记 `RISK-*`，不得关闭 P1/安全项。
 18. **审计水位**：每次全量会话审计结束后运行 `audit-state.mjs --mark`，记录审计时间与已覆盖的会话/消息最大时间戳；下次审计从水位之后开始。
 19. **权限矩阵**：新增脚本/命令时先更新 `ai-team-workflow/permissions.json` 的 required/forbidden，再改 agent 权限；`permission-lint` 必须 PASS。禁止用扩大 `node *`/`git *` 绕过。
+20. **证据脱敏（P-27）**：任何 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 写入 `qa/**`、`work/**`、`release/**`、`security/**` 前必须掩码；提交前跑 `secret-check.mjs`，发现明文先 `--fix`。历史已提交的明文需用户决定轮换/接受/改写，不得用“未推送”作为默认前提。
+21. **升级后新会话（P-29）**：`version.mjs --update` 成功后必须新开 OpenCode 会话或重启；旧会话可能仍用旧权限缓存。普通命令被 `Permission denied` 时先查版本，不要扩 allow。
+22. **checkpoint 自动同步（P-26）**：优先用 `checkpoint-check --mark --sync-docs`，自动更新 `HANDOFF` 的 Git/Baseline 与 `STATUS` 的 Checkpoint；随后跑 `state-check`，不要把纯文档同步再派给 DevOps。
 
 ## 7. 记忆与状态协议（防遗忘）
 

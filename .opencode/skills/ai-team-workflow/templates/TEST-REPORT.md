@@ -15,6 +15,7 @@
 | Flaky/skipped | 无；有则列 `RISK-*`/`DEF-*`、owner、原因 |
 | 排除项 | 无（有则列明原因与批准人） |
 | 与上一基线差异 | `+N / -N`；新增/删除用例 |
+| 脱敏 | `Set-Cookie`/`Authorization`/Cookie/口令/token 已脱敏；`secret-check` findings=0 |
 | 证据 | `logs/<date>/TASK-*-mvn-clean-test-*.log`（UTF-8）或等价日志 |
 
 > 同一 Wave 只认这一条全量基线；禁止用“排除旧基线”“跳过失败用例”作为通过口径。部分/定向测试只作补充，不替代全量基线。重跑通过不能单独关闭 flaky；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。

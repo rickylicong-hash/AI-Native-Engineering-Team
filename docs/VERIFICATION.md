@@ -701,6 +701,31 @@ installed verify:          179/179
 installed + OpenCode:      189/189
 ```
 
+### 5.27 流程自动化（1.6.0）
+
+- **P-24**：新增 `brief-new.mjs` 生成标准 brief 骨架；`brief-lint` 新增必填 `脚本参数`、`契约影响`、`证据位置` UTF-8。
+- **P-25**：所有 agent 的 Shell 纪律增加 UTF-8 日志规则；模板和 brief 强制 `证据位置` 含 UTF-8。
+- **P-26**：`checkpoint-check --sync-docs` / `--mark --sync-docs` 自动同步 HANDOFF Git/Baseline 与 STATUS Checkpoint。
+- **P-27**：新增 `secret-check.mjs`；`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token。
+- **P-29**：`version.mjs --update` 输出 `RESTART REQUIRED`；`/ai`、`/ai-resume` 增加版本/旧会话检查。
+
+验证：
+
+```text
+brief-new + brief-lint:      PASS (QA + reviewer fixtures)
+secret-check:                3 findings -> 0 after --fix
+riccon-ai secret scan:       360 files, 0 findings
+checkpoint --mark --sync-docs: state-check PASS (fixture)
+source verify:               189/189
+installed verify:            181/181
+installed + OpenCode:        191/191
+audit-team-consistency:      177 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+permission-lint --role chief: 57 checks, 0 failed
+sourceHash === installedHash: af44686d...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -730,12 +755,13 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.5.1 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.6.0 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 29 个 `done` 到期 → 补录 `RETRO-0001` → 下次 39 或 G5 前；脚本可重复检查）。
-- 一致性审计：通过（158 项；移除依赖 edit/task/external_directory 的旧检查，只保留结构、文档与 shell 边界）。
+- 一致性审计：通过（177 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步与版本握手检查）。
 - 成长提案落地：通过（RETRO-0001 P-01..P-06；RETRO-0002/0003 P-07..P-14；1.3.0 关闭 RETRO-0004/0005 的 P-15..P-22）。
 - 成长处置：通过（`GROWTH.md` 提案处置索引 23/23 done；`growth-check --strict` PASS；旧 RETRO 已归档到 `team/archive/GROWTH-2026.md`）。
-- Shell 权限：通过（1.5.1 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- Shell 权限：通过（1.6.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake）。
 - 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验破坏性边界）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。

@@ -430,7 +430,7 @@ Chief 在流程上**不执行 `git add`/`git commit`**。Shell-first strict 后�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark` 记录 `state/CHECKPOINT.json`。
+DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHECKPOINT.json`，并自动同步 HANDOFF 的 Git/Baseline 与 STATUS 的 Checkpoint。
 
 ---
 
@@ -441,13 +441,17 @@ DevOps 提交后运行 `--mark` 记录 `state/CHECKPOINT.json`。
 - **Shell-first strict**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`。
 - **破坏性命令 deny**：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
 - **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有工具权限强制。
+- **Brief 自动化（P-24）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`。
+- **证据脱敏（P-27）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token；`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
+- **Checkpoint 收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF/STATUS，减少一次纯文档 subagent。
+- **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存。
 - **密钥**：`.env`、`.ssh`、`.aws` 的 `read` 也已 allow（覆盖 base 的 `.env` ask）；仍禁止把密钥写入聊天、日志或提交。
 - **生产发布需批准**：L3 不可逆操作必须用户明确同意；这是流程要求，不是权限 `ask`。
-- **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成。
+- **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成；证据必须 UTF-8 且无明文凭据。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
 - **Git 权限**：只保留破坏性 git 命令 deny；commit/push/tag/branch 普通操作 allow。审计：`node scripts/audit-git-permissions.mjs`。
 - **发布/部署权限**：不再由 shell 权限拦截；流程上仍建议只由 DevOps 执行，并由用户批准生产发布。
-- **Checkpoint 提交**：流程上 Chief 不执行 `git add`/`commit`，到期时派 DevOps；权限不再强制。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark` 更新 `state/CHECKPOINT.json`。
+- **Checkpoint 提交**：流程上 Chief 不执行 `git add`/`commit`，到期时派 DevOps；权限不再强制。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并同步文档。
 
 ---
 

@@ -59,6 +59,7 @@
 - 实际执行的命令/退出码/结果：
 - 未能执行的命令 + 原因（无 shell/RISK-*）：
 - 证据可读性（UTF-8/摘要/不可读处理）：
+- 证据脱敏（Set-Cookie/Authorization/Cookie/口令/token 已掩码；secret-check findings=0）：
 
 ## 测试检查
 

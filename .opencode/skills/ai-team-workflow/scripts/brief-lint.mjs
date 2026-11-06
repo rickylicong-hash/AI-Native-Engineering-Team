@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Subagent brief 预检（1.3.1）。
+ * Subagent brief 预检（1.6.0）。
  *
  * 派发 subagent 前先写 brief 文件，再运行本脚本；缺字段直接拒绝派发。
+ * 1.6.0 起额外强制：脚本参数以 --help 实跑为准、契约只引章节号/字段名、
+ * 证据位置含 UTF-8。
  *
  * 用法：
  *   node brief-lint.mjs --brief .ai-team/tasks/TASK-0035-BRIEF.md --agent ai-team/qa-engineer
@@ -48,7 +50,11 @@ const fields = {
   constraints: ["## 约束", "约束："],
   acceptance: ["## 验收", "验收标准"],
   must: ["## 必须执行", "必须执行："],
+  script_help: ["脚本参数：", "脚本参数:", "以 `--help` 实跑", "以 --help 实跑"],
+  contract_ref: ["契约影响：", "契约引用："],
+  independent: ["独立验证"],
   evidence_location: ["证据位置"],
+  encoding: ["UTF-8", "utf8", "utf-8"],
   evidence_req: ["证据要求"],
   forbidden: ["禁止"],
   report: ["## 回报格式", "回报格式"],
@@ -57,8 +63,8 @@ const fields = {
 
 const required = [
   "role", "skill", "task", "track", "goal", "background", "ownership", "constraints",
-  "acceptance", "must", "evidence_location", "evidence_req", "forbidden",
-  "report", "build_isolation",
+  "acceptance", "must", "script_help", "contract_ref", "evidence_location", "encoding",
+  "evidence_req", "forbidden", "report", "build_isolation",
 ];
 
 if (agent === "code-reviewer" || agent === "security-auditor") {

@@ -226,21 +226,31 @@ Track / 阶段：T3 / G4
 约束：<技术/合规/兼容/性能/依赖>
 设计预审：<无 / 涉及凭据、迁移、传输、租户边界 → SEC-xxxx 通过后才能开工>
 装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
-契约影响：<必填；无则写“无”；有则列出 API/事件/字段 + 同一提交更新 API-CONTRACTS/ADR + 契约测试>
+契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制定义；有变更时同一提交更新契约 + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
 验收标准：
   1. ...
   2. ...
-必须执行：<命令/测试/扫描>
+必须执行：<命令/测试/扫描；参数以对应 --help 实跑为准>
+脚本参数：以 `<script> --help` 实跑为准；不手抄参数
 独立验证：<reviewer/QA 必须实际执行的命令；无 shell 写 RISK-* + 补偿证据>
-证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8>
+证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；禁止 Tee-Object 默认编码>
 测试路径：<owner=qa-engineer 时必填；QA-owned + 构建 test source root>
 构建隔离：<共享工作区串行 / 独立 worktree>
 P2 处置：<修改后通过时必填；TASK-* / RISK-* / 明确接受>
-证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径
-禁止：不得启动 subagent；不得跨职责；不得改 state；不得伪造证据
+证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径；敏感值已脱敏
+禁止：不得启动 subagent；不得跨职责；不得改 state；不得伪造证据；不得手抄脚本参数/契约字段
 回报格式：结论/改动/证据/风险/下一步/TASKS.md 建议更新
 ```
+
+生成与预检：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" --task TASK-xxxx --agent ai-team/engineer --out .ai-team/tasks/TASK-xxxx-BRIEF.md
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/engineer
+```
+
+缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。
 
 ## 6. 证据标准
 
@@ -276,6 +286,7 @@ P2 处置：<修改后通过时必填；TASK-* / RISK-* / 明确接受>
 - 部署无健康检查/回滚；
 - 把日志/临时文件写在仓库根目录；
 - 用 UTF-16/二进制日志作为唯一证据；
+- 证据含明文 `Set-Cookie`/`Authorization`/Cookie/口令/token；
 - 用“重跑通过”关闭 flake。
 
 修复/回归任务额外要求：`work/TASK-*-EVIDENCE.md` 附 P1 closure 表（原 P1、修复点、复现命令、回归结果），并说明是否引入新的同类 P1；没有这张表，G5 不通过。
@@ -367,7 +378,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark` 更新 `state/CHECKPOINT.json`。`checkpoint-check` 会同时扫描根目录产物和证据编码；有 artifact error 时 `--mark` 拒绝。**`--mark` 后必须由 Chief 同步 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `Git`/`Baseline` 与 `STATUS.md` 的 `Checkpoint`。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -392,7 +403,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。
 - **P-17 审查独立复现**：reviewer brief 默认授予测试/扫描 shell；无 shell 必须写 `RISK-*` + 补偿证据。证据必须可读（UTF-8 或文本摘要），UTF-16/二进制日志不能作为 P1/安全项唯一依据。reviewer 报告必须写“实际执行/未能执行”的命令。
-- **P-18 checkpoint 收口**：`--mark` 后 Chief 同步 `HANDOFF Git/Baseline` 与 `STATUS Checkpoint` 到该 commit，提交纯文档同步并运行 `state-check`；`TASK-GIT-*` 证据包含 `state-check` PASS。
+- **P-18/P-26 checkpoint 收口**：`checkpoint-check --mark --sync-docs` 自动同步 `HANDOFF Git/Baseline` 与 `STATUS Checkpoint` 到该 commit；提交纯文档变更后运行 `state-check`；`TASK-GIT-*` 证据包含 `state-check` PASS。
 - **P-19 QA 测试路径**：Java/Maven/Gradle 的 E2E 放在 `**/src/test/java/**/e2e/**`（资源放 `**/src/test/resources/**/e2e/**`）；brief 的 `测试路径` 必须 QA-owned 且在构建 test source root；E2E 必须用标准构建命令从干净 checkout 执行，禁止手工 `javac`/复制 class 作为最终证据。
 - **T-20 构建互斥**：同一工作区同一时刻只允许一个 subagent 执行会写 `target/`/`build/`/`coverage/` 的命令；并行任务默认只读或独立 worktree；brief 写 `构建隔离`。
 - **T-21 独立验证强制**：reviewer/security 的 brief 必须给可执行测试/扫描命令；禁止默认写“无 shell”；无 shell 需 `RISK-*` + Chief 批准，且不得据此关闭 P1/安全项。
@@ -402,13 +413,15 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-25 权限/审计加固**：Engineer 不得编辑 QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计覆盖上述边界。
 - **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/落地/证据/日期；`growth-check` 检查；已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
-- **T-30 brief 预检**：派发 subagent 前写 `.ai-team/tasks/TASK-*-BRIEF.md` 并运行 `brief-lint.mjs --agent`；缺 `独立验证`/`证据位置`/QA `测试路径`/Reviewer-Security `P2 处置`/`构建隔离` 时不得派发。
+- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/QA `测试路径`/Reviewer-Security `P2 处置`/`构建隔离` 时不得派发。
 - **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；1.5.0 不再保留这些限制。
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
 - **T-34 权限矩阵与预检**：`permissions.json` 只保留破坏性 shell forbidden；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝。
 - **T-35 统一命令网关**：`team-shell.mjs --role <role> --action <action>` 执行 git 读取、构建/测试、扫描和团队脚本；动作由 `permissions.json.gateway` 授权；不经过 shell；普通 shell 不再强制走网关。
-- **T-36 Shell-first strict（1.5.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
+- **T-36 Shell-first strict（1.6.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
+- **T-37 证据脱敏（P-27）**：`secret-check` 扫描 qa/work/release/security/logs；`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token。
+- **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
 
 ## 8. 并行规则
 

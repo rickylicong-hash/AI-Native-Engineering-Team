@@ -146,7 +146,9 @@ permissions:
 - 读文件优先 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求。
 - 不通过 shell 写入非本角色 owned 的路径；ownership 由 brief、diff、review、checkpoint 和会话审计约束。
 - `.env`/密钥读取不再由 shell 权限拦截；仍禁止把密钥写入聊天、日志或提交。
-- 收到 `Permission denied` 只可能是破坏性命令；不要为了绕过它扩大 allow。
+- 写日志/证据必须 UTF-8：PowerShell 5.1 下 `Tee-Object`、`*>` 可能生成 UTF-16；统一用 `Out-File -Encoding utf8`（或 `$PSDefaultParameterValues['Out-File:Encoding']='utf8'`），checkpoint 前跑 `artifact-check --strict`。
+- 证据中的 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 必须脱敏（保留长度+sha256）；提交前跑 `secret-check.mjs`，发现明文先 `--fix`。
+- 收到 `Permission denied` 时：若命令不是破坏性操作，先检查是否旧会话/旧版本（`version.mjs`），新开会话；不要为了绕过它扩大 allow。
 
 # 代码审查员（Code Reviewer）
 

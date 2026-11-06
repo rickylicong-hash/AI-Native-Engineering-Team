@@ -7,11 +7,14 @@
  *
  * 同时扫描根目录临时产物与证据编码；artifact error 会使 checkpoint 到期，
  * 并让 --mark 拒绝。--strict 还会把 artifact warning 视为到期。
+ * 1.6.0 起还扫描证据中的明文凭据，并提供 --sync-docs 自动同步 HANDOFF/STATUS。
  *
  * 用法：
  *   node checkpoint-check.mjs [--project <dir>] [--json] [--quiet] [--strict]
  *   node checkpoint-check.mjs --handoff          # 交接前强制检查
  *   node checkpoint-check.mjs --mark             # 提交成功后记录基线
+ *   node checkpoint-check.mjs --sync-docs        # 把 HANDOFF/STATUS 同步到 CHECKPOINT.json
+ *   node checkpoint-check.mjs --mark --sync-docs # 标记后立即同步文档
  *   node checkpoint-check.mjs --max-files 20     # 自定义文件阈值
  *
  * 退出码：
@@ -39,6 +42,7 @@ const json = hasFlag("--json");
 const quiet = hasFlag("--quiet");
 const handoff = hasFlag("--handoff");
 const mark = hasFlag("--mark");
+const syncDocs = hasFlag("--sync-docs");
 const force = hasFlag("--force");
 const strict = hasFlag("--strict");
 const maxFiles = Number.parseInt(getArg("--max-files", "20"), 10) || 20;
@@ -46,6 +50,7 @@ const maxFiles = Number.parseInt(getArg("--max-files", "20"), 10) || 20;
 const stateDir = path.join(project, ".ai-team", "state");
 const tasksFile = path.join(stateDir, "TASKS.md");
 const statusFile = path.join(stateDir, "STATUS.md");
+const handoffFile = path.join(stateDir, "HANDOFF.md");
 const checkpointFile = path.join(stateDir, "CHECKPOINT.json");
 
 function read(file) {
@@ -99,6 +104,79 @@ function auditHead() {
   return [...new Set(violations)];
 }
 
+function replaceFirstHash(line, commit) {
+  if (/`[0-9a-f]{7,40}`/i.test(line)) return line.replace(/`[0-9a-f]{7,40}`/i, `\`${commit}\``);
+  if (/\b[0-9a-f]{7,40}\b/i.test(line)) return line.replace(/\b[0-9a-f]{7,40}\b/i, commit);
+  return `${line.trimEnd()} \`${commit}\``;
+}
+
+function replaceLastHash(line, commit) {
+  const hashes = [...line.matchAll(/`?([0-9a-f]{7,40})`?/gi)];
+  if (hashes.length > 0) {
+    const last = hashes[hashes.length - 1];
+    const start = last.index;
+    const end = start + last[0].length;
+    return `${line.slice(0, start)}\`${commit}\`${line.slice(end)}`;
+  }
+  return `${line.trimEnd()} \`${commit}\``;
+}
+
+function syncStateDocs(commit, doneCount) {
+  const changes = [];
+  if (!fs.existsSync(handoffFile)) {
+    return { ok: false, error: "HANDOFF.md missing; cannot sync Git/Baseline", changes };
+  }
+  if (!fs.existsSync(statusFile)) {
+    return { ok: false, error: "STATUS.md missing; cannot sync Checkpoint", changes };
+  }
+  const handoffText = read(handoffFile);
+  const handoffEol = handoffText.includes("\r\n") ? "\r\n" : "\n";
+  const handoffLines = handoffText.split(/\r?\n/);
+  let handoffGit = false;
+  let handoffBaseline = false;
+  for (let i = 0; i < handoffLines.length; i += 1) {
+    const line = handoffLines[i];
+    if (/^-\s*Git[：:]/.test(line)) {
+      handoffLines[i] = replaceFirstHash(line, commit);
+      handoffGit = true;
+    } else if (/^-\s*Baseline[：:]/.test(line)) {
+      handoffLines[i] = replaceLastHash(line, commit);
+      handoffBaseline = true;
+    }
+  }
+  if (!handoffGit || !handoffBaseline) {
+    return { ok: false, error: "HANDOFF.md needs both '- Git:' and '- Baseline:' lines", changes };
+  }
+  const nextHandoff = handoffLines.join(handoffEol);
+  if (nextHandoff !== handoffText) {
+    fs.writeFileSync(handoffFile, nextHandoff, "utf8");
+    changes.push("HANDOFF.md Git/Baseline");
+  }
+
+  const statusText = read(statusFile);
+  const statusEol = statusText.includes("\r\n") ? "\r\n" : "\n";
+  const statusLines = statusText.split(/\r?\n/);
+  let statusCheckpoint = false;
+  for (let i = 0; i < statusLines.length; i += 1) {
+    const line = statusLines[i];
+    if (/^-\s*Checkpoint[：:]/.test(line)) {
+      statusLines[i] = `- Checkpoint: \`${commit}\`（done ${doneCount}）`;
+      statusCheckpoint = true;
+    } else if (/^-\s*HEAD[：:]/.test(line)) {
+      statusLines[i] = replaceFirstHash(line, commit);
+    }
+  }
+  if (!statusCheckpoint) {
+    return { ok: false, error: "STATUS.md needs a '- Checkpoint:' line", changes };
+  }
+  const nextStatus = statusLines.join(statusEol);
+  if (nextStatus !== statusText) {
+    fs.writeFileSync(statusFile, nextStatus, "utf8");
+    changes.push("STATUS.md Checkpoint/HEAD");
+  }
+  return { ok: true, changes };
+}
+
 if (!fs.existsSync(tasksFile)) {
   const message = `not an AI Team project: missing ${tasksFile}`;
   if (json) console.log(JSON.stringify({ ok: false, due: null, error: message }, null, 2));
@@ -148,6 +226,37 @@ const headCommit = head.status === 0 ? head.stdout.trim() : "(no commits)";
 const branchResult = git(["rev-parse", "--abbrev-ref", "HEAD"]);
 const branch = branchResult.status === 0 ? branchResult.stdout.trim() : "unknown";
 const headViolations = head.status === 0 ? auditHead() : [];
+
+// P-26：把 HANDOFF/STATUS 的基线字段同步到 CHECKPOINT.json，避免每次
+// checkpoint 后再派一个纯文档 subagent。
+if (syncDocs && !mark) {
+  const commit = String(checkpoint.last_checkpoint_commit || "");
+  const doneCount = checkpoint.tasks_at_last_checkpoint !== undefined && Number.isFinite(Number(checkpoint.tasks_at_last_checkpoint))
+    ? Number(checkpoint.tasks_at_last_checkpoint)
+    : done;
+  if (!commit) {
+    const message = "CHECKPOINT.json has no last_checkpoint_commit; run --mark first";
+    if (json) console.log(JSON.stringify({ ok: false, error: message }, null, 2));
+    else console.log(`ERROR  ${message}`);
+    process.exit(3);
+  }
+  const result = syncStateDocs(commit, doneCount);
+  if (!result.ok) {
+    if (json) console.log(JSON.stringify({ ok: false, error: result.error, changes: result.changes }, null, 2));
+    else {
+      console.log(`ERROR  ${result.error}`);
+      for (const change of result.changes) console.log(`  CHANGED ${change}`);
+    }
+    process.exit(3);
+  }
+  if (json) console.log(JSON.stringify({ ok: true, commit, done: doneCount, changes: result.changes }, null, 2));
+  else {
+    console.log(`SYNCED  HANDOFF/STATUS -> ${commit} (done ${doneCount})`);
+    for (const change of result.changes) console.log(`  CHANGED ${change}`);
+    console.log("next: run state-check, then commit the doc-only sync.");
+  }
+  process.exit(0);
+}
 
 // P-15/P-17：被 .gitignore 忽略的日志不会被 git status 看到，必须单独扫描根目录。
 let artifactResult = { errors: [], warnings: [], scanned: 0, truncated: false };
@@ -208,15 +317,30 @@ if (mark) {
   const next = [
     `HANDOFF Git/Baseline = ${headCommit}`,
     `STATUS Checkpoint = ${headCommit} (done ${done})`,
-    "commit the doc-only sync, then run state-check",
+    "run checkpoint-check --sync-docs (or update the two doc lines manually), then state-check",
   ];
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(checkpointFile, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-  if (json) console.log(JSON.stringify({ ok: true, marked: payload, next }, null, 2));
+  const syncResult = syncDocs ? syncStateDocs(headCommit, done) : { ok: true, changes: [] };
+  if (!syncResult.ok) {
+    if (json) console.log(JSON.stringify({ ok: false, marked: payload, error: syncResult.error, changes: syncResult.changes }, null, 2));
+    else {
+      console.log(`MARKED  ${path.relative(project, checkpointFile)} (${headCommit}, done ${done})`);
+      console.log(`ERROR   ${syncResult.error}`);
+    }
+    process.exit(3);
+  }
+  if (json) console.log(JSON.stringify({ ok: true, marked: payload, next, synced: syncResult.changes }, null, 2));
   else if (!quiet) {
     console.log(`MARKED  ${path.relative(project, checkpointFile)} (${headCommit}, done ${done})`);
-    console.log("NEXT:");
-    for (const step of next) console.log(`  - ${step}`);
+    if (syncResult.changes.length > 0) {
+      console.log("SYNCED:");
+      for (const change of syncResult.changes) console.log(`  - ${change}`);
+      console.log("NEXT: run state-check, then commit the doc-only sync.");
+    } else {
+      console.log("NEXT:");
+      for (const step of next) console.log(`  - ${step}`);
+    }
   }
   process.exit(0);
 }

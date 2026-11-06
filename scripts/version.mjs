@@ -204,6 +204,12 @@ if (update) {
     process.exit(1);
   }
   console.log(`Updated to ${after.sourceVersion}.`);
+  if (!json) {
+    console.log("");
+    console.log("RESTART REQUIRED: OpenCode caches agent permissions at session creation.");
+    console.log("Start a new session (or restart OpenCode) before running /ai or /ai-resume.");
+    console.log("Old sessions may still deny non-destructive commands.");
+  }
   process.exit(0);
 }
 

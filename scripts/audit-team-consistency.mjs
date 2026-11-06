@@ -107,14 +107,25 @@ const checkpointCheckText = read(path.join(skillsDir, "ai-team-workflow", "scrip
 check("checkpoint-check integrates artifact-check", checkpointCheckText.includes('from "./artifact-check.mjs"'), "missing artifact-check import");
 check(
   "checkpoint-check emits closeout next steps",
-  checkpointCheckText.includes("NEXT:") && checkpointCheckText.includes("HANDOFF Git/Baseline"),
-  "missing --mark closeout instructions",
+  checkpointCheckText.includes("--sync-docs") && checkpointCheckText.includes("syncStateDocs"),
+  "missing --mark/--sync-docs closeout instructions",
 );
 const artifactCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "artifact-check.mjs"));
 check(
   "artifact-check can fix UTF-16 evidence",
   artifactCheckText.includes("--fix") && artifactCheckText.includes("fixEvidence"),
   "missing UTF-16 conversion path",
+);
+check(
+  "artifact-check blocks plaintext credentials",
+  artifactCheckText.includes("scanSecrets") && artifactCheckText.includes("credential-plaintext"),
+  "artifact-check does not block plaintext credentials",
+);
+const reviewCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "review-check.mjs"));
+check(
+  "review-check blocks plaintext credentials",
+  reviewCheckText.includes("scanText") && reviewCheckText.includes("plaintext credential"),
+  "review-check does not block plaintext credentials",
 );
 const reviewerText = read(path.join(agentsDir, "code-reviewer.md"));
 check(
@@ -186,7 +197,7 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
-for (const script of ["brief-lint.mjs", "review-check.mjs", "audit-state.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs"]) {
+for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs"]) {
   check(
     `workflow script ${script} exists`,
     fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),
@@ -222,8 +233,8 @@ if (permissionMatrix) {
 }
 const briefLintText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs"));
 check(
-  "brief-lint validates skill and independent verification",
-  briefLintText.includes("skill") && briefLintText.includes("independent") && briefLintText.includes("test_path"),
+  "brief-lint validates skill, script help, contract, encoding and independent verification",
+  briefLintText.includes("script_help") && briefLintText.includes("contract_ref") && briefLintText.includes("encoding") && briefLintText.includes("independent") && briefLintText.includes("test_path"),
   "brief-lint does not validate the required contract fields",
 );
 for (const file of agentFiles) {
@@ -239,7 +250,7 @@ for (const file of agentFiles) {
 }
 
 const chiefText = read(path.join(agentsDir, "chief.md"));
-for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "技能：", "构建互斥", "状态自检", "growth-check", "brief-lint", "review-check", "audit-state", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）"]) {
+for (const term of ["设计预审：", "装配清单：", "契约影响：<必填", "脚本参数：", "brief-new", "secret-check", "--sync-docs", "审查节流", "Checkpoint 硬闸", "状态回填", "独立验证：", "证据位置：", "测试路径：", "构建隔离：", "P2 处置：", "技能：", "构建互斥", "状态自检", "growth-check", "brief-lint", "review-check", "audit-state", "证据/产物卫生", "flake 治理", "checkpoint 收口（P-18）", "证据脱敏（P-27）", "升级后新会话（P-29）", "checkpoint 自动同步（P-26）"]) {
   check(`chief brief/process contains ${term}`, chiefText.includes(term), "missing workflow guard");
 }
 const reviewTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md"));
@@ -250,7 +261,7 @@ check(
 );
 check(
   "review template checks independent verification",
-  reviewTemplate.includes("## 独立验证") && reviewTemplate.includes("证据可读性"),
+  reviewTemplate.includes("## 独立验证") && reviewTemplate.includes("证据可读性") && reviewTemplate.includes("证据脱敏"),
   "missing reviewer independent verification/evidence readability section",
 );
 check(
@@ -266,7 +277,7 @@ check(
 const workflowDoc = read(path.resolve("docs", "WORKFLOW.md"));
 check(
   "workflow doc has current brief fields",
-  workflowDoc.includes("构建隔离：") && workflowDoc.includes("独立验证：") && workflowDoc.includes("测试路径："),
+  workflowDoc.includes("构建隔离：") && workflowDoc.includes("独立验证：") && workflowDoc.includes("测试路径：") && workflowDoc.includes("脚本参数：") && workflowDoc.includes("契约影响："),
   "WORKFLOW brief template is missing new fields",
 );
 check(

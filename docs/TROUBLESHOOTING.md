@@ -95,7 +95,7 @@ Permission denied: shell
 
 **原因（1.4.1 及以前）**：只读角色 shell 默认 deny；复合命令、管道和 `2>&1` 会被直接拒绝。1.4.2 起改为 Shell-first：所有角色 shell 默认 allow，复合命令不再默认拒绝。
 
-**1.5.1 仍会被拒的只有破坏性命令**：
+**1.6.0 仍会被拒的只有破坏性命令**：
 
 - `git reset --hard*`、`git clean*`、`git restore*`、`git checkout --*`、`git checkout -f*`；
 - force push/mirror/delete、history rewrite、删除分支/tag/stash/worktree；
@@ -105,11 +105,13 @@ commit/push、publish/deploy、`.env`/密钥、`git add -A` 都**不再**被权�
 
 **处理**：
 
-1. 先确认版本 ≥ `1.5.1`：
+1. 先确认版本 ≥ `1.6.0`：
 
 ```bash
 node scripts/version.mjs --update
 ```
+
+   如果刚执行过 `--update`，必须**新开 OpenCode 会话**；旧会话仍使用旧权限缓存，会继续拒绝普通命令。
 
 2. 用 `permission-doctor` 看最终匹配规则；不要为了绕过破坏性 deny 扩大 `node *`/`git *`：
 
@@ -125,6 +127,21 @@ cmd /c "java -version 2>&1"
 ```
 
 **项目外目录**：1.5.1 起 agent 级 `external_directory` 规则已移除，base 默认允许；shell 由 OS 权限和人工审查约束。
+
+### 3.2.1 `brief-lint` 报缺字段 / brief 手抄参数
+
+**现象**：`brief-lint` 报 `MISSING script_help`、`MISSING contract_ref`、`MISSING encoding`，或 brief 里手抄的 `--file`/`--report` 与脚本实际参数不一致。
+
+**处理**：不要手写骨架；用生成器：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" `
+  --task TASK-xxxx --agent ai-team/engineer --out .ai-team/tasks/TASK-xxxx-BRIEF.md
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" `
+  --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/engineer
+```
+
+脚本参数一律写“以 `<script> --help` 实跑为准”；契约只引 `API-CONTRACTS`/ADR 章节号或字段名，不复制定义。
 
 ### 3.3 有未提交改动但没人提交
 
@@ -144,7 +161,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 
 - 到期 → 建 `TASK-GIT-*`，brief 列出明确路径，派 DevOps 提交；流程建议不要写 `git add -A`。
 - 只提交精选 `.ai-team` 路径；不提交 `work/**` 原始日志、截图、tmp、未脱敏安全报告。
-- 提交后 DevOps 运行 `checkpoint-check --mark`；若 HEAD 含原始日志/密钥/构建产物，`--mark` 会拒绝，先修正再标记。
+- 提交后 DevOps 运行 `checkpoint-check --mark --sync-docs`；`--sync-docs` 会自动更新 `HANDOFF` 的 Git/Baseline 和 `STATUS` 的 Checkpoint。若 HEAD 含原始日志/密钥/构建产物或证据含明文凭据，`--mark` 会拒绝，先修正再标记。
 - 用户明确要求暂不提交 → 在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 3.3.1 `growth-check` 报提案缺少处置状态
@@ -171,7 +188,7 @@ Shell mvn -v                                                  Permission denied
 - `git -C ...`、`Get-Content`、`mvn -v` 等旧版未匹配；
 - 模型被拒后反复换写法重试，放大成“大量 Permission denied”。
 
-**1.5.1 Shell-first strict 处理**：
+**1.6.0 Shell-first strict 处理**：
 
 - 所有角色 shell 默认 allow；以上命令现在都应直接通过；
 - 只有破坏性命令仍会被拒；commit/push/publish/`.env`/`git add -A` 不再由权限拦截；
@@ -180,13 +197,13 @@ Shell mvn -v                                                  Permission denied
 
 ## 4. 一直弹权限确认
 
-1.5.1 起 shell 不再配置 `ask`。如果仍弹确认，通常是旧会话仍在用旧配置。
+1.6.0 起 shell 不再配置 `ask`。如果仍弹确认，通常是旧会话仍在用旧配置。
 
 处理：
 
 1. 看提示里的 action/resource；
-2. 确认已安装 1.5.1：`node scripts/version.mjs --check`；
-3. 重开 `/ai-resume` 或新会话，让 OpenCode 重新加载 agent 配置；
+2. 确认已安装 1.6.0：`node scripts/version.mjs --check`；
+3. 重开 `/ai-resume` 或新会话，让 OpenCode 重新加载 agent 配置；`version.mjs --update` 后会提示 `RESTART REQUIRED`；
 4. 如果新会话仍弹 `ask`，用 `permission-doctor` 检查是否有旧的 `ask` 规则；
 5. 项目级可覆盖：项目 `.opencode/opencode.jsonc` 的 `agents`。
 
@@ -200,6 +217,19 @@ Shell mvn -v                                                  Permission denied
 - 需要新变量：改 `.env.example` 并说明；
 - 需要真实密钥：由用户在本地/Secret Manager 配置，不交给 agent；
 - 不要把密钥贴进聊天、日志或提交。
+
+### 5.1 证据里出现明文 Cookie/Authorization/口令
+
+**现象**：`state-check`/`artifact-check`/`checkpoint-check --mark` 报 `credential-plaintext`，或 `secret-check` 找到明文。
+
+**处理**：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project .
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project . --fix
+```
+
+`--fix` 会把值替换为 `<redacted len=NN sha256=前12位>`，保留长度和交叉核对能力。已经提交到历史的明文不能靠 `--fix` 消除；需要用户决定轮换、接受或改写历史（force push 属于破坏性操作，必须明确批准）。
 
 ## 6. 技能没有出现在可用列表
 

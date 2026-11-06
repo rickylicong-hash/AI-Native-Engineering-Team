@@ -5,7 +5,8 @@
  * 检查报告是否真的记录了独立验证：
  *   - 必须有 `## 独立验证`（或 `## 证据` 兼容旧报告）；
  *   - 必须出现实际命令（mvn/git/扫描器）与退出码；
- *   - 或者明确写“未执行”并附 `RISK-*`。
+ *   - 或者明确写“未执行”并附 `RISK-*`；
+ *   - 报告自身不得含明文 Cookie/Authorization/口令/token（1.6.0 P-27）。
  * `--strict` 要求实际命令 + 退出码，不接受 risk-only。
  *
  * 用法：
@@ -18,6 +19,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { scanText } from "./secret-check.mjs";
 
 const args = process.argv.slice(2);
 const getArg = (name, fallback = null) => {
@@ -48,6 +50,10 @@ const hasRisk = /RISK-\d+/i.test(text);
 
 const errors = [];
 if (!hasSection) errors.push("missing section: ## 独立验证（或 ## 证据）");
+const secrets = scanText(text, file);
+if (secrets.length > 0) {
+  errors.push(`plaintext credential in report (${secrets.map((item) => `${item.kind}@${item.line}`).join(", ")}); redact with secret-check --fix`);
+}
 if (strict) {
   if (!hasCommand) errors.push("strict: no actual command evidence");
   if (!hasExit) errors.push("strict: no exit code");

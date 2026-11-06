@@ -175,13 +175,16 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 
 ### 5.2 Shell
 
-- **Shell-first strict（1.5.1）**：每个角色只有 44 条权限规则：42 条 shell（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow（覆盖 base ask）；
+- **Shell-first strict（1.6.0）**：每个角色仍是 44 条权限规则：42 条 shell（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow（覆盖 base ask）；
 - 允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`；
 - 只有破坏性命令 `deny`：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
 - `.env`/密钥读取、commit/push、publish/deploy **不再由权限拦截**；由 brief、ownership、review、checkpoint 和会话审计约束；
 - 只读角色不再有 shell 强制边界；Chief/PM/UX/Architect/Reviewer/Security 不提交是**流程约定**，不是权限保证；
 - 权限矩阵：`permissions.json` 维护 `shellDestructiveDeny` / `shellMustAllow` 与各角色 `gateway`；`permission-lint` 校验 agent 只含 42 shell + 2 read allow；
 - 统一网关：读/构建/测试/扫描/团队脚本优先走 `team-shell.mjs --role <role> --action <action>`；但普通 shell 不再要求走网关；
+- **checkpoint 自动收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF 的 Git/Baseline 与 STATUS 的 Checkpoint；
+- **证据脱敏（P-27）**：`secret-check` 扫描 qa/work/release/security/logs；`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断；
+- **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；
 - 残余风险：shell 可以写文件、提交、发布、读取密钥；需要强隔离时用 OS ACL 或容器只读挂载。
 
 ### 5.3 生产发布
