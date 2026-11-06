@@ -3,6 +3,25 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.6] - 2026-11-07
+
+### Changed
+
+- **`/ai-improve` is now analysis-first**: default mode audits GROWTH, AUDIT and sessions, writes a project-side report and stops for explicit user authorization. It does not modify the AI Native source or target-project GROWTH.
+- **`--apply` is the authorization/implementation mode**: it reads the latest `TEAM-IMPROVEMENT-*.md`, validates it, and only then updates GROWTH and team source.
+- **Risk-based subagents**: `DOCS-ONLY` is build-only; `PATCH` adds code-reviewer; script/permission/security changes add security-auditor; only `FEATURE` uses the full team chain. Analysis mode never calls subagents.
+- **Artifact policy**: analysis does not create an AI Native `.ai-team/` directory; implementation may create it locally and must archive/clean it after.
+- Updated README, WORKFLOW, TEAM, SKILL and IMPROVEMENT docs for the authorization gate and execution matrix.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- installed verify → 187/187; installed + OpenCode → 197/197.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `sourceHash === installedHash` (`a652d5f8...`), version `1.8.6`.
+
 ## [1.8.5] - 2026-11-07
 
 ### Fixed

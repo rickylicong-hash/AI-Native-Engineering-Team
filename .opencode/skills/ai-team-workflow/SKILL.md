@@ -410,9 +410,10 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
 2. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；
-3. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；
-4. 需要改团队源时，先请求用户批准；批准后实现、审查、验证、更新版本与文档；
-5. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`。
+3. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
+4. **默认停止并等待用户授权**；授权后用 `--apply` 实施，不能在同一轮自动修改团队源；
+5. 实施按风险调用子智能体：`DOCS-ONLY` 由 build 自己改；`PATCH` 加 code-reviewer；涉及脚本/权限/安全加 security-auditor；`FEATURE` 才用完整团队链；
+6. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`；完成后清理本地 `.ai-team` 证据。
 
 硬规则：
 

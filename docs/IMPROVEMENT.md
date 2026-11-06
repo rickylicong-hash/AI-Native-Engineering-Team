@@ -13,7 +13,7 @@
 /ai-improve riccon-ai
 ```
 
-命令会读取该项目的 `.ai-team/team/GROWTH.md`、`AUDIT.json`、最近会话审计和交付证据，判断团队是否需要优化；需要时再修改 AI Native 团队源，并同步文档与版本。
+命令会读取该项目的 `.ai-team/team/GROWTH.md`、`AUDIT.json`、最近会话审计和交付证据，判断团队是否需要优化。默认只输出分析和报告，**不修改 AI Native 团队源**；用户阅读报告并授权后，才用 `--apply` 进入实施并同步文档与版本。
 
 ## 2. 优化闭环
 
@@ -25,6 +25,8 @@ Observe  收集 GROWTH、会话、交付、文档证据
 Frame    把现象归因到流程/角色/工具/文档，而不是归因到某个人
   ↓
 Decide   NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER
+  ↓
+Authorize 用户阅读报告并明确授权（--apply）
   ↓
 Change   一次最多 2 个改动，写清验收与回滚
   ↓
@@ -198,14 +200,22 @@ proposed → accepted → in_progress → done
 
 ## 10. 快速使用
 
+默认只分析并等待授权：
+
 ```text
 /ai-improve D:\Development\riccon-ai
 ```
 
-只做分析和提案：
+阅读报告后授权实施：
+
+```text
+/ai-improve D:\Development\riccon-ai --apply
+```
+
+只分析、不询问实施：
 
 ```text
 /ai-improve D:\Development\riccon-ai --analyze-only
 ```
 
-当前命令默认先分析、再请求一次批准；批准后才修改 AI Native 源。`--analyze-only` 可显式跳过实施阶段。
+授权前不得修改 AI Native 源。实施阶段按风险决定子智能体：`DOCS-ONLY` 由 build 自己改；`PATCH` 加 code-reviewer；涉及脚本/权限/安全时加 security-auditor；`FEATURE` 才使用完整团队链。

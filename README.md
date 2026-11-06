@@ -108,7 +108,7 @@ flowchart LR
 | `/ai-hotfix <问题>` | T1 快速修复 + 回归 + 复盘 |
 | `/ai-retro [范围]` | 复盘与团队改进提案（每 10 个 done / 门禁前 / 事故后） |
 | `/ai-docs [范围]` | README/API/运维/CHANGELOG，并验证命令 |
-| `/ai-improve <项目>` | **维护者命令（build）**：审计项目 GROWTH 与会话，持续优化团队并同步文档 |
+| `/ai-improve <项目>` | **维护者命令（build）**：默认只审计 GROWTH 与会话并等待授权；`--apply` 才实施团队优化 |
 
 除 `/ai-improve` 由 `build` 维护者执行外，其余命令默认进入 `ai-team/chief`。也可以直接选择 agent：`ai-team/chief`。
 
@@ -216,7 +216,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.8.5 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.8.6 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -376,7 +376,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 3. 才修改本仓库源文件；
 4. 再走 `publish` 流程。
 
-跨项目持续优化在 `build` 下用 `/ai-improve <project>`：它读取该项目的 GROWTH、AUDIT 与会话使用，按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；需要改团队时先请求批准，完成后同步版本、命令、文档和验证记录。策略见 [docs/IMPROVEMENT.md](docs/IMPROVEMENT.md)。
+跨项目持续优化在 `build` 下用 `/ai-improve <project>`：它读取该项目的 GROWTH、AUDIT 与会话使用，按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策。默认只输出报告并等待授权；你确认后运行 `--apply`，才修改团队源、版本、命令、文档并留下验证记录。策略见 [docs/IMPROVEMENT.md](docs/IMPROVEMENT.md)。
 
 更完整的维护者说明见 [INSTALL.md](INSTALL.md#51-团队自身迭代维护者)。
 
