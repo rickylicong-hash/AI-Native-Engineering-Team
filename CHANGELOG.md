@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.3] - 2026-11-06
+
+### Changed
+
+- **`/ai-improve` now runs under `build`**: the command is a maintainer workflow for auditing projects and evolving the team, not a project-delivery workflow. `ai-team/chief` remains the runtime orchestrator for `/ai` and `/ai-resume` inside target projects.
+- `verify.mjs` and `audit-team-consistency.mjs` now allow the built-in `build` agent as an external command agent.
+- README, WORKFLOW, TEAM, SKILL and IMPROVEMENT docs clarify the maintainer vs delivery split.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- installed verify → 187/187; installed + OpenCode → 197/197.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `sourceHash === installedHash` (`19caa476...`), version `1.8.3`.
+
 ## [1.8.2] - 2026-11-06
 
 ### Fixed

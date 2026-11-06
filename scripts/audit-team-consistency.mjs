@@ -59,6 +59,7 @@ function check(name, ok, detail = "") {
 const manifest = JSON.parse(read(manifestPath).replace(/^\uFEFF/, ""));
 const agentFiles = fs.readdirSync(agentsDir).filter((f) => f.endsWith(".md")).sort();
 const agentIds = new Set(agentFiles.map((f) => `ai-team/${path.basename(f, ".md")}`));
+const externalCommandAgents = new Set(["build"]);
 
 check("manifest agent count", manifest.agents.length === agentFiles.length, `manifest ${manifest.agents.length}, files ${agentFiles.length}`);
 for (const agent of manifest.agents) {
@@ -73,7 +74,7 @@ for (const file of commandFiles) {
   const text = read(path.join(commandsDir, file));
   const agent = text.match(/^agent:\s*(\S+)/m)?.[1];
   check(`command ${file} has agent`, Boolean(agent));
-  if (agent) check(`command ${file} agent exists`, agentIds.has(agent), agent);
+  if (agent) check(`command ${file} agent exists`, agentIds.has(agent) || externalCommandAgents.has(agent), agent);
 }
 
 const skillDirs = fs.readdirSync(skillsDir, { withFileTypes: true })

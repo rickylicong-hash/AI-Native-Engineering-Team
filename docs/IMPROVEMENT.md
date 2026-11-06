@@ -6,6 +6,8 @@
 
 适用于任意使用 AI Native 团队的项目，例如：
 
+在 `build` 维护者会话中运行：
+
 ```text
 /ai-improve D:\Development\riccon-ai
 /ai-improve riccon-ai

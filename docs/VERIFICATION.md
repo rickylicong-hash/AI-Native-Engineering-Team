@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.8.2**。§1–§3 为 1.8.2 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.8.3**。§1–§3 为 1.8.3 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -794,7 +794,7 @@ sourceHash === installedHash: c14718e2...
 - `brief-lint.mjs`：校验字段值（非空、非 `<...>`、非“不适用/N/A/无”）；事务类 engineer brief 与 reviewer/QA 边界四问为必填。
 - `checkpoint-check.mjs`：`--sync-docs` 写 HANDOFF `- 远程：`（origin/upstream/ahead/SHA，剥离 userinfo 与 query/fragment）；`--max-evidence-files` 默认 2000；`--mark --sync-docs` 预检失败零写入、apply 失败回滚 `CHECKPOINT.json`。
 - `templates/HANDOFF.md`：新增 `- 远程：` 行。
-- 证据：`.ai-team/work/TASK-IMPROVE-2026-11-06-logs/`（R1/R2/R3）；审查 `REV-IMPROVE-2026-11-06-R3`、`SEC-IMPROVE-2026-11-06-R3`。
+- 证据：本地审计产物（R1/R2/R3，已归档，不随仓库发布）；审查 `REV-IMPROVE-2026-11-06-R3`、`SEC-IMPROVE-2026-11-06-R3`。
 
 验证：
 
@@ -809,13 +809,13 @@ run-fixtures:                148 PASS / 0 FAIL（连续 2 次 + 并行 2 实例�
 sourceHash === installedHash: b6919825...
 ```
 
-已知遗留：`secret-check` 不扫 `.ai-team/state/**` 与无 scheme/空白 URL 的窄形态，由 `TASK-IMPROVE-2026-11-06-SEC-R1` 与 `RISK-TEAM-001/002` 承接。
+已知遗留：`secret-check` 不扫目标项目 `.ai-team/state/**` 与无 scheme/空白 URL 的窄形态，由历史审计 `TASK-IMPROVE-2026-11-06-SEC-R1` 与 `RISK-TEAM-001/002` 承接（本地已归档）。
 
 ### 5.32 state-check 证据扫描上限（1.8.2）
 
 - `state-check.mjs` 新增 `--max-evidence-files`（默认 2000），与 `checkpoint-check.mjs` 对齐；非法值（0/负值/非数字）exit 2。
 - 528 证据文件项目：`state-check` 0 warning、`scanned=528, truncated=false`；`--max-evidence-files 5` 触发 truncated；`--json`/`--strict` 语义不变。
-- 证据：`.ai-team/work/TASK-IMPROVE-2026-11-06-logs/R4/`；审查 `REV-IMPROVE-2026-11-06-R4`。
+- 证据：本地审计产物 R4（已归档，不随仓库发布）；审查 `REV-IMPROVE-2026-11-06-R4`。
 
 验证：
 
@@ -827,6 +827,25 @@ audit-team-consistency:      183 checks, 0 failed
 audit-git-permissions:       10 agents, 0 failed
 permission-lint:             570 checks, 0 failed
 sourceHash === installedHash: cedf4665...
+```
+
+### 5.33 维护者命令路由（1.8.3）
+
+- `/ai-improve` 的 `agent` 从 `ai-team/chief` 改为 `build`：它属于团队仓库维护流程，不是项目交付流程；`/ai`、`/ai-resume` 仍在目标项目中使用 Chief。
+- `verify.mjs` 与 `audit-team-consistency.mjs` 允许内置 `build` 作为 command 的外部 agent；其余命令仍必须是 `ai-team/*`。
+- README、WORKFLOW、TEAM、SKILL、IMPROVEMENT 明确“build 维护团队，Chief 交付项目”的分工。
+- 本仓库本地 `.ai-team/` 审计产物已归档到仓库外并清理；该目录 gitignored，不进入发布包。
+
+验证：
+
+```text
+source verify:               195/195
+installed verify:            187/187
+installed + OpenCode:        197/197
+audit-team-consistency:      183 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+sourceHash === installedHash: 19caa476...
 ```
 
 ## 6. 未执行项
@@ -858,14 +877,14 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.0 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.3 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
 - 一致性审计：通过（183 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令与版本握手检查）。
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；具体项目状态以该项目 GROWTH 为准。
-- Shell 权限：通过（1.8.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- Shell 权限：通过（1.8.3 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake）。
-- 持续优化：通过（`/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；GROWTH/会话/文档闭环）。
+- 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；GROWTH/会话/文档闭环）。
 - 网关定位：通过（`team-shell` 为可选结构化执行器，不是权限边界；预检直接跑 `permission-lint`）。
 - 文档一致性：通过（1.6.1 全量 docs 校验；1.7.0 新增命令计数、策略文档与验证记录）。
 - 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验破坏性边界）。

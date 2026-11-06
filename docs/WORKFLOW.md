@@ -432,7 +432,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 
 ### 7.7 跨项目持续优化（1.7.0）
 
-`/ai-improve <project>` 用项目的真实使用证据优化团队本身：
+`/ai-improve <project>` 由 `build` 维护者运行，用项目的真实使用证据优化团队本身：
 
 1. 读取项目 `GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md`、状态与交付证据；
 2. 运行 `improve-scan.mjs` 汇总会话/消息/工具错误/权限拒绝/角色分布；

@@ -211,6 +211,7 @@ if (fs.existsSync(chiefFile)) {
 // Commands
 // ---------------------------------------------------------------------------
 const commandFiles = listMarkdown(paths.commands).filter((f) => path.basename(f).startsWith("ai"));
+const externalCommandAgents = new Set(["build"]);
 addCheck("command count", commandFiles.length === 13, `expected 13, found ${commandFiles.length}`);
 
 const commandIds = new Set();
@@ -220,7 +221,7 @@ for (const file of commandFiles) {
   const { data, body } = parseFrontmatter(readText(file));
   const label = `command /${id}`;
   addCheck(`${label} description`, typeof data.description === "string" && data.description.length >= 5);
-  addCheck(`${label} agent exists`, typeof data.agent === "string" && agentIds.has(data.agent), String(data.agent));
+  addCheck(`${label} agent exists`, typeof data.agent === "string" && (agentIds.has(data.agent) || externalCommandAgents.has(data.agent)), String(data.agent));
   addCheck(`${label} body`, body.trim().length > 40);
   addCheck(`${label} passes arguments or is a read-only command`, body.includes("$ARGUMENTS") || id === "ai-status" || id === "ai-resume" || id === "ai-handoff");
   if (manifestCommands.size > 0) addCheck(`${label} in manifest`, manifestCommands.has(id));

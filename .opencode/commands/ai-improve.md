@@ -1,6 +1,6 @@
 ---
-description: 指定项目，审计 GROWTH 与会话使用，持续优化 AI Native 团队并同步文档
-agent: ai-team/chief
+description: 维护者命令（build）：审计项目 GROWTH 与会话，持续优化 AI Native 团队并同步文档
+agent: build
 ---
 
 优化对象项目：
@@ -135,7 +135,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
    - `node .opencode/skills/ai-team-workflow/scripts/permission-lint.mjs`
    - `node scripts/version.mjs --update`，然后 installed verify 和 `version.mjs --check`
 7. 回填项目 `GROWTH.md`：提案状态改为 `done`，写落地版本/任务、证据、日期；`growth-check` PASS。
-8. 由 DevOps 精选提交；Chief 不得自己 `git add`/`commit`；push 需用户批准。更新安装后提示新开会话（`RESTART REQUIRED`）。
+8. 由 DevOps 精选提交；执行者（build）不要自己 `git add`/`commit`；push 需用户批准。更新安装后提示新开会话（`RESTART REQUIRED`）。
 
 ## 6. 持续优化策略
 

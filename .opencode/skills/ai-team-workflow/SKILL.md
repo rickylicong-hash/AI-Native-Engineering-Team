@@ -406,7 +406,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 ### 3.9 跨项目团队优化（1.7.0）
 
-`/ai-improve <project>` 用真实项目证据优化团队本身：
+`/ai-improve <project>` 由 `build` 维护者运行，用真实项目证据优化团队本身：
 
 1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
 2. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；
