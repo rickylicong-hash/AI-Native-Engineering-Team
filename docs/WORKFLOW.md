@@ -391,6 +391,8 @@ DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并�
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
+# 500+ 证据文件项目：默认上限 2000，可用 --max-evidence-files 调整
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project . --max-evidence-files 2000
 ```
 
 检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git/Baseline commit、`TASKS.md` 的 `done（...）` 旧状态，以及根目录临时产物和证据编码。`Baseline` 只写最近代码 checkpoint；其后的纯文档/`.ai-team` 提交不报 warning。stage/track 不一致或存在 artifact error 时先修正，不得交接或把门禁标为通过。

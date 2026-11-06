@@ -12,11 +12,12 @@
  *
  * 用法：
  *   node state-check.mjs [--project <dir>] [--json] [--strict]
+ *   node state-check.mjs --max-evidence-files 2000  # 证据扫描上限（默认 2000，必须 >= 1）
  *
  * 退出码：
  *   0 = 无 error（warning 不阻断）
  *   1 = 有 error，或 --strict 下有 warning
- *   2 = 没有 .ai-team/state
+ *   2 = 没有 .ai-team/state / 参数非法
  *   3 = 读取失败
  */
 
@@ -36,6 +37,25 @@ const hasFlag = (name) => args.includes(name);
 const project = path.resolve(getArg("--project", process.cwd()).replace(/^~(?=$|[\\/])/, process.env.USERPROFILE || process.env.HOME || ""));
 const json = hasFlag("--json");
 const strict = hasFlag("--strict");
+
+/**
+ * 读取数量型参数；显式传值必须是 >= 1 的整数（与 checkpoint-check 同一规则）。
+ * 不接受 `parseInt(...) || 2000`：负值会被当成 0 条扫描却仍退出 0，
+ * 等于静默禁用证据/凭据扫描；这里改为参数错误退出 2。
+ */
+function parseCountOption(name, fallback) {
+  const raw = getArg(name, null);
+  if (raw === null) return fallback;
+  if (!/^\d+$/.test(raw) || Number.parseInt(raw, 10) < 1) {
+    console.error(`ERROR  ${name} must be an integer >= 1 (got "${raw}")`);
+    process.exit(2);
+  }
+  return Number.parseInt(raw, 10);
+}
+
+// P-36：与 artifact-check 默认（500）解耦；默认 2000，避免 500+ 证据项目
+// 每次 state-check 都报 scan-truncated。
+const maxEvidenceFiles = parseCountOption("--max-evidence-files", 2000);
 
 const stateDir = path.join(project, ".ai-team", "state");
 const projectFile = path.join(stateDir, "PROJECT.md");
@@ -237,7 +257,8 @@ try {
   }
 
   // P-15/P-17：根目录产物与证据可读性也属于状态一致性的一部分。
-  const artifacts = checkArtifacts(project);
+  // P-36：扫描上限与 checkpoint-check 对齐，避免同一项目两套判定。
+  const artifacts = checkArtifacts(project, { maxEvidenceFiles });
   artifactSummary = {
     errors: artifacts.errors.length,
     warnings: artifacts.warnings.length,

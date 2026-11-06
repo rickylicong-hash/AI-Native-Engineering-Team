@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.8.1**。§1–§3 为 1.8.1 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.8.2**。§1–§3 为 1.8.2 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -810,6 +810,24 @@ sourceHash === installedHash: b6919825...
 ```
 
 已知遗留：`secret-check` 不扫 `.ai-team/state/**` 与无 scheme/空白 URL 的窄形态，由 `TASK-IMPROVE-2026-11-06-SEC-R1` 与 `RISK-TEAM-001/002` 承接。
+
+### 5.32 state-check 证据扫描上限（1.8.2）
+
+- `state-check.mjs` 新增 `--max-evidence-files`（默认 2000），与 `checkpoint-check.mjs` 对齐；非法值（0/负值/非数字）exit 2。
+- 528 证据文件项目：`state-check` 0 warning、`scanned=528, truncated=false`；`--max-evidence-files 5` 触发 truncated；`--json`/`--strict` 语义不变。
+- 证据：`.ai-team/work/TASK-IMPROVE-2026-11-06-logs/R4/`；审查 `REV-IMPROVE-2026-11-06-R4`。
+
+验证：
+
+```text
+source verify:               195/195
+installed verify:            187/187
+installed + OpenCode:        197/197
+audit-team-consistency:      183 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+sourceHash === installedHash: cedf4665...
+```
 
 ## 6. 未执行项
 

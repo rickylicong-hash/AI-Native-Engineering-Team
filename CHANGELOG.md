@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.2] - 2026-11-06
+
+### Fixed
+
+- **`state-check.mjs` evidence scan cap**: added `--max-evidence-files` (default 2000) and passed it to `checkArtifacts`, matching `checkpoint-check`. Projects with 500+ evidence files no longer get a permanent `scan-truncated` warning from `state-check`; `--strict` semantics are unchanged. Invalid values (`0`, negative, non-numeric) exit 2.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195; installed verify → 187/187; installed + OpenCode → 197/197.
+- `state-check --project D:\Development\riccon-ai` → 0 warnings (528 files scanned); `--max-evidence-files 5` → truncated warning; `0/-5/abc` → exit 2.
+- `node scripts/audit-team-consistency.mjs` → 183/0/0; `audit-git-permissions` → 10/0; `permission-lint` → 570 PASS.
+- `sourceHash === installedHash` (`cedf4665...`), version `1.8.2`.
+
+### Known issues
+
+- `artifact-check` itself still defaults to 500 files; use `--max-files 2000` in 500+ evidence projects. The `scan-truncated` suggestion text still points to `--max-files`; tracked as a follow-up.
+
 ## [1.8.1] - 2026-11-06
 
 ### Added

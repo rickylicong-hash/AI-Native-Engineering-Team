@@ -236,6 +236,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
+# 500+ 证据文件项目可显式提高扫描上限（默认 2000）
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project . --max-evidence-files 2000
 ```
 
 检查：
