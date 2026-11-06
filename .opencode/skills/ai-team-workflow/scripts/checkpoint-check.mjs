@@ -16,12 +16,16 @@
  *   node checkpoint-check.mjs --sync-docs        # 把 HANDOFF/STATUS 同步到 CHECKPOINT.json
  *   node checkpoint-check.mjs --mark --sync-docs # 标记后立即同步文档
  *   node checkpoint-check.mjs --max-files 20     # 自定义文件阈值
+ *   node checkpoint-check.mjs --max-evidence-files 2000  # 证据扫描上限（默认 2000，必须 >= 1）
+ *
+ * 远程行写入 HANDOFF 前会剥离 URL userinfo 与 query/fragment，并清洗换行/反引号，
+ * 避免凭据随被提交的状态文件进入仓库历史。
  *
  * 退出码：
  *   0 = 未到期
  *   1 = 到期
- *   2 = 不是 git 仓库
- *   3 = 参数/读取/标记失败
+ *   2 = 不是 git 仓库 / 参数非法
+ *   3 = 标记或读取失败
  */
 
 import fs from "node:fs";
@@ -46,6 +50,25 @@ const syncDocs = hasFlag("--sync-docs");
 const force = hasFlag("--force");
 const strict = hasFlag("--strict");
 const maxFiles = Number.parseInt(getArg("--max-files", "20"), 10) || 20;
+
+/**
+ * 读取数量型参数；显式传值必须是 >= 1 的整数（P3-03）。
+ * 旧实现用 `parseInt(...) || 2000`，负值会被当成 0 条扫描却仍退出 0，
+ * 相当于静默禁用证据/凭据扫描；这里改为参数错误退出 2。
+ */
+function parseCountOption(name, fallback) {
+  const raw = getArg(name, null);
+  if (raw === null) return fallback;
+  if (!/^\d+$/.test(raw) || Number.parseInt(raw, 10) < 1) {
+    console.error(`ERROR  ${name} must be an integer >= 1 (got "${raw}")`);
+    process.exit(2);
+  }
+  return Number.parseInt(raw, 10);
+}
+
+// P-36：与 artifact-check 默认（500）解耦；默认 2000，避免 500+ 证据项目
+// 每次 checkpoint 都报 scan-truncated。
+const maxEvidenceFiles = parseCountOption("--max-evidence-files", 2000);
 
 const stateDir = path.join(project, ".ai-team", "state");
 const tasksFile = path.join(stateDir, "TASKS.md");
@@ -121,7 +144,81 @@ function replaceLastHash(line, commit) {
   return `${line.trimEnd()} \`${commit}\``;
 }
 
-function syncStateDocs(commit, doneCount) {
+/**
+ * 清洗写入 Markdown 单行的文本（P3-01）：
+ * - CR/LF 折成空格，避免一行拆成两行破坏 HANDOFF 结构；
+ * - 反引号替换为单引号，避免破坏 code span 的奇偶配对。
+ */
+function sanitizeInline(value) {
+  return String(value).replace(/[\r\n]+/g, " ").replace(/`/g, "'").trim();
+}
+
+/**
+ * 剥离 URL 中的凭据与 query/fragment（P1-01 / R3 L-01）。
+ *
+ * 顺序很关键：必须在 sanitizeInline 之前处理**原文**。若先清洗，
+ * userinfo 内的 CR/LF 会被折成空格，`[^/\s]*` 就跨不过空白，
+ * 密码会原样写进被提交的 HANDOFF.md。这里改为：
+ *   1. 只定位 authority 段（scheme:// 或 // 之后、第一个 / 之前），
+ *      去掉其中最后一个 @ 及其左侧的 userinfo；允许 userinfo 含空白/换行。
+ *   2. 无 scheme 的 scp 形式 `user:pass@host:path` 剥掉 `user:pass@`；
+ *      不含冒号的 `git@host:path` 是纯用户名，不算凭据，保持原样。
+ *   3. 最后统一去掉 query/fragment（`?private_token=...`/`#...`），
+ *      避免 query 参数中的 token 随远程行进入提交。
+ *   4. 只在这一步做 sanitizeInline，保证输出单行、反引号成对。
+ */
+function stripUserinfo(url) {
+  let raw = String(url).trim();
+  const authority = raw.match(/^([a-z][a-z0-9+.-]*:\/\/|\/\/)([^/]*)([\s\S]*)$/i);
+  if (authority) {
+    const [, prefix, hostPart, rest] = authority;
+    const at = hostPart.lastIndexOf("@");
+    if (at >= 0) raw = `${prefix}${hostPart.slice(at + 1)}${rest}`;
+  } else {
+    // 只匹配“带密码的 userinfo”，且 host 段不含反斜杠/空白，
+    // 避免把 `C:\repos\my@repo` 这类本地路径误判成远程 URL。
+    raw = raw.replace(/^[^/@\\\s]+:[^/@\\\s]*@(?=[^/\\\s]*(?:[:/]|$))/, "");
+  }
+  raw = raw.replace(/[?#][\s\S]*$/, "");
+  return sanitizeInline(raw);
+}
+
+/**
+ * 生成 HANDOFF 的“- 远程：”行（P-35）。
+ * 读取 origin URL、当前分支、upstream、ahead 数和 upstream 短 SHA；
+ * 无 origin/upstream（含 detached HEAD）时返回 `(no upstream)`，不阻断同步。
+ * 所有外部字符串先脱敏/清洗，避免凭据或换行进入被提交的 HANDOFF.md。
+ */
+function remoteLine() {
+  const origin = git(["remote", "get-url", "origin"]);
+  const originUrl = origin.status === 0 ? stripUserinfo(origin.stdout) : "";
+  const branchResult = git(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const branchRaw = branchResult.status === 0 ? branchResult.stdout.trim() : "";
+  const upstreamResult = git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
+  const upstreamRaw = upstreamResult.status === 0 ? upstreamResult.stdout.trim() : "";
+  if (!originUrl || !upstreamRaw || !branchRaw) {
+    return "- 远程：(no upstream)";
+  }
+  // R3 L-03：git 调用必须用**原始** refname。sanitizeInline 会把反引号换成
+  // 单引号，若先清洗再查 git，`feat'x` 查不到，ahead/SHA 会退化成 ?。
+  // 清洗只作用于最终展示。
+  const aheadResult = git(["rev-list", "--count", `${upstreamRaw}..HEAD`]);
+  const ahead = aheadResult.status === 0 ? sanitizeInline(aheadResult.stdout) : "(unknown)";
+  const shaResult = git(["rev-parse", "--short", upstreamRaw]);
+  const sha = shaResult.status === 0 ? sanitizeInline(shaResult.stdout) : "(unknown)";
+  const branch = sanitizeInline(branchRaw);
+  const upstream = sanitizeInline(upstreamRaw);
+  return `- 远程：\`origin ${originUrl}\`，\`${branch}\` ahead ${ahead}（\`${upstream}=${sha}\`）`;
+}
+
+/**
+ * 构建 HANDOFF/STATUS 的下一版内容（只读，不写盘，P2-01）。
+ *
+ * 所有前置校验都在这里完成：文件存在、HANDOFF 的 Git/Baseline 行、
+ * STATUS 的 Checkpoint 行。任何一项失败都返回 ok:false，调用方不得写文件，
+ * 从而保证失败路径没有半写。
+ */
+function buildStateDocs(commit, doneCount) {
   const changes = [];
   if (!fs.existsSync(handoffFile)) {
     return { ok: false, error: "HANDOFF.md missing; cannot sync Git/Baseline", changes };
@@ -132,49 +229,129 @@ function syncStateDocs(commit, doneCount) {
   const handoffText = read(handoffFile);
   const handoffEol = handoffText.includes("\r\n") ? "\r\n" : "\n";
   const handoffLines = handoffText.split(/\r?\n/);
-  let handoffGit = false;
-  let handoffBaseline = false;
+  // P-35：远程/ahead 由脚本读取，避免 HANDOFF/STATUS 手写数字漂移。
+  const remote = remoteLine();
+  const remoteIndexes = [];
+  let gitIndex = -1;
+  let baselineIndex = -1;
   for (let i = 0; i < handoffLines.length; i += 1) {
     const line = handoffLines[i];
-    if (/^-\s*Git[：:]/.test(line)) {
-      handoffLines[i] = replaceFirstHash(line, commit);
-      handoffGit = true;
-    } else if (/^-\s*Baseline[：:]/.test(line)) {
-      handoffLines[i] = replaceLastHash(line, commit);
-      handoffBaseline = true;
+    if (/^-\s*远程[：:]/.test(line)) {
+      remoteIndexes.push(i);
+    } else if (/^-\s*Git[：:]/.test(line) && gitIndex < 0) {
+      gitIndex = i;
+    } else if (/^-\s*Baseline[：:]/.test(line) && baselineIndex < 0) {
+      baselineIndex = i;
     }
   }
-  if (!handoffGit || !handoffBaseline) {
+  if (gitIndex < 0 || baselineIndex < 0) {
     return { ok: false, error: "HANDOFF.md needs both '- Git:' and '- Baseline:' lines", changes };
   }
-  const nextHandoff = handoffLines.join(handoffEol);
-  if (nextHandoff !== handoffText) {
-    fs.writeFileSync(handoffFile, nextHandoff, "utf8");
-    changes.push("HANDOFF.md Git/Baseline");
+  const previousRemote = remoteIndexes.length > 0 ? handoffLines[remoteIndexes[0]] : null;
+  // P3-02：重复的“- 远程：”只保留一行；倒序删除避免索引漂移。
+  for (const index of remoteIndexes.slice(1).reverse()) handoffLines.splice(index, 1);
+  if (remoteIndexes.length === 0) {
+    // 旧 HANDOFF 没有“- 远程：”时插到“- Git：”前，兼容既有格式。
+    handoffLines.splice(gitIndex, 0, remote);
+    changes.push("HANDOFF.md 远程");
+  } else {
+    handoffLines[remoteIndexes[0]] = remote;
+    if (previousRemote !== remote || remoteIndexes.length > 1) changes.push("HANDOFF.md 远程");
   }
+  const nextGitIndex = handoffLines.findIndex((line) => /^-\s*Git[：:]/.test(line));
+  if (nextGitIndex >= 0) {
+    const updated = replaceFirstHash(handoffLines[nextGitIndex], commit);
+    if (updated !== handoffLines[nextGitIndex]) changes.push("HANDOFF.md Git");
+    handoffLines[nextGitIndex] = updated;
+  }
+  const nextBaselineIndex = handoffLines.findIndex((line) => /^-\s*Baseline[：:]/.test(line));
+  if (nextBaselineIndex >= 0) {
+    const updated = replaceLastHash(handoffLines[nextBaselineIndex], commit);
+    if (updated !== handoffLines[nextBaselineIndex]) changes.push("HANDOFF.md Baseline");
+    handoffLines[nextBaselineIndex] = updated;
+  }
+  const nextHandoff = handoffLines.join(handoffEol);
 
   const statusText = read(statusFile);
   const statusEol = statusText.includes("\r\n") ? "\r\n" : "\n";
   const statusLines = statusText.split(/\r?\n/);
   let statusCheckpoint = false;
+  let statusHeadChanged = false;
   for (let i = 0; i < statusLines.length; i += 1) {
     const line = statusLines[i];
     if (/^-\s*Checkpoint[：:]/.test(line)) {
-      statusLines[i] = `- Checkpoint: \`${commit}\`（done ${doneCount}）`;
+      const updated = `- Checkpoint: \`${commit}\`（done ${doneCount}）`;
+      if (updated !== line) changes.push("STATUS.md Checkpoint");
+      statusLines[i] = updated;
       statusCheckpoint = true;
     } else if (/^-\s*HEAD[：:]/.test(line)) {
-      statusLines[i] = replaceFirstHash(line, commit);
+      const updated = replaceFirstHash(line, commit);
+      if (updated !== line) statusHeadChanged = true;
+      statusLines[i] = updated;
     }
   }
   if (!statusCheckpoint) {
     return { ok: false, error: "STATUS.md needs a '- Checkpoint:' line", changes };
   }
+  if (statusHeadChanged) changes.push("STATUS.md HEAD");
   const nextStatus = statusLines.join(statusEol);
-  if (nextStatus !== statusText) {
-    fs.writeFileSync(statusFile, nextStatus, "utf8");
-    changes.push("STATUS.md Checkpoint/HEAD");
+
+  // 只把真正有变化的文件放进计划，避免无谓改写（保留 CRLF/原内容）。
+  const files = [];
+  if (nextHandoff !== handoffText) files.push({ path: handoffFile, content: nextHandoff, original: handoffText });
+  if (nextStatus !== statusText) files.push({ path: statusFile, content: nextStatus, original: statusText });
+  return { ok: true, changes, files };
+}
+
+/**
+ * 同步 HANDOFF/STATUS：build（校验+计算）全部通过后才 apply（写盘）。
+ * --sync-docs 单跑走这里；--mark --sync-docs 复用 build/apply 以保持同样的顺序。
+ */
+function syncStateDocs(commit, doneCount) {
+  const plan = buildStateDocs(commit, doneCount);
+  if (!plan.ok) return { ok: false, error: plan.error, changes: plan.changes };
+  const applied = applyStateDocs(plan);
+  if (!applied.ok) return { ok: false, error: applied.error, changes: plan.changes };
+  return { ok: true, changes: plan.changes };
+}
+
+/**
+ * 应用 buildStateDocs 的计划：先写临时文件，再统一 rename，降低半写概率。
+ * 执行阶段不再做业务校验；build 失败时本函数不会被调用。
+ * rename 中途失败时，把已替换的文件恢复成原内容（尽力而为）。
+ */
+function applyStateDocs(plan) {
+  if (!plan.ok || plan.files.length === 0) return { ok: true };
+  const staged = [];
+  const applied = [];
+  try {
+    for (const entry of plan.files) {
+      const temp = `${entry.path}.tmp-${process.pid}`;
+      fs.writeFileSync(temp, entry.content, "utf8");
+      staged.push({ temp, dest: entry.path, original: entry.original });
+    }
+    for (const entry of staged) {
+      fs.renameSync(entry.temp, entry.dest);
+      applied.push(entry);
+    }
+    return { ok: true };
+  } catch (error) {
+    for (const entry of applied) {
+      try {
+        fs.writeFileSync(entry.dest, entry.original, "utf8");
+      } catch {
+        // 恢复失败不掩盖原始写盘错误
+      }
+    }
+    for (const entry of staged) {
+      try {
+        if (fs.existsSync(entry.temp)) fs.unlinkSync(entry.temp);
+      } catch {
+        // 临时文件清理失败忽略
+      }
+    }
+    return { ok: false, error: `failed to write state docs: ${error.message}` };
   }
-  return { ok: true, changes };
 }
 
 if (!fs.existsSync(tasksFile)) {
@@ -240,6 +417,7 @@ if (syncDocs && !mark) {
     else console.log(`ERROR  ${message}`);
     process.exit(3);
   }
+  // P2-01：syncStateDocs 内部先完成全部校验与内容计算，再写盘。
   const result = syncStateDocs(commit, doneCount);
   if (!result.ok) {
     if (json) console.log(JSON.stringify({ ok: false, error: result.error, changes: result.changes }, null, 2));
@@ -262,7 +440,7 @@ if (syncDocs && !mark) {
 let artifactResult = { errors: [], warnings: [], scanned: 0, truncated: false };
 let artifactReadError = "";
 try {
-  artifactResult = checkArtifacts(project);
+  artifactResult = checkArtifacts(project, { maxEvidenceFiles });
 } catch (error) {
   artifactReadError = `artifact check failed: ${error.message}`;
 }
@@ -308,6 +486,21 @@ if (mark) {
     else console.log(`ERROR  ${message}`);
     process.exit(3);
   }
+  // P2-01：sync 计划必须在写 CHECKPOINT.json 之前完成全部校验与内容计算；
+  // 校验失败时直接退出，HANDOFF/STATUS/CHECKPOINT 都不动。
+  let syncPlan = null;
+  if (syncDocs) {
+    syncPlan = buildStateDocs(headCommit, done);
+    if (!syncPlan.ok) {
+      const message = `cannot sync HANDOFF/STATUS: ${syncPlan.error}`;
+      if (json) console.log(JSON.stringify({ ok: false, error: message, changes: syncPlan.changes }, null, 2));
+      else {
+        console.log(`ERROR  ${message}`);
+        for (const change of syncPlan.changes) console.log(`  CHANGED ${change}`);
+      }
+      process.exit(3);
+    }
+  }
   const payload = {
     last_checkpoint_at: new Date().toISOString(),
     last_checkpoint_commit: headCommit,
@@ -319,23 +512,32 @@ if (mark) {
     `STATUS Checkpoint = ${headCommit} (done ${done})`,
     "run checkpoint-check --sync-docs (or update the two doc lines manually), then state-check",
   ];
+  // 记录旧的 CHECKPOINT.json 内容，文档写盘失败时回滚，避免“已标记但未同步”。
+  const previousCheckpoint = fs.existsSync(checkpointFile) ? read(checkpointFile) : null;
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(checkpointFile, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-  const syncResult = syncDocs ? syncStateDocs(headCommit, done) : { ok: true, changes: [] };
+  const syncResult = syncPlan ? applyStateDocs(syncPlan) : { ok: true };
   if (!syncResult.ok) {
-    if (json) console.log(JSON.stringify({ ok: false, marked: payload, error: syncResult.error, changes: syncResult.changes }, null, 2));
+    // 回滚标记：恢复旧 CHECKPOINT.json（原本不存在则删除），保证失败路径零残留。
+    try {
+      if (previousCheckpoint === null) fs.rmSync(checkpointFile, { force: true });
+      else fs.writeFileSync(checkpointFile, previousCheckpoint, "utf8");
+    } catch {
+      // 回滚失败时无法进一步恢复，但必须保留原始错误可见
+    }
+    if (json) console.log(JSON.stringify({ ok: false, marked: payload, error: syncResult.error, changes: syncPlan.changes }, null, 2));
     else {
-      console.log(`MARKED  ${path.relative(project, checkpointFile)} (${headCommit}, done ${done})`);
-      console.log(`ERROR   ${syncResult.error}`);
+      console.log(`ERROR  ${syncResult.error}`);
+      console.log("       CHECKPOINT.json rolled back; no state file was intentionally kept.");
     }
     process.exit(3);
   }
-  if (json) console.log(JSON.stringify({ ok: true, marked: payload, next, synced: syncResult.changes }, null, 2));
+  if (json) console.log(JSON.stringify({ ok: true, marked: payload, next, synced: syncPlan ? syncPlan.changes : [] }, null, 2));
   else if (!quiet) {
     console.log(`MARKED  ${path.relative(project, checkpointFile)} (${headCommit}, done ${done})`);
-    if (syncResult.changes.length > 0) {
+    if (syncPlan && syncPlan.changes.length > 0) {
       console.log("SYNCED:");
-      for (const change of syncResult.changes) console.log(`  - ${change}`);
+      for (const change of syncPlan.changes) console.log(`  - ${change}`);
       console.log("NEXT: run state-check, then commit the doc-only sync.");
     } else {
       console.log("NEXT:");
@@ -355,6 +557,7 @@ if (json) {
     modified,
     untracked,
     maxFiles,
+    maxEvidenceFiles,
     done,
     last,
     lastAt,

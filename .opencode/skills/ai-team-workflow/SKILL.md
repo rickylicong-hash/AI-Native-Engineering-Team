@@ -204,6 +204,7 @@ Checkpoint 由 `ai-team/devops-engineer` 执行；Chief 只提供明确路径、
 | 触发 | 阈值 |
 |---|---|
 | 工作区未提交文件 | ≥20 个（默认，可用 `--max-files` 调整） |
+| 证据文件扫描 | 默认 2000（可用 `--max-evidence-files` 调整；与 `artifact-check` 的 500 默认解耦） |
 | 门禁 | 进入 G5/G7/G8 前 |
 | 交接 | 写 `HANDOFF.md` 前（`--handoff`） |
 | 任务节奏 | 已有 `CHECKPOINT.json` 基线后，每 10 个 `done` |
@@ -227,7 +228,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 4. 用户要求暂不提交时，在 `HANDOFF.md` 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
 5. 提交后更新 `state/CHECKPOINT.json`（`--mark`），push 仍需用户批准。
 6. `checkpoint-check` 同时扫描根目录产物（`*.log`、`target-*`、`*.class` 等）和证据编码；有 error 时 `--mark` 拒绝。先把日志移到 `logs/` 或 `.ai-team/work/<TASK>-logs/`，不要用 `.gitignore` 掩盖。
-7. **checkpoint 收口（P-18/P-26）**：优先用 `checkpoint-check --mark --sync-docs`；它会把 `HANDOFF.md` 的 `Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit。随后提交纯文档同步并运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。若本次包含 `GROWTH.md` 变更，先运行 `growth-check`，有缺失处置状态时退回 Chief。
+7. **checkpoint 收口（P-18/P-26/P-35）**：优先用 `checkpoint-check --mark --sync-docs`；它会把 `HANDOFF.md` 的 `远程`/`Git`/`Baseline` 和 `STATUS.md` 的 `Checkpoint` 同步到该 commit。`远程` 行由脚本读取 origin/upstream/ahead/SHA 并剥离 userinfo，不要手写。随后提交纯文档同步并运行 `state-check`。`TASK-GIT-*` 证据必须包含 `state-check` PASS；未同步不算 checkpoint 完成。若本次包含 `GROWTH.md` 变更，先运行 `growth-check`，有缺失处置状态时退回 Chief。
 
 ### 3.3 状态一致性检查
 
@@ -303,6 +304,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" `
 ```
 
 缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
+
+P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`（组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免）。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。
 
 **报告门禁：**
 
@@ -572,6 +575,7 @@ owner: ai-team/chief
 - 阻塞/风险：
 - Retro：not due / done YYYY-MM-DD / DUE — 先补
 - Checkpoint：clean / done <commit> / DUE — 先派 DevOps / WAIVED
+- 远程：<origin url>，<branch> ahead N（<upstream>=<sha>）
 - Git：<last code checkpoint SHA>
 - Baseline：<last code checkpoint SHA；默认同 Git>
 - 下一条指令：

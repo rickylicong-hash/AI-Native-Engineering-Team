@@ -3,6 +3,35 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.1] - 2026-11-06
+
+### Added
+
+- **Brief 边界/事务门禁 (P-32/P-34)**: `brief-new.mjs` engineer template now includes `事务边界与部分提交`, `旧行为反证` and `边界四问`; reviewer/QA templates include `边界四问`. `brief-lint.mjs` validates the field **value** (not just the label) and rejects empty/`<...>`/`N/A`/`不适用` values for transaction tasks and reviewer/QA boundary checks.
+- **Checkpoint 远程行 (P-35)**: `checkpoint-check --mark --sync-docs` now writes `HANDOFF.md` `- 远程：` from `origin`, branch, upstream, ahead and upstream SHA; it strips URL userinfo and query/fragment before writing.
+- **Evidence scan cap (P-36)**: `checkpoint-check` now accepts `--max-evidence-files` (default 2000), aligned with `artifact-check --strict --max-files 2000`; 500+ evidence projects no longer get a permanent `scan-truncated` warning.
+
+### Fixed
+
+- **P1 (security)**: origin URL userinfo (e.g. `https://user:token@host/...`) is no longer written into the tracked `HANDOFF.md`; CR/LF and backticks are sanitized to keep the Markdown line intact.
+- **Atomic checkpoint sync**: `--mark --sync-docs` validates and computes HANDOFF/STATUS content before writing; preflight failure exits 3 with zero writes; apply failure rolls back `CHECKPOINT.json` and cleans temp files.
+- **Duplicate remote lines**: existing duplicate `- 远程：` lines are collapsed to one.
+- **Invalid `--max-evidence-files`**: `0`, negative or non-numeric values exit 2 instead of silently disabling evidence scanning.
+
+### Known issues
+
+- `secret-check` still does not scan `.ai-team/state/**` for URL userinfo; the remaining gap and narrow no-scheme/whitespace URL forms are tracked in `TASK-IMPROVE-2026-11-06-SEC-R1` and `RISK-TEAM-001/002`. 1.8.1 closes the common scheme/protocol-relative/query leak path but does not claim full coverage.
+- Fixtures live under `.ai-team/work/**` (gitignored) and are not shipped with the package; CI cannot run them yet.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `run-fixtures.mjs` → 148 PASS / 0 FAIL (sequential 2× and parallel 2×).
+- `sourceHash === installedHash` (`b6919825...`), version `1.8.1`.
+
 ## [1.8.0] - 2026-11-06
 
 ### Changed

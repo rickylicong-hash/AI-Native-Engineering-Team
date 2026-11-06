@@ -6,6 +6,11 @@
  * 1.6.0 起额外强制：脚本参数以 --help 实跑为准、契约只引章节号/字段名、
  * 证据位置含 UTF-8。
  *
+ * P-32/P-34：含“重试/幂等/事务/并发/回滚/迁移”的 engineer brief 强制
+ * “事务边界与部分提交”“旧行为反证”；reviewer/QA brief 强制“边界四问”。
+ * 校验的是字段值：非空、不是 `<...>` 占位符、不是纯 `-`，只看字段名会误判。
+ * 关键词任务不接受“不适用/N/A/无”；边界四问至少覆盖 2 个维度才算回答。
+ *
  * 用法：
  *   node brief-lint.mjs --brief .ai-team/tasks/TASK-0035-BRIEF.md --agent ai-team/qa-engineer
  *   node brief-lint.mjs --brief brief.md --agent code-reviewer --json
@@ -39,6 +44,31 @@ if (!fs.existsSync(file)) {
 const text = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
 
 const hasAny = (needles) => needles.some((n) => text.includes(n));
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** 取字段“冒号之后”的值；字段不存在返回 null。 */
+function fieldValue(labels) {
+  const names = labels.map((label) => escapeRegExp(label.replace(/[：:]\s*$/, ""))).join("|");
+  const matched = text.match(new RegExp(`^[ \\t>*\\-]*(?:${names})[ \\t]*[：:][ \\t]*(.*)$`, "m"));
+  return matched ? matched[1].trim() : null;
+}
+
+/**
+ * 字段值是否真的填写：非空、不是纯 `-`、不能只有 `<...>` 占位符。
+ * 例如 `<组件故障 / ...>`、`<...> / <...>` 都算未填。
+ */
+function isFilled(value) {
+  if (value === null || value === undefined) return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (/^[-—–_]+$/.test(trimmed)) return false;
+  const remainder = trimmed.replace(/<[^<>]*>/g, "").replace(/[\s/、,，;；|]+/g, "");
+  return remainder.length > 0;
+}
+
 const fields = {
   role: ["角色：", "角色:"],
   skill: ["技能：", "Skill："],
@@ -85,6 +115,79 @@ for (const [key, needles] of Object.entries(fields)) {
   if (required.includes(key) && !present[key]) missing.push(key);
 }
 
+// P-32/P-34：新增字段必须看值。先剔除字段名（“事务边界与部分提交”自带
+// “事务”）和 `<...>` 占位符，避免模板自身触发关键词、或把占位符当成已填。
+// 同时剔除否定语境（“不涉及迁移”）和流程术语“事务门禁”，避免实现/评审本
+// 门禁的 brief 被自己的说明文字误伤。
+// 注意：不再整段删除“重试/幂等/事务/并发/回滚/迁移”枚举串——那会让
+// “本任务涉及重试/…”这类正文绕过 needs_transaction 判定。
+const keywordText = text
+  .replace(/<[^<>]*>/g, "")
+  .replace(/事务边界与部分提交/g, "")
+  .replace(/旧行为反证/g, "")
+  .replace(/边界四问/g, "")
+  .replace(/不涉及[^；。，,\n]*/g, (clause) => clause.replace(/重试|幂等|事务|并发|回滚|迁移/g, ""))
+  .replace(/事务门禁/g, "");
+const needsTransaction = /重试|幂等|事务|并发|回滚|迁移/.test(keywordText);
+
+/**
+ * “不适用/N/A/无”不是有效回答：关键词任务必须写具体边界或证明。
+ * 只匹配整个值（允许尾随标点），避免把“无降级路径，整单回滚”误判为未填。
+ */
+function isNotApplicable(value) {
+  return /^(?:不适用|不涉及|无|n\/?a|none|not applicable|not needed)[\s。.！!，,；;]*$/i.test(value.trim());
+}
+
+// “边界四问”的四个维度；整篇按关键词命中计数，至少命中 2 个才算回答。
+const BOUNDARY_DIMENSIONS = [
+  { name: "组件故障", pattern: /组件故障|组件失效|组件不可用|依赖不可用|降级/ },
+  { name: "部分提交/事务回滚", pattern: /部分提交|事务回滚|回滚/ },
+  { name: "导出/依赖链", pattern: /导出|依赖链/ },
+  { name: "拒绝顺序/豁免", pattern: /拒绝顺序|鉴权顺序|豁免/ },
+];
+
+function boundaryDimensionHits(value) {
+  return BOUNDARY_DIMENSIONS.filter((dimension) => dimension.pattern.test(value)).length;
+}
+
+const valueChecks = [];
+if (agent === "engineer" && needsTransaction) {
+  valueChecks.push(
+    { key: "retry_boundary", labels: ["事务边界与部分提交：", "事务边界与部分提交:"], rejectNotApplicable: true },
+    { key: "old_behavior", labels: ["旧行为反证：", "旧行为反证:"], rejectNotApplicable: true },
+  );
+}
+if (agent === "code-reviewer" || agent === "security-auditor" || agent === "qa-engineer") {
+  valueChecks.push({ key: "boundary_four", labels: ["边界四问：", "边界四问:"], minBoundaryDimensions: 2 });
+}
+
+const valueMissing = new Set();
+const valueReasons = new Map();
+for (const item of valueChecks) {
+  const value = fieldValue(item.labels);
+  fields[item.key] = item.labels;
+  let filled = isFilled(value);
+  let reason = filled ? "" : "value empty or placeholder";
+  if (filled && item.rejectNotApplicable && isNotApplicable(value)) {
+    filled = false;
+    reason = "value is 'not applicable' but the brief needs a transaction boundary";
+  }
+  if (filled && item.minBoundaryDimensions) {
+    const hits = boundaryDimensionHits(value);
+    if (isNotApplicable(value) || hits < item.minBoundaryDimensions) {
+      filled = false;
+      reason = `boundary four must cover at least ${item.minBoundaryDimensions} dimensions (got ${hits})`;
+    }
+  }
+  present[item.key] = filled;
+  required.push(item.key);
+  if (!filled) {
+    missing.push(item.key);
+    valueMissing.add(item.key);
+    valueReasons.set(item.key, reason);
+  }
+}
+
 const ok = missing.length === 0;
 const result = {
   ok,
@@ -93,6 +196,8 @@ const result = {
   required,
   present,
   missing,
+  value_issues: Object.fromEntries(valueReasons),
+  needs_transaction: needsTransaction,
 };
 
 if (json) {
@@ -105,7 +210,10 @@ if (json) {
     console.log("result: PASS");
   } else {
     console.log(`result: FAIL (${missing.length} missing)`);
-    for (const key of missing) console.log(`  MISSING ${key}`);
+    for (const key of missing) {
+      const reason = valueReasons.get(key);
+      console.log(`  MISSING ${key}${reason ? ` (${reason})` : valueMissing.has(key) ? " (value empty or placeholder)" : ""}`);
+    }
   }
 }
 

@@ -5,6 +5,9 @@
  * 目的：不让 Chief 手抄脚本参数、契约字段和必填小节；生成后只填占位符，
  * 再运行 brief-lint。脚本参数统一写“以 --help 实跑为准”，契约只引章节号/字段名。
  *
+ * P-32/P-34：engineer 模板增加“事务边界与部分提交”“旧行为反证”“边界四问”，
+ * reviewer/QA 模板增加“边界四问”；brief-lint 会校验字段值而非字段名。
+ *
  * 用法：
  *   node brief-new.mjs --task TASK-0066 --agent ai-team/engineer
  *   node brief-new.mjs --task TASK-0066 --agent ai-team/qa-engineer --out .ai-team/tasks/TASK-0066-BRIEF.md
@@ -50,6 +53,18 @@ if (!task || !agent || !ROLES.has(agent)) {
 const isReviewer = agent === "ai-team/code-reviewer" || agent === "ai-team/security-auditor";
 const isQa = agent === "ai-team/qa-engineer";
 
+// P-32/P-34：把事务边界与失败模式前置到 brief，减少首轮验收遗漏。
+// 普通文档/UI 任务可以保留占位符或写“不适用”，由 brief-lint 按关键词判定。
+const boundaryChecklist = agent === "ai-team/engineer"
+  ? `事务边界与部分提交：<涉及重试/幂等/事务/并发/回滚/迁移时必填：事务范围、重放位置、部分提交可见性、失败回滚>
+旧行为反证：<修复类必填：旧实现如何失败、如何证明已修复；非修复写“不适用”>
+边界四问：<组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免；逐项给结论>
+`
+  : isReviewer || isQa
+    ? `边界四问：<组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免；逐项给结论>
+`
+    : "";
+
 const template = `角色：${agent}
 技能：ai-team-workflow${agent === "ai-team/engineer" ? "；AI 功能加 ai-team-ai-native" : ""}
 任务 ID：${task}
@@ -62,7 +77,7 @@ Track / 阶段：T? / G?
 装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
 契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制字段定义；有变更时同一提交更新契约 + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
-验收标准：
+${boundaryChecklist}验收标准：
 - [ ] <3-6 条可检查条件>
 必须执行：<命令/测试/扫描；参数以对应脚本 --help 实跑为准；环境不允许时写 BLOCKED + 原始错误>
 脚本参数：以 \`<script> --help\` 实跑为准；不手抄参数

@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.8.0**。§1–§3 为 1.8.0 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.8.1**。§1–§3 为 1.8.1 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -787,6 +787,29 @@ audit-git-permissions:       10 agents, 0 failed
 permission-lint:             570 checks, 0 failed
 sourceHash === installedHash: c14718e2...
 ```
+
+### 5.31 边界/事务门禁与 checkpoint 收口（1.8.1）
+
+- `brief-new.mjs`：engineer 模板新增 `事务边界与部分提交`/`旧行为反证`/`边界四问`；reviewer/QA 模板新增 `边界四问`。
+- `brief-lint.mjs`：校验字段值（非空、非 `<...>`、非“不适用/N/A/无”）；事务类 engineer brief 与 reviewer/QA 边界四问为必填。
+- `checkpoint-check.mjs`：`--sync-docs` 写 HANDOFF `- 远程：`（origin/upstream/ahead/SHA，剥离 userinfo 与 query/fragment）；`--max-evidence-files` 默认 2000；`--mark --sync-docs` 预检失败零写入、apply 失败回滚 `CHECKPOINT.json`。
+- `templates/HANDOFF.md`：新增 `- 远程：` 行。
+- 证据：`.ai-team/work/TASK-IMPROVE-2026-11-06-logs/`（R1/R2/R3）；审查 `REV-IMPROVE-2026-11-06-R3`、`SEC-IMPROVE-2026-11-06-R3`。
+
+验证：
+
+```text
+source verify:               195/195
+installed verify:            187/187
+installed + OpenCode:        197/197
+audit-team-consistency:      183 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+run-fixtures:                148 PASS / 0 FAIL（连续 2 次 + 并行 2 实例）
+sourceHash === installedHash: b6919825...
+```
+
+已知遗留：`secret-check` 不扫 `.ai-team/state/**` 与无 scheme/空白 URL 的窄形态，由 `TASK-IMPROVE-2026-11-06-SEC-R1` 与 `RISK-TEAM-001/002` 承接。
 
 ## 6. 未执行项
 

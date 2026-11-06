@@ -228,6 +228,9 @@ Track / 阶段：T3 / G4
 装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
 契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制定义；有变更时同一提交更新契约 + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
+事务边界与部分提交：<涉及重试/幂等/事务/并发/回滚/迁移时必填：事务范围、重放位置、部分提交可见性、失败回滚>
+旧行为反证：<修复类必填：旧实现如何失败、如何证明已修复；非修复写“不适用”>
+边界四问：<组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免；逐项给结论>
 验收标准：
   1. ...
   2. ...
@@ -251,6 +254,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 ```
 
 缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。
+
+P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。`brief-lint` 校验字段值，不校验字段名。
 
 ## 6. 证据标准
 
@@ -378,7 +383,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `Git`/`Baseline` 与 `STATUS.md` 的 `Checkpoint`。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `远程`/`Git`/`Baseline` 与 `STATUS.md` 的 `Checkpoint`。`远程` 行由脚本读取 origin/upstream/ahead/SHA 并剥离 userinfo，不要手写。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。证据扫描默认上限 2000，可用 `--max-evidence-files` 调整。`--mark --sync-docs` 先完成 HANDOFF/STATUS 校验与内容计算，失败时零写入；成功后才落 `CHECKPOINT.json`。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -413,7 +418,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-25 权限/审计加固**：Engineer 不得编辑 QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计覆盖上述边界。
 - **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/落地/证据/日期；`growth-check` 检查；已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
-- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/QA `测试路径`/Reviewer-Security `P2 处置`/`构建隔离` 时不得派发。
+- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/QA `测试路径`/Reviewer-Security `P2 处置`/`构建隔离` 时不得派发。P-32/P-34 起，事务类 engineer brief 还缺 `事务边界与部分提交`/`旧行为反证`，reviewer/QA 缺 `边界四问` 时也不得派发；字段值不能是占位符或“不适用/N/A/无”。
 - **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；1.5.0 不再保留这些限制。
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
