@@ -26,6 +26,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 ### Verified
 
 - `node scripts/verify.mjs` → 195/195.
+- installed verify → 187/187; installed + OpenCode → 197/197.
 - `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
 - `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
 - `permission-lint` → 570 checks, 0 failed.
