@@ -3,6 +3,24 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.4] - 2026-11-06
+
+### Fixed
+
+- **`/ai-improve` commit ownership**: corrected the command to say the `build` maintainer commits AI Native team-source changes, while target-project `.ai-team`/GROWTH changes follow that project's checkpoint policy (DevOps when applicable). Push still requires user approval; no `git add -A`.
+- **Submit policy wording**: README, WORKFLOW, GIT-POLICY and the `checkpoint-check` action message now distinguish the AI Native maintainer (`build`) from project Chief/read-only roles and DevOps checkpoint ownership.
+- **Historical audit refs**: VERIFICATION now marks removed local `.ai-team` evidence as archived outside the repo.
+- **Self-modification wording**: README/TEAM now clarify that team agents cannot edit `.opencode/**`; the `build` maintainer implements approved improvements.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- installed verify → 187/187; installed + OpenCode → 197/197.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `sourceHash === installedHash` (`1d571aae...`), version `1.8.4`.
+
 ## [1.8.3] - 2026-11-06
 
 ### Changed

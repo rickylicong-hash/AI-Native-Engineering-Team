@@ -603,7 +603,7 @@ if (json) {
   }
   if (due) {
     console.log("action:   dispatch ai-team/devops-engineer for a curated checkpoint;");
-    console.log("          Chief must NOT run git add/commit. Push still needs user approval.");
+    console.log("          Project Chief/read-only roles must NOT run git add/commit. Push still needs user approval.");
   } else {
     console.log(`action:   none; next file threshold ${maxFiles}, next task threshold ${fs.existsSync(checkpointFile) ? last + 10 : "after first checkpoint"}`);
   }

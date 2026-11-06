@@ -216,7 +216,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.8.3 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.8.4 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -430,7 +430,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 #### 11. 为什么有未提交改动却没提交
 
-Chief 在流程上**不执行 `git add`/`git commit`**。Shell-first strict 后权限不再拒绝，但正确动作仍是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。
+Chief 在流程上**不执行 `git add`/`git commit`**。Shell-first strict 后权限不再拒绝，但正确动作仍是调度 `ai-team/devops-engineer` 做精选 checkpoint。团队用 `checkpoint-check` 在门禁/交接/≥20 个文件时强制检查，避免把“未提交”写进 HANDOFF 就继续。AI Native 团队仓库本身由 `build` 维护者按作者模型提交，不受 Chief 这条流程限制。
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
@@ -454,10 +454,10 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **密钥**：`.env`/`.env.*` 的 `read` 由 agent 规则显式 `allow`（覆盖 base 的 `.env` ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定。仍禁止把密钥写入聊天、日志或提交。
 - **生产发布需批准**：L3 不可逆操作必须用户明确同意；这是流程要求，不是权限 `ask`。
 - **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成；证据必须 UTF-8 且无明文凭据。
-- **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
+- **不自我修改**：团队 agent 不能改 `.opencode/**`；改进只写提案，由用户批准的 `build` 维护者实施。
 - **Git 权限**：只保留破坏性 git 命令 deny；commit/push/tag/branch 普通操作 allow。审计：`node scripts/audit-git-permissions.mjs`。
 - **发布/部署权限**：不再由 shell 权限拦截；流程上仍建议只由 DevOps 执行，并由用户批准生产发布。
-- **Checkpoint 提交**：流程上 Chief 不执行 `git add`/`commit`，到期时派 DevOps；权限不再强制。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并同步文档。
+- **Checkpoint 提交**：项目内流程上 Chief 不执行 `git add`/`commit`，到期时派 DevOps；AI Native 团队源由 `build` 维护者提交。权限不再强制。检查：`checkpoint-check`（见 `ai-team-workflow` 3.2），提交后 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并同步文档。
 
 ---
 

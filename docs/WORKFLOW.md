@@ -330,6 +330,7 @@ P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brie
 
 - **作者负责内容**：每个角色只写自己的 owned paths。
 - **DevOps 统一 checkpoint commit**：`.ai-team` 的精选快照由 DevOps 提交；Chief 只提供路径/TASK/角色/message。
+- **团队源维护提交**：AI Native 团队仓库由 `build` 维护者按作者模型提交；目标项目 `.ai-team` checkpoint 仍由 DevOps。
 - **代码作者提交代码**：Engineer 提交代码 + 单测 + `.ai-team/work/TASK-*` 证据；流程上由作者执行，不再需要权限 `ask`。
 - **文档作者提交文档**：Writer 提交 `docs/**`、README、CHANGELOG、`.ai-team/docs`；流程上由作者执行，不再需要权限 `ask`。
 - **只读角色不 commit**：Chief/PM/UX/Architect/Reviewer/Security 不拿 raw git；这是流程约定，权限不再强制。

@@ -77,8 +77,8 @@
 
 1. **流程建议只 stage 明确路径**；`git add -A` / `git add .` 不再被权限拒绝。
 2. 只读角色（Chief/PM/UX/Architect/Reviewer/Security）流程上不 commit；权限不再强制。
-3. 提交前扫描密钥/凭据/客户数据；安全报告必须脱敏。
-4. `git push` 前仍需用户批准（L3）；权限不再 `ask`。
+3. AI Native 团队仓库由 `build` 维护者按作者模型提交；目标项目 `.ai-team` checkpoint 仍由 DevOps。`push` 前均需用户批准。
+4. 提交前扫描密钥/凭据/客户数据；安全报告必须脱敏。
 5. 不提交 `work/**` 原始日志、截图、tmp；只提交精选 `work/*EVIDENCE.md` 和门禁需要的摘要。
 6. 若项目选择 `.ai-team` 完全本地，则不做 checkpoint commit。
 

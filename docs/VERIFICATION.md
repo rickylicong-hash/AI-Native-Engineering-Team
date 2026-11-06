@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.8.3**。§1–§3 为 1.8.3 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.8.4**。§1–§3 为 1.8.4 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -848,6 +848,25 @@ permission-lint:             570 checks, 0 failed
 sourceHash === installedHash: 19caa476...
 ```
 
+### 5.34 提交归属澄清（1.8.4）
+
+- `/ai-improve` 明确：AI Native 团队源由 `build` 维护者精选提交；目标项目 `.ai-team`/GROWTH 按项目 checkpoint 策略提交（通常 DevOps）；`push` 需用户批准；禁止 `git add -A`。
+- README、WORKFLOW、GIT-POLICY 增加“build 维护团队源 / Chief 交付项目 / DevOps 管项目 checkpoint”的边界说明。
+- `checkpoint-check` 的到期提示从“Chief must NOT”收紧为“Project Chief/read-only roles must NOT”，避免在团队维护场景误读。
+- README/TEAM 的“不自我修改”明确为“团队 agent 不改 `.opencode/**`；由 build 维护者实施批准后的改进”。
+
+验证：
+
+```text
+source verify:               195/195
+installed verify:            187/187
+installed + OpenCode:        197/197
+audit-team-consistency:      183 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+sourceHash === installedHash: 1d571aae...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -877,14 +896,15 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.3 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.4 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
 - 一致性审计：通过（183 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令与版本握手检查）。
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；具体项目状态以该项目 GROWTH 为准。
-- Shell 权限：通过（1.8.3 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- Shell 权限：通过（1.8.4 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake）。
 - 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；GROWTH/会话/文档闭环）。
+- 提交归属：通过（build 提交团队源；Chief 不提交项目状态；DevOps 管项目 `.ai-team` checkpoint；push 需批准）。
 - 网关定位：通过（`team-shell` 为可选结构化执行器，不是权限边界；预检直接跑 `permission-lint`）。
 - 文档一致性：通过（1.6.1 全量 docs 校验；1.7.0 新增命令计数、策略文档与验证记录）。
 - 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验破坏性边界）。

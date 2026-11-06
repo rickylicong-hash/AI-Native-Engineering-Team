@@ -207,7 +207,7 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - 会话审计：全量审计后用 `audit-state.mjs --mark` 记录 `AUDIT.json` 水位；下次只审计水位之后的会话/消息。
 - 跨项目优化：`build` 维护者运行 `/ai-improve <project>`，汇总 GROWTH、AUDIT 与会话证据，按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；默认不新增角色。
 - 批准：Chief 提案 → 安全/架构审计 → 用户批准 → 授权方修改 `.opencode/**`。
-- **团队不能自己改自己。**
+- **团队 agent 不能自己改自己；** AI Native 源由用户批准的 `build` 维护者修改。
 
 ## 7. 反模式
 

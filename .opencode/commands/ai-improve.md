@@ -135,7 +135,11 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
    - `node .opencode/skills/ai-team-workflow/scripts/permission-lint.mjs`
    - `node scripts/version.mjs --update`，然后 installed verify 和 `version.mjs --check`
 7. 回填项目 `GROWTH.md`：提案状态改为 `done`，写落地版本/任务、证据、日期；`growth-check` PASS。
-8. 由 DevOps 精选提交；执行者（build）不要自己 `git add`/`commit`；push 需用户批准。更新安装后提示新开会话（`RESTART REQUIRED`）。
+8. 提交与发布：
+   - AI Native 团队源变更由 `build` 作为维护者精选提交；
+   - 目标项目 `.ai-team`/`GROWTH` 变更按该项目自身策略提交；若项目使用本团队 checkpoint，派 `ai-team/devops-engineer`；
+   - 不使用 `git add -A` / `git add .`；push 前需用户批准；
+   - 更新安装后提示新开会话（`RESTART REQUIRED`）。
 
 ## 6. 持续优化策略
 
