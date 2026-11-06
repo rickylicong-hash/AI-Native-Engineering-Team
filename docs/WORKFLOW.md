@@ -423,6 +423,26 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-37 证据脱敏（P-27）**：`secret-check` 扫描 qa/work/release/security/logs；`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token。
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
 
+### 7.7 跨项目持续优化（1.7.0）
+
+`/ai-improve <project>` 用项目的真实使用证据优化团队本身：
+
+1. 读取项目 `GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md`、状态与交付证据；
+2. 运行 `improve-scan.mjs` 汇总会话/消息/工具错误/权限拒绝/角色分布；
+3. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；
+4. 需要改团队源时先请求用户批准；批准后实现、审查、验证、更新版本与文档；
+5. 回填项目 GROWTH 的提案处置索引，运行 `growth-check`。
+
+规则：
+
+- 单次证据写 `RISK-*`；≥2 次才写 GROWTH 提案；`ROLE-GAP` 需 ≥3 次、跨 ≥2 任务/项目且现有角色无法覆盖；
+- 每轮最多 2 个改动；优先改 prompt/命令/模板，再考虑脚本；
+- 必须写基线、验收、回滚和观察窗口；无改善就 `rejected`/`superseded`；
+- 行为、命令、计数、版本、文档同轮同步；文档不一致视为未完成；
+- token/成本只观察，不建立预算机制，除非用户另行批准。
+
+完整策略见 `docs/IMPROVEMENT.md`。
+
 ## 8. 并行规则
 
 - 契约冻结前不并行实现；

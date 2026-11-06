@@ -131,7 +131,9 @@
 | 阶段门禁 | Stage-Gate / 评审 | G0–G8，结论三态 |
 | 单一 owner | DRI（Directly Responsible Individual） | 每任务一个 owner |
 | 复盘 | Blameless Postmortem | 根因/影响/改进/owner |
-| 持续改进 | Kaizen/PDCA | GROWTH 提案，证据≥2 次 |
+| 持续改进 | Kaizen/PDCA | GROWTH 提案，证据≥2 次；`/ai-improve` 做跨项目复盘 |
+| 交付度量 | DORA | 变更失败率、返工、Lead time、恢复时间作为观察指标 |
+| 无责复盘 | SRE Postmortem | 根因、影响、行动项、owner；不评价个人 |
 | 工作可视化 | Kanban | `TASKS.md` 状态流 |
 | 限制在制 | WIP limit | 并行任务按文件所有权切分 |
 

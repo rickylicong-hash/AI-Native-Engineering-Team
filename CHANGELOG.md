@@ -3,6 +3,29 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.7.0] - 2026-11-06
+
+### Added
+
+- **`/ai-improve <project>`**: cross-project continuous optimization command. Reads the project's `GROWTH.md`, `AUDIT.json`, latest session audit and delivery evidence; runs `improve-scan.mjs`; decides `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER`; asks for approval before changing the team source; syncs version, commands, docs and verification after implementation.
+- **`improve-scan.mjs`**: read-only evidence scanner for project GROWTH/TASKS/AUDIT and OpenCode sessions. Supports current `session`/`part` and legacy `session_v2`/`session_part` schemas; reports sessions, messages, tokens, tool calls/errors, permission denials, role distribution and signals.
+- **`docs/IMPROVEMENT.md`**: continuous-improvement strategy based on PDCA/Kaizen, DORA, SRE postmortems, Diátaxis and SemVer, with cadence, thresholds, proposal lifecycle, rollback/observation windows and anti-patterns.
+
+### Changed
+
+- Command count is now 13; manifest, README, INSTALL, WORKFLOW, TEAM, BEST-PRACTICES and verification counts updated.
+- `audit-team-consistency` now checks the improve command, scanner script and strategy doc.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- installed verify → 187/187; installed + OpenCode → 197/197.
+- `node scripts/audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `improve-scan` against riccon-ai → 31 proposals (3 open) and 185 sessions scanned.
+- `sourceHash === installedHash` (`cca06fd0...`), version `1.7.0`.
+
 ## [1.6.1] - 2026-11-06
 
 ### Fixed

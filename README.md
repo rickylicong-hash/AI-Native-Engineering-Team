@@ -108,6 +108,7 @@ flowchart LR
 | `/ai-hotfix <问题>` | T1 快速修复 + 回归 + 复盘 |
 | `/ai-retro [范围]` | 复盘与团队改进提案（每 10 个 done / 门禁前 / 事故后） |
 | `/ai-docs [范围]` | README/API/运维/CHANGELOG，并验证命令 |
+| `/ai-improve <项目>` | 审计项目 GROWTH 与会话，持续优化团队并同步文档 |
 
 所有命令默认进入 `ai-team/chief`。也可以直接选择 agent：`ai-team/chief`。
 
@@ -215,18 +216,18 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.6.1 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.7.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 189, passed: 189, failed: 0
+# 期望：checks: 195, passed: 195, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 191, passed: 191, failed: 0
+# 期望：checks: 197, passed: 197, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。
@@ -375,6 +376,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 3. 才修改本仓库源文件；
 4. 再走 `publish` 流程。
 
+跨项目持续优化用 `/ai-improve <project>`：它读取该项目的 GROWTH、AUDIT 与会话使用，按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；需要改团队时先请求批准，完成后同步版本、命令、文档和验证记录。策略见 [docs/IMPROVEMENT.md](docs/IMPROVEMENT.md)。
+
 更完整的维护者说明见 [INSTALL.md](INSTALL.md#51-团队自身迭代维护者)。
 
 #### 7. `team/GROWTH.md` 什么时候创建
@@ -513,7 +516,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 .
 ├─ .opencode/
 │  ├─ agents/ai-team/          # 10 个角色
-│  ├─ commands/                # /ai 等 12 个命令
+│  ├─ commands/                # /ai 等 13 个命令
 │  └─ skills/
 │     ├─ ai-team-workflow/     # 流程、状态、证据、模板
 │     ├─ ai-team-standards/    # 工程标准、质量门禁、栈 playbook
@@ -555,4 +558,4 @@ node scripts/version.mjs --update # 更新到源版本
 **Q：团队会自己改自己吗？**  
 不会。改进只写 `.ai-team/team/GROWTH.md` 提案，由你批准后由授权方修改 `.opencode/**`。
 
-更多见 [docs/TEAM.md](docs/TEAM.md)、[docs/WORKFLOW.md](docs/WORKFLOW.md)、[docs/BEST-PRACTICES.md](docs/BEST-PRACTICES.md)、[docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md)、[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)、[docs/VERIFICATION.md](docs/VERIFICATION.md)、[docs/LARGE-PROJECTS.md](docs/LARGE-PROJECTS.md)、[docs/GIT-POLICY.md](docs/GIT-POLICY.md)。
+更多见 [docs/TEAM.md](docs/TEAM.md)、[docs/WORKFLOW.md](docs/WORKFLOW.md)、[docs/IMPROVEMENT.md](docs/IMPROVEMENT.md)、[docs/BEST-PRACTICES.md](docs/BEST-PRACTICES.md)、[docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md)、[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)、[docs/VERIFICATION.md](docs/VERIFICATION.md)、[docs/LARGE-PROJECTS.md](docs/LARGE-PROJECTS.md)、[docs/GIT-POLICY.md](docs/GIT-POLICY.md)。

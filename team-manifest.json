@@ -1,7 +1,7 @@
 {
   "name": "AI Native Engineering Team",
   "id": "ai-team",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "A stack-agnostic, globally installable AI engineering team for OpenCode V2. One instruction drives product, UX, architecture, implementation, review, testing, security, deployment and documentation.",
   "default_agent": "ai-team/chief",
   "entry_command": "/ai <goal>",
@@ -89,7 +89,8 @@
     { "id": "ai-handoff", "file": "commands/ai-handoff.md", "description": "Write HANDOFF and print the next-session prompt" },
     { "id": "ai-hotfix", "file": "commands/ai-hotfix.md", "description": "T1 fast fix with regression" },
     { "id": "ai-retro", "file": "commands/ai-retro.md", "description": "Retrospective and growth proposals" },
-    { "id": "ai-docs", "file": "commands/ai-docs.md", "description": "README, API, runbooks and changelog" }
+    { "id": "ai-docs", "file": "commands/ai-docs.md", "description": "README, API, runbooks and changelog" },
+    { "id": "ai-improve", "file": "commands/ai-improve.md", "description": "Cross-project team audit, improvement and documentation sync" }
   ],
   "skills": [
     { "id": "ai-team-workflow", "path": "skills/ai-team-workflow/SKILL.md", "purpose": "Tracks, gates, state, evidence, handoff, templates" },

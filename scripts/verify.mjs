@@ -211,7 +211,7 @@ if (fs.existsSync(chiefFile)) {
 // Commands
 // ---------------------------------------------------------------------------
 const commandFiles = listMarkdown(paths.commands).filter((f) => path.basename(f).startsWith("ai"));
-addCheck("command count", commandFiles.length === 12, `expected 12, found ${commandFiles.length}`);
+addCheck("command count", commandFiles.length === 13, `expected 13, found ${commandFiles.length}`);
 
 const commandIds = new Set();
 for (const file of commandFiles) {

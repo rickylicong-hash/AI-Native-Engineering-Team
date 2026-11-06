@@ -399,6 +399,26 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 - 新增动作：先改 `permissions.json` 的 `gateway`，再改 `team-shell.mjs`，然后 `permission-lint`；
 - Shell-first 下普通 `node *script.mjs*` 已由 `shell * -> allow` 覆盖；gateway 不是执行前提，但团队脚本仍建议走 `team-shell`，以获得参数校验和结构化日志。
 
+### 3.9 跨项目团队优化（1.7.0）
+
+`/ai-improve <project>` 用真实项目证据优化团队本身：
+
+1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
+2. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；
+3. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；
+4. 需要改团队源时，先请求用户批准；批准后实现、审查、验证、更新版本与文档；
+5. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`。
+
+硬规则：
+
+- 单次现象写 `RISK-*`，≥2 次证据才写 GROWTH 提案；`ROLE-GAP` 需 ≥3 次、跨 ≥2 任务/项目且现有角色无法覆盖；
+- 默认不新增角色；每轮最多 2 个改动；优先改 prompt/命令/模板，再考虑脚本；
+- 优化必须写清基线、验收、回滚和观察窗口；无改善就标记 `rejected`/`superseded`；
+- 文档、命令、计数、版本必须同轮同步，文档不一致视为未完成；
+- token/成本只观察，不建立预算机制，除非用户另行批准。
+
+完整策略与行业映射见 `docs/IMPROVEMENT.md`。
+
 ## 4. 目录与产物
 
 ```text

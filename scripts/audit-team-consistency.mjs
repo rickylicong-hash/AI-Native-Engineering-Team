@@ -197,7 +197,7 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
-for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs"]) {
+for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "improve-scan.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs"]) {
   check(
     `workflow script ${script} exists`,
     fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),
@@ -310,6 +310,18 @@ check(
   "retro command runs growth-check",
   read(path.join(commandsDir, "ai-retro.md")).includes("growth-check"),
   "retro does not check GROWTH dispositions",
+);
+check(
+  "improve command uses GROWTH, sessions and docs",
+  read(path.join(commandsDir, "ai-improve.md")).includes("GROWTH.md") &&
+    read(path.join(commandsDir, "ai-improve.md")).includes("improve-scan.mjs") &&
+    read(path.join(commandsDir, "ai-improve.md")).includes("docs/IMPROVEMENT.md"),
+  "improve command is missing GROWTH/session/documentation steps",
+);
+check(
+  "improvement strategy doc exists",
+  fs.existsSync(path.resolve("docs", "IMPROVEMENT.md")),
+  "missing docs/IMPROVEMENT.md",
 );
 const testReportTemplate = read(path.join(skillsDir, "ai-team-workflow", "templates", "TEST-REPORT.md"));
 check(

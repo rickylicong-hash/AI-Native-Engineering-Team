@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.6.1**。§1–§3 为 1.6.1 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.7.0**。§1–§3 为 1.7.0 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -15,17 +15,17 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 189, passed: 189, failed: 0, warnings: 0
+checks: 195, passed: 195, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
 覆盖：
 
 - 10 个 agent：frontmatter、mode、权限结构（仅 shell 破坏性 deny）、manifest、角色边界（流程约定）；
-- 12 个 command：description、agent 引用、body、参数、manifest；
+- 13 个 command：description、agent 引用、body、参数、manifest；
 - 4 个 skill：SKILL.md、name/description、引用文件、manifest；
 - 12 个 workflow 模板（含 GROWTH）；
-- 流程脚本：brief 生成/校验、secret 扫描、checkpoint 同步、review 门禁的语法与接线检查；
+- 流程脚本：brief 生成/校验、secret 扫描、checkpoint 同步、review 门禁、持续优化扫描的语法与接线检查；
 - 无绝对路径/stack-specific 泄漏（warning 级）。
 
 ## 2. OpenCode 识别验证
@@ -74,7 +74,7 @@ Dry-run：
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -DryRun
 ```
 
-结果：列出 10 个 agent、12 个 command、4 个 skill，未改文件。
+结果：列出 10 个 agent、13 个 command、4 个 skill，未改文件。
 
 实际安装：
 
@@ -85,7 +85,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 结果：
 
 ```text
-Installed: 10 agents, 12 commands, 4 skills.
+Installed: 10 agents, 13 commands, 4 skills.
 ```
 
 同时写入 `ai-team-install.json`（版本、安装时间、源/目标路径、`sourceHash`、`installedHash`、`manifestHash`、数量）。干净安装时 `sourceHash === installedHash`。
@@ -99,7 +99,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 结果：
 
 ```text
-checks: 191, passed: 191, failed: 0, warnings: 0
+checks: 197, passed: 197, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -749,6 +749,26 @@ permission-lint:             570 checks, 0 failed
 sourceHash === installedHash: 433d878e...
 ```
 
+### 5.29 跨项目持续优化（1.7.0）
+
+- 新增 `/ai-improve <project>`：读取项目 GROWTH/AUDIT/会话，按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；修改团队源前请求批准，完成后同步版本与文档。
+- 新增 `improve-scan.mjs`：汇总 GROWTH、TASKS、AUDIT 与 OpenCode 会话/消息/token/工具调用，支持 `node:sqlite` 和旧 `session_v2`/`session_part` schema。
+- 新增 `docs/IMPROVEMENT.md`：PDCA/Kaizen、DORA、SRE 复盘、Diátaxis、SemVer 等持续优化策略与反模式。
+- `team-manifest.json`、README、INSTALL、WORKFLOW、TEAM、BEST-PRACTICES、verify 计数同步；命令数 12 → 13。
+- riccon-ai 实测：31 条提案（3 未处置）、185 个 team 会话；旧库 `session_v2` 可读，`session_part` 已清理时自动标记数据缺口。
+
+验证：
+
+```text
+source verify:               195/195
+installed verify:            187/187
+installed + OpenCode:        197/197
+audit-team-consistency:      183 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+sourceHash === installedHash: cca06fd0...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -778,14 +798,15 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.6.1 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.7.0 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
-- 一致性审计：通过（177 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步与版本握手检查）。
+- 一致性审计：通过（183 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令与版本握手检查）。
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；具体项目状态以该项目 GROWTH 为准。
-- Shell 权限：通过（1.6.1 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- Shell 权限：通过（1.7.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake）。
-- 文档一致性：通过（1.6.1 全量 docs 校验；计数、权限说明、路径、checkpoint/证据命令已同步）。
+- 持续优化：通过（`/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；GROWTH/会话/文档闭环）。
+- 文档一致性：通过（1.6.1 全量 docs 校验；1.7.0 新增命令计数、策略文档与验证记录）。
 - 审查员独立验证：通过（shell 默认 allow 后不再依赖逐条 allowlist；`permission-lint` 校验破坏性边界）。
 - 真实编排：通过（T0 + 单专家 + 证据 + 拒绝伪造）。
 - 文档闭环：经专家评审发现并修复 5 个问题后通过。
