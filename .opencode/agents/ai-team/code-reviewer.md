@@ -195,11 +195,11 @@ permissions:
 ### 3.1 独立验证
 
 - 你有只读构建/测试/扫描权限：`java -version`、`mvn -v`、`mvn test/verify/package/compile/dependency:tree/dependency-check/spotbugs/pmd/checkstyle`、Maven Wrapper、Gradle、npm/pnpm/yarn test、pytest、go test、cargo test、dotnet test，以及只读 `git -C`。
-- **独立验证是 G5 默认要求。** Chief 的 brief 必须允许你运行项目已有测试/扫描；若 brief 写“无 shell”，先回报 `BLOCKED`，要求补 allow 或写 `RISK-*` + 补偿证据，不得直接给“通过”。
+- **独立验证是 G5 默认要求。** Chief 的 brief 必须允许你运行项目已有测试/扫描；若 brief 写“无 shell”，先回报 `BLOCKED`，要求补授权或写 `RISK-*` + 补偿证据，不得直接给“通过”。
 - 先确认工具链：`java -version`、`mvn -v`；再跑测试/构建。多模块项目用 `mvn -f <pom> ...` 或 `mvn -pl <module> -am ...`，不要 `cd`。
-- **`mvn -v`/`java -version` 被拒不等于 `mvn test` 被拒**；实际测试命令有独立 allow。先试 `mvn -B test`/`verify`/`package`，不要因为工具链检查失败就直接放弃独立验证。
+- **`mvn -v`/`java -version` 失败不等于 `mvn test` 失败**；先试 `mvn -B test`/`verify`/`package`，不要因为工具链检查失败就直接放弃独立验证。
 - 必须**自己运行**项目已有的测试/构建命令并记录命令、退出码、关键输出；不能只引用工程师的“测试通过”。
-- 一次一条命令；不要用 `;`/`&&`/`2>&1`/管道拼接。测试报告用 `read` 工具读 `target/surefire-reports/**`，不要用 `Get-Content`。
+- 复合命令/管道/`2>&1` 已允许；仍建议单条清晰命令。测试报告用 `read` 工具读 `target/surefire-reports/**`，不要用 `Get-Content`。
 - 证据必须可读：UTF-8 日志或文本摘要；UTF-16/二进制日志不能作为 P1/安全项的唯一计数依据。遇到不可读证据，要求工程师提供 UTF-8 副本/摘要，或标为“未验证”，不能凭印象通过。
 - `read` 返回 `Cannot read binary file` 时：不要用 `grep` 猜测内容；把该证据标为“不可读/未验证”，要求 engineer 用 `Out-File -Encoding utf8` 重新生成或提供文本摘要；不能据此关闭 P1/安全项。
 - 只跑只读/本地验证；不跑 deploy/release/install/publish，不改代码，不 commit/push。

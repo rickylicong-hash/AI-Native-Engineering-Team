@@ -89,7 +89,7 @@
 - [ ] 风险/阻塞/回退计划；
 - [ ] DoR 满足；
 - [ ] 每个 subagent brief 已通过 `brief-lint`（脚本参数/契约影响/独立验证/证据位置 UTF-8/测试路径/P2 处置/构建隔离齐全）；
-- [ ] `permission-lint` 对当前角色 PASS；新增脚本/命令已进入 `permissions.json`；
+- [ ] `permission-lint` 对当前角色 PASS；新增 gateway 动作已在 `permissions.json` 声明；
 - [ ] 读/构建/测试/扫描/团队脚本优先走 `team-shell`，gateway 动作已声明；
 - [ ] `TASKS.md` 已写。
 
@@ -130,12 +130,13 @@
 
 - [ ] `checkpoint-check` 未到期，或已由 DevOps 完成 checkpoint；
 - [ ] `artifact-check` 无 error（根目录产物/误落盘编译目录）；T3/T4 用 `--strict` 无 warning；历史 `.ai-team/work/**` UTF-16 用 `--fix-all` 迁移，未迁移须 `RISK-*` + 迁移计划；
+- [ ] `secret-check` 无明文 Cookie/Authorization/口令/token；证据已脱敏；
 - [ ] 若 `GROWTH.md` 有新增/处置，`growth-check` 无 error；
-- [ ] `permission-lint` PASS；新增脚本/命令已进入 `permissions.json`；
+- [ ] `permission-lint` PASS；新增 gateway 动作已在 `permissions.json` 声明；
 - [ ] checkpoint 有 `TASK-GIT-*`、brief 明确路径、`work/TASK-GIT-*EVIDENCE.md`；
 - [ ] 工作区未提交文件 < 20，或已提交精选路径；
-- [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark` 更新；
-- [ ] `--mark` 后 `HANDOFF.md` 的 Git/Baseline 与 `STATUS.md` 的 Checkpoint 已同步到该 commit；`state-check` PASS 已写入 `TASK-GIT-*` 证据；
+- [ ] `state/CHECKPOINT.json` 已由 DevOps 用 `--mark --sync-docs` 更新；
+- [ ] `--sync-docs` 已把 `HANDOFF.md` 的 Git/Baseline 与 `STATUS.md` 的 Checkpoint 同步到该 commit；`state-check` PASS 已写入 `TASK-GIT-*` 证据；
 - [ ] 没有把 `work/**`、日志、截图、tmp、未脱敏安全报告带进提交；
 - [ ] 没有 `git add -A` / `git add .`；Chief 没有自己 commit。
 

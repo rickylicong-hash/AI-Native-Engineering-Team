@@ -3,6 +3,25 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.6.1] - 2026-11-06
+
+### Fixed
+
+- **Documentation consistency**: replaced stale 1.4.x/1.5.x instructions that told readers to add `edit`/`subagent`/`task` permission rules or expect `ask`; current model is Shell-first with only destructive shell `deny` and process-level role boundaries.
+- Corrected verification counts in README/INSTALL/VERIFICATION (`189/189` source, `181/181` installed, `191/191` installed + OpenCode).
+- Replaced maintainer-specific paths with `<path-to-this-repo>`; clarified `.env`/`.env.*` read allow versus `.ssh`/`.aws` platform/OS permissions.
+- Documented `RESTART REQUIRED` after `version.mjs --update`, `checkpoint-check --mark --sync-docs`, and `secret-check` in the checkpoint/evidence paths.
+- Removed stale "one command at a time" guidance; compound shell is allowed under Shell-first.
+
+### Verified
+
+- `node scripts/verify.mjs` → 189/189.
+- installed verify → 181/181; installed + OpenCode → 191/191.
+- `node scripts/audit-team-consistency.mjs` → 177 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint` → 570 checks, 0 failed.
+- `sourceHash === installedHash`, version `1.6.1` (recorded in VERIFICATION.md).
+
 ## [1.6.0] - 2026-11-06
 
 ### Added

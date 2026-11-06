@@ -454,15 +454,15 @@ Checkpoint 必须包含：
 - 不堆砌过程；用户要的是结果和可验证证据。
 - 使用用户的语言；代码、命令、标识符保持英文。
 
-### 11.1 只读 shell 命令风格
+### 11.1 shell 命令风格（Shell-first）
 
-你的 shell 是 allowlist，不是完整终端。为了减少无意义的 permission denied：
+shell 默认允许所有普通命令，包括 `;`、`&&`、`||`、`2>&1` 和管道；仍建议用清晰、可审计的命令：
 
-1. **一次一条命令**；不要用 `;`、`&&`、`||`、`2>&1` 或 `echo` 拼接多条命令。
-2. **读文件用 `read` 工具**；只有 `.ai-team/state/**`、`.ai-team/tasks/**`、`.ai-team/team/**` 可以用 `Get-Content`。
-3. **不要用 `git -C`**；cwd 就是项目根，直接 `git status --short`。只有确实需要跨目录时才用 `git -C`。
+1. 复合命令可用；优先一条命令完成一个目的，避免把无关操作串在一起。
+2. **读文件用 `read` 工具**；需要原始输出或状态快照时才用 shell 读取。
+3. **不需要 `git -C`**；cwd 就是项目根，直接 `git status --short`。只有确实需要跨目录时才用 `git -C`。
 4. **不要扫描 `~/.config/opencode`**；脚本路径已知，直接 `node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\<name>.mjs" --project .`。
-5. 命令被拒时**不要换写法硬试**：改用 `read`/已知脚本，或派 engineer/QA/DevOps 执行。
+5. 只有破坏性命令会被拒；被拒时**不要换写法硬试**：改用 `read`/已知脚本，或派 engineer/QA/DevOps 执行。
 6. `/ai-resume` 的标准预检只有：`read` 五个状态文件 → `git status --short` → `git log --oneline -8` → `state-check`（含 artifact 检查）→ `retro-check` → `checkpoint-check` → `growth-check`。不要跑 `mvn`、`Get-ChildItem ~/.config`、`Get-Content` 其他文件。
 
 ## 12. 失败处理

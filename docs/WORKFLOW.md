@@ -325,8 +325,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 
 - **作者负责内容**：每个角色只写自己的 owned paths。
 - **DevOps 统一 checkpoint commit**：`.ai-team` 的精选快照由 DevOps 提交；Chief 只提供路径/TASK/角色/message。
-- **代码作者提交代码**：Engineer 提交代码 + 单测 + `.ai-team/work/TASK-*` 证据；commit 由作者执行，权限不再 `ask`。
-- **文档作者提交文档**：Writer 提交 `docs/**`、README、CHANGELOG、`.ai-team/docs`；commit 由作者执行，权限不再 `ask`。
+- **代码作者提交代码**：Engineer 提交代码 + 单测 + `.ai-team/work/TASK-*` 证据；流程上由作者执行，不再需要权限 `ask`。
+- **文档作者提交文档**：Writer 提交 `docs/**`、README、CHANGELOG、`.ai-team/docs`；流程上由作者执行，不再需要权限 `ask`。
 - **只读角色不 commit**：Chief/PM/UX/Architect/Reviewer/Security 不拿 raw git；这是流程约定，权限不再强制。
 - **流程建议只 stage 明确路径**；`git add -A`/`git add .` 不再被权限拒绝。
 - **提交前扫描密钥/凭据/客户数据**；安全报告脱敏。
@@ -398,7 +398,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-08 审查节流**：同一模块连续未审切片 ≤2；第 3 个切片开工前先完成审查。
 - **P-10 状态回填**：任务回报必须包含 `TASKS.md` 建议更新，Chief 当轮落盘。
 
-### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-36）
+### 7.6 证据、构建与成长治理（P-15..P-19, T-20..T-38）
 
 - **P-15 产物卫生**：原始日志只进 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；根目录不得有 `*.log`、`target-*`、`*.tmp`、`*.class`；spike/T0 的 `target/` 收口清理。
 - **P-16 flake 治理**：非确定性失败登记 `RISK-*`/`DEF-*`，写复现命令、频率、owner；重跑通过只能作为临时证据，不能单独关闭 P1/安全项；至少连续 3 次通过或固定种子/有限重试并保留首次失败日志。

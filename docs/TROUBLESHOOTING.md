@@ -35,26 +35,13 @@ node scripts/verify.mjs --root ~/.config/opencode --installed
 
 **现象**：Chief 无法调用 `ai-team/engineer`，或提示 subagent not allowed。
 
-检查：
+1.5.1 起已移除 agent 级 `subagent`/`task` 权限规则；不要为此新增权限块。检查：
 
-1. Chief 的 `permissions` 是否有：
-
-```yaml
-- action: subagent
-  resource: "ai-team/*"
-  effect: allow
-```
-
-2. 是否有更后面的 deny 覆盖（最后匹配生效）；
-3. 子 agent 的 `mode` 是否为 `subagent`/`all`；
-4. 子 agent ID 是否与文件名/目录一致（`agents/ai-team/engineer.md` → `ai-team/engineer`）；
-5. 如果运行时仍用旧 `task` 权限，补一条：
-
-```yaml
-- action: task
-  resource: "ai-team/*"
-  effect: allow
-```
+1. 子 agent 的 `mode` 是否为 `subagent`/`all`；
+2. 子 agent ID 是否与文件名/目录一致（`agents/ai-team/engineer.md` → `ai-team/engineer`）；
+3. 是否触发了 `experimental.subagent_depth` 限制（见 3.1）；
+4. 是否旧会话仍在使用升级前的权限缓存：新开 OpenCode 会话后再试；
+5. 仍失败时用 `permission-doctor.mjs` 查看最终规则，不要扩大 `*` allow。
 
 ### 3.1 嵌套编排深度限制
 
@@ -105,7 +92,7 @@ commit/push、publish/deploy、`.env`/密钥、`git add -A` 都**不再**被权�
 
 **处理**：
 
-1. 先确认版本 ≥ `1.6.0`：
+1. 先确认版本 ≥ `1.6.1`（在团队仓库根目录；安装副本不含 `scripts/`）：
 
 ```bash
 node scripts/version.mjs --update
@@ -202,7 +189,7 @@ Shell mvn -v                                                  Permission denied
 处理：
 
 1. 看提示里的 action/resource；
-2. 确认已安装 1.6.0：`node scripts/version.mjs --check`；
+2. 确认已安装 1.6.1：`node scripts/version.mjs --check`；
 3. 重开 `/ai-resume` 或新会话，让 OpenCode 重新加载 agent 配置；`version.mjs --update` 后会提示 `RESTART REQUIRED`；
 4. 如果新会话仍弹 `ask`，用 `permission-doctor` 检查是否有旧的 `ask` 规则；
 5. 项目级可覆盖：项目 `.opencode/opencode.jsonc` 的 `agents`。
@@ -211,9 +198,9 @@ Shell mvn -v                                                  Permission denied
 
 1.5.1 起 agent 的 `read` 规则对 `*.env` / `*.env.*` 显式 `allow`，覆盖 base 的 `.env` ask；shell 也不再拦截。
 
-仍不建议：
+建议：
 
-- 读 `.env.example` / `.env.sample` / `.env.template` 了解变量名；
+- 优先读 `.env.example` / `.env.sample` / `.env.template` 了解变量名；
 - 需要新变量：改 `.env.example` 并说明；
 - 需要真实密钥：由用户在本地/Secret Manager 配置，不交给 agent；
 - 不要把密钥贴进聊天、日志或提交。
@@ -239,8 +226,9 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" -
 2. frontmatter 是否有 `description`；
 3. 是否设置了 `metadata.opencode/autoinvoke: false`（会隐藏）；
 4. 技能 ID 是否与目录名一致；
-5. 权限 `skill` 是否 deny；
-6. 运行 `/reload`。
+5. 是否被全局/项目配置禁用（`skill` 规则或 autoinvoke）；
+6. 运行 `/reload`；
+7. 仍不可见时检查是否安装到了错误的配置目录。
 
 ## 7. 模型不可用/报 provider 错误
 
@@ -260,7 +248,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 - 路径含空格要加引号；
 - 不要用 `/home/...` 假设；
 - 行尾 CRLF/LF 不影响 Markdown agent；脚本用对应平台；
-- `~` 在权限路径中会展开，shell 命令不会。
+- `~` 的展开取决于 shell/脚本；不确定时写绝对路径。
 
 ### 8.1 中文显示乱码
 
@@ -275,8 +263,6 @@ chcp 65001
 这不影响团队运行。
 
 ## 9. 安装后旧文件还在/冲突
-
-安装器会备份同名文件：
 
 安装器会把同名内容移动到：
 
@@ -295,7 +281,7 @@ chcp 65001
 
 - 确认 Chief 被正确选中（`/ai` 或 `ai-team/chief`）；
 - 确认当前目录可写；
-- 检查 Chief 是否有 `.ai-team/state/*` 的 edit 权限；
+- 检查 Chief 是否能写当前目录（OS 权限）；1.5.1 起不再用 `edit` 权限拦截；
 - 让 Chief “初始化 `.ai-team/`”；
 - 仍失败：手动复制 `.opencode/skills/ai-team-workflow/templates/` 到 `.ai-team/state/`。
 
@@ -304,17 +290,17 @@ chcp 65001
 - 确认用的是 T1/T2，而不是 T3；小任务应裁剪；
 - 在目标里写清范围/技术栈/验收；
 - 检查是否触发了 L3（生产/删数据/密钥/支付）——这些必须问；
-- 如果是权限弹窗，按第 4 节加精确 allow；
+- 1.6.0 起不应有 shell `ask`；若仍弹窗，按第 4 节确认版本并新开会话；
 - 如果 Chief 反复澄清，检查 `PROJECT.md` 是否为空/矛盾。
 
 ## 12. 团队改了不该改的文件
 
 1. 立即停止；
 2. `git diff` 确认范围；
-3. 恢复非预期改动（`git checkout -- <file>`，确认没有用户工作被覆盖）；
-4. 检查对应 agent 的 `edit` 权限；
+3. 由用户确认后恢复非预期改动（`git restore`/`git checkout --` 属于破坏性命令，agent 权限会 deny）；
+4. 检查 brief/所有权/prompt 是否给了错误范围（权限层没有 `edit` 边界）；
 5. 在 Chief 的 `RISK` 记录；
-6. 如果是权限过宽，收紧并跑验证。
+6. 如属流程缺口，更新 brief/review/checkpoint 规则并重跑验证。
 
 ## 13. 验证脚本失败
 
@@ -350,6 +336,8 @@ node scripts/version.mjs
 | `unknown` | 标记 JSON 损坏/缺字段 | `--update --force` |
 | `installed-newer` | 已安装版本高于源 | 更新源，或 `--force` 降级 |
 | `not-installed` | 目标目录没有团队文件 | `--update` 或 `install.ps1` |
+
+`--update` 成功后必须新开 OpenCode 会话/重启（`RESTART REQUIRED`）；旧会话可能仍使用旧权限缓存。
 
 标记文件位置：
 

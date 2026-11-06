@@ -117,7 +117,7 @@ node scripts/verify.mjs
 期望：
 
 ```text
-checks: 192, passed: 192, failed: 0
+checks: 189, passed: 189, failed: 0
 OK: package is structurally valid.
 ```
 
@@ -132,7 +132,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed
 期望：
 
 ```text
-checks: 184, passed: 184, failed: 0
+checks: 181, passed: 181, failed: 0
 OK: package is structurally valid.
 ```
 
@@ -149,7 +149,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 ```text
 opencode lists ai-team/chief                             PASS
 ...
-checks: 194, passed: 194, failed: 0
+checks: 191, passed: 191, failed: 0
 ```
 
 ### OpenCode 识别验证
@@ -206,8 +206,10 @@ Subagent depth limit reached (1). Increase "experimental.subagent_depth" to allo
 
 ## 5.1 团队自身迭代（维护者）
 
-**源真相**：`D:\Documents\AI Native`（或你克隆的仓库）。  
-**安装产物**：`~/.config/opencode/agents|commands|skills`。  
+**源真相**：`<path-to-this-repo>`（你克隆/解压的团队仓库）。
+
+**安装产物**：`~/.config/opencode/agents|commands|skills`。
+
 **原则**：先改源 → 验证 → 发布安装 → 验证安装产物。不要直接改全局安装副本（下次发布会覆盖）。
 
 标准流程：
@@ -288,6 +290,7 @@ node scripts/version.mjs --check
 # 退出码：0=一致；1=需更新/漂移/不完整；2=未安装；3=unknown
 
 # 更新（源验证 → 安装 → 安装后验证 → 写 marker）
+# 成功后输出 RESTART REQUIRED；必须新开会话/重启 OpenCode
 node scripts/version.mjs --update
 
 # 强制重装/降级
@@ -325,10 +328,11 @@ node scripts/version.mjs --target "$env:USERPROFILE\.config\opencode" --check
 
 1. 备份当前 `.opencode`（或依赖安装器自动备份）；
 2. 拉取新版本；
-3. 重跑安装脚本；
+3. 重跑安装脚本或 `node scripts/version.mjs --update`；
 4. `node scripts/verify.mjs --root ~/.config/opencode --installed`；
 5. 看 `CHANGELOG.md` 的破坏性变更；
-6. 在临时项目 smoke test。
+6. **新开 OpenCode 会话/重启**（旧会话可能仍使用旧权限缓存）；
+7. 在临时项目 smoke test。
 
 ## 7. 卸载
 
@@ -355,10 +359,11 @@ node scripts/version.mjs --target "$env:USERPROFILE\.config\opencode" --check
 
 ## 9. 安全说明
 
-- 团队 agent 默认禁止读 `.env`/密钥；
-- 生产发布/推送/云变更默认 `ask`；
-- 破坏性命令默认 `deny`；
-- 审查者只读代码；
+- 每个角色只有 44 条权限规则：42 条 shell（1 条 `* -> allow` + 41 条破坏性 `deny`）+ 2 条 `.env` read allow；
+- 普通 shell（含 `git commit`/`push`、发布/部署）默认 `allow`，不配置 `ask`；只有破坏性命令 `deny`；
+- `read`/`edit`/`task`/`subagent`/`external_directory` 没有 agent 级限制；角色边界靠 prompt、brief、review 和 checkpoint 流程约束；
+- `.env`/`.env.*` 的 `read` 由 agent 规则显式 `allow`（覆盖 base ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定，不要依赖权限层隔离密钥；
+- 审查者只读代码、Chief 不提交等是**流程约定**，不是权限保证；需要硬隔离时用 OS ACL 或容器只读挂载；
 - 安装器不会删除无关文件；
 - 仍建议在受控环境先 `-DryRun`，并检查 `git status`。
 

@@ -33,7 +33,7 @@ model: provider/model-id#variant
 
 1. 新建 `.opencode/agents/ai-team/<role>.md`；
 2. frontmatter：`description`、`mode: subagent`、`color`、`permissions`；
-3. 复制现有角色的权限块，按新角色调整写范围；
+3. 复制现有角色的 44 条权限规则（42 shell + 2 `.env` read allow）；写范围写进角色 prompt 和 brief 约束，不再用 `edit` 权限控制；
 4. 在 `team-manifest.json` 的 `agents` 加条目；
 5. 在 `chief.md` 的名册/调度矩阵加一行；
 6. 在 `docs/TEAM.md` 角色卡加一节；
@@ -53,19 +53,16 @@ model: provider/model-id#variant
 
 ## 4. 调整权限
 
-权限是**有序规则，最后匹配生效**。常用模式：
+权限是**有序规则，最后匹配生效**。当前团队只使用 shell 规则：
 
 ```yaml
 permissions:
-  - action: "*"            # 先宽
+  - action: shell           # 默认允许普通命令
     resource: "*"
     effect: allow
-  - action: edit           # 再收紧
-    resource: "*"
+  - action: shell           # 只拒绝破坏性命令
+    resource: "docker compose down -v *"
     effect: deny
-  - action: edit
-    resource: ".ai-team/product/*"
-    effect: allow
 ```
 
 注意：
@@ -74,8 +71,8 @@ permissions:
 - 路径匹配是整路径，`*` 可跨 `/`；Windows 反斜杠会归一化；
 - shell 规则匹配原始命令文本；1.6.0 Shell-first strict 下只有破坏性命令 deny；
 - 最后匹配生效；破坏性 deny 放在 allow 后面；
-- 不要给审查者 `edit` 源码权限；
-- `.env`/密钥的 `read` 也已 `allow`（覆盖 base ask）；仍禁止泄露。
+- 权限层没有 `edit` 边界；审查者不改源码是 prompt/流程约定，不要试图用 `edit` deny 实现；
+- `.env`/`.env.*` 的 `read` 已显式 `allow`（覆盖 base ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定；仍禁止泄露。
 
 ## 5. 项目级覆盖
 
@@ -94,7 +91,7 @@ permissions:
 }
 ```
 
-Shell-first strict 下 shell 已默认 allow；项目级通常用于**新增破坏性命令 deny**，而不是补 allow。项目规则会追加在全局/agent 规则之后，可覆盖为更具体的行为。`.env` 的 `read` 也已 allow；仍禁止泄露。
+Shell-first strict 下 shell 已默认 allow；项目级通常用于**新增破坏性命令 deny**，而不是补 allow。项目规则会追加在全局/agent 规则之后，可覆盖为更具体的行为。`.env`/`.env.*` 的 `read` 已显式 allow；仍禁止泄露。
 
 ## 6. 修改流程/门禁
 
@@ -173,7 +170,7 @@ description: ...
 5. 授权方修改 `.opencode/**`；
 6. bump `team-manifest.json` 的 `version` + 更新 `CHANGELOG.md`；
 7. 发布：`node scripts/version.mjs --update`（或 `publish.ps1` / `publish.sh`）；
-8. 版本校验：`node scripts/version.mjs --check` 应为 0；
+8. 版本校验：`node scripts/version.mjs --check` 应为 0；更新成功后新开 OpenCode 会话/重启（`RESTART REQUIRED`）；
 9. 在临时项目做 smoke test。
 
 ## 12. 嵌套编排（可选）

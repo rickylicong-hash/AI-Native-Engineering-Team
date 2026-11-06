@@ -397,7 +397,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 - `git add`/`commit`/`push` 等写操作不再由 shell 权限拦截；仍按 brief、ownership 和 checkpoint 流程执行；
 - 每次调用写 `.ai-team/work/team-shell-logs/TEAM-SHELL.log`；
 - 新增动作：先改 `permissions.json` 的 `gateway`，再改 `team-shell.mjs`，然后 `permission-lint`；
-- 直接的 `node *script.mjs*` allow 为兼容保留；新命令/新脚本一律走 gateway，后续版本再移除直接 allow。
+- Shell-first 下普通 `node *script.mjs*` 已由 `shell * -> allow` 覆盖；gateway 不是执行前提，但团队脚本仍建议走 `team-shell`，以获得参数校验和结构化日志。
 
 ## 4. 目录与产物
 

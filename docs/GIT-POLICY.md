@@ -1,6 +1,6 @@
 # Git 权限策略（GIT POLICY）
 
-> **1.6.0 Shell-first strict**：每个角色只有 42 条 shell 规则（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；commit/push/tag/publish/.env 都不再被拦截。
+> **1.6.0 Shell-first strict**：每个角色只有 42 条 shell 规则（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；shell 层的 commit/push/tag/publish 都不再被拦截，`.env`/`.env.*` 的 `read` 另有显式 allow。
 >
 > 注意：shell 权限是**破坏性操作护栏**，不是沙箱；它不防越权或密钥读取。
 
@@ -11,7 +11,7 @@
 | 普通 Git | `status`、`diff`、`log`、`add`、`commit`、`push`、`tag`、`branch`、`remote`、`init`、`apply`、`am` 全部 `allow` |
 | 破坏性 Git | `reset --hard`、`clean`、`restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash/worktree → `deny` |
 | 普通 shell | 管道、`;`、`&&`、`||`、`2>&1`、多行命令、构建/测试/发布/部署 → `allow` |
-| 密钥 | `.env`/`.ssh`/`.aws` 的 `read` 和 shell 读取均 `allow`（`.env` 的 base ask 由 agent allow 覆盖） |
+| 密钥 | shell 读取 `allow`；`.env`/`.env.*` 的 `read` 另有显式 `allow`（覆盖 base ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定 |
 | 发布/部署 | 所有角色 `allow`；流程上仍建议只由 DevOps 执行并由用户批准 |
 
 ## 2. 角色流程约定（非权限强制）

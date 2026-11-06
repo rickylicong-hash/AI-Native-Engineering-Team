@@ -42,7 +42,7 @@ Chief 会自动：
 | **DevOps/交付** | `ai-team/devops-engineer` | 仓库基线、CI/CD、容器、IaC、一键部署、可观测性、回滚 | 不写业务代码 |
 | **技术文档** | `ai-team/technical-writer` | README、API、运维手册、CHANGELOG、发布说明 | 不写生产代码 |
 
-每个角色都有独立的文件所有权和权限边界；审查者不能改代码，工程师不能改需求/设计，Chief 不能替成员干活。
+每个角色都有独立的文件所有权和流程边界（权限层只限制破坏性 shell 命令）；审查者不能改代码，工程师不能改需求/设计，Chief 不能替成员干活。
 
 ---
 
@@ -215,16 +215,18 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
+以下数字以团队 1.6.1 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 192, passed: 192, failed: 0
+# 期望：checks: 189, passed: 189, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 194, passed: 194, failed: 0
+# 期望：checks: 191, passed: 191, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。
@@ -258,6 +260,7 @@ node scripts/version.mjs
 node scripts/version.mjs --check
 
 # 更新已安装版本：源验证 → 安装 → 安装后验证 → 写版本标记
+# 成功后必须新开 OpenCode 会话/重启（RESTART REQUIRED）
 node scripts/version.mjs --update
 
 # 强制重装 / 降级
@@ -298,7 +301,7 @@ node scripts/version.mjs --json
 #### 2. 标准流程
 
 ```text
-1. 改源：D:\Documents\AI Native\.opencode\**
+1. 改源：<path-to-this-repo>/.opencode/**
 2. 同步元数据（增删角色/命令/技能时）
 3. 源验证：node scripts/verify.mjs
 4. 一键发布：.\scripts\publish.ps1
@@ -445,7 +448,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **证据脱敏（P-27）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token；`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
 - **Checkpoint 收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF/STATUS，减少一次纯文档 subagent。
 - **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存。
-- **密钥**：`.env`、`.ssh`、`.aws` 的 `read` 也已 allow（覆盖 base 的 `.env` ask）；仍禁止把密钥写入聊天、日志或提交。
+- **密钥**：`.env`/`.env.*` 的 `read` 由 agent 规则显式 `allow`（覆盖 base 的 `.env` ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定。仍禁止把密钥写入聊天、日志或提交。
 - **生产发布需批准**：L3 不可逆操作必须用户明确同意；这是流程要求，不是权限 `ask`。
 - **证据标准**：没有命令、退出码、输出和文件路径的“完成”不算完成；证据必须 UTF-8 且无明文凭据。
 - **不自我修改**：团队不能改 `.opencode/**`；改进只写提案，由用户批准。
@@ -482,7 +485,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 
 ## 9. 设计来源与改进
 
-本团队参考了 `D:\Development\riccon\.opencode\agents` 的以下优点：
+本团队参考了成熟 AI 工程团队配置的以下优点：
 
 - 明确的角色边界与“只写 owned paths”；
 - 阶段门禁与评审结论（通过/修改后通过/不通过）；
