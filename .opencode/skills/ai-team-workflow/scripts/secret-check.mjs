@@ -12,7 +12,8 @@
  *   node secret-check.mjs --project . --fix
  *   node secret-check.mjs --project . --json
  *
- * 退出码：0 = 无明文；1 = 有明文；2 = 参数/读取错误。
+ * 退出码：0 = 无明文；1 = 有明文；2 = 参数/读取错误；
+ *         3 = 扫描被截断（PARTIAL，未扫完不能当作 PASS）。
  */
 
 import fs from "node:fs";
@@ -23,7 +24,8 @@ import crypto from "node:crypto";
 const ROOTS = [".ai-team/qa", ".ai-team/work", ".ai-team/release", ".ai-team/security", "logs"];
 const TEXT_EXT = /\.(md|txt|log|json|headers|ya?ml|xml|csv|http)$/i;
 const SKIP_DIRS = new Set([".git", "node_modules", "target", "dist", "build", ".idea", ".vscode", ".mvn"]);
-const MAX_FILES_DEFAULT = 500;
+// P-44：500 上限会让 500+ 证据文件的项目把“未扫完”当成 PASS；默认提高到 2000。
+const MAX_FILES_DEFAULT = 2000;
 
 function normalize(file) {
   return file.replace(/\\/g, "/");
@@ -50,14 +52,10 @@ function isPlaceholder(value) {
     || /example|placeholder|your[-_]|changeme/i.test(value);
 }
 
-function preview(value) {
-  if (value.length <= 6) return "***";
-  return `${value.slice(0, 4)}...${value.slice(-2)}`;
-}
-
 /**
- * 检测一行文本中的明文凭据。返回 [{kind, line, value, column}]。
- * value 只用于内部脱敏和预览，不会原样打印。
+ * 检测一行文本中的明文凭据。返回 [{kind, line, len, sha256, file}]。
+ * P1-01：findings 不包含原始值，避免 --json / 证据日志二次泄露；
+ * 原始值只在扫描函数内部用于判定与哈希，不进入返回值。
  */
 export function scanText(text, file = "") {
   const findings = [];
@@ -65,7 +63,7 @@ export function scanText(text, file = "") {
   const add = (kind, line, value) => {
     if (isPlaceholder(value) || value.length < 8) return;
     if (value.includes("`") || value.includes("|")) return;
-    findings.push({ kind, line: line + 1, value });
+    findings.push({ kind, line: line + 1, len: value.length, sha256: sha256(value).slice(0, 12) });
   };
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -94,9 +92,9 @@ export function scanText(text, file = "") {
     }
   }
 
-  // 同一行同一值只报一次，避免 Set-Cookie / __Host- 双重命中。
+  // 同一行同一值只报一次，避免 Set-Cookie / __Host- 双重命中；用哈希比较，不保留明文。
   return findings.filter((finding, index) => {
-    return !findings.slice(0, index).some((other) => other.line === finding.line && other.value === finding.value);
+    return !findings.slice(0, index).some((other) => other.line === finding.line && other.sha256 === finding.sha256);
   }).map((finding) => ({ ...finding, file: normalize(file) }));
 }
 
@@ -237,11 +235,21 @@ function runCli() {
   const json = hasFlag("--json");
   const fix = hasFlag("--fix");
   const quiet = hasFlag("--quiet");
-  const maxFiles = Number.parseInt(getArg("--max-files", String(MAX_FILES_DEFAULT)), 10) || MAX_FILES_DEFAULT;
+  const maxFilesArg = args.includes("--max-files") ? getArg("--max-files", null) : null;
+  let maxFiles = MAX_FILES_DEFAULT;
 
   if (!fs.existsSync(project) || !fs.statSync(project).isDirectory()) {
     console.error(`ERROR  project not found: ${project}`);
     process.exit(2);
+  }
+
+  // P3-01：0/负数/非整数会让 walkFiles 收到非法 limit，必须在扫描和 --fix 前拦截。
+  if (args.includes("--max-files")) {
+    if (maxFilesArg === null || !/^[1-9]\d*$/.test(maxFilesArg) || !Number.isSafeInteger(Number(maxFilesArg))) {
+      console.error(`ERROR  --max-files must be a positive integer, got: ${maxFilesArg === null ? "(missing value)" : maxFilesArg}`);
+      process.exit(2);
+    }
+    maxFiles = Number(maxFilesArg);
   }
 
   let fixed = [];
@@ -257,9 +265,11 @@ function runCli() {
   }
 
   const result = scanSecrets(project, { maxFiles });
-  const ok = result.findings.length === 0;
+  // 截断意味着还有文件没扫，不能算 PASS；有明确 findings 时仍按 FAIL 返回 1。
+  const ok = result.findings.length === 0 && !result.truncated;
+  const status = result.findings.length > 0 ? "FAIL" : result.truncated ? "PARTIAL" : "PASS";
   if (json) {
-    console.log(JSON.stringify({ ok, fixed, ...result }, null, 2));
+    console.log(JSON.stringify({ ok, result: status, fixed, ...result }, null, 2));
   } else if (!quiet) {
     console.log("AI Team secret check");
     console.log(`project:  ${project}`);
@@ -270,14 +280,15 @@ function runCli() {
     }
     console.log(`findings: ${result.findings.length}`);
     for (const finding of result.findings.slice(0, 10)) {
-      console.log(`  FIND  [${finding.kind}] ${finding.file}:${finding.line} value=${preview(finding.value)}`);
+      console.log(`  FIND  [${finding.kind}] ${finding.file}:${finding.line} len=${finding.len} sha256=${finding.sha256}`);
     }
     if (result.findings.length > 10) console.log(`  ... and ${result.findings.length - 10} more finding(s)`);
     console.log(`scanned:  ${result.scanned} file(s)${result.truncated ? " (truncated)" : ""}`);
-    console.log(`result:   ${ok ? "PASS" : "FAIL"}`);
-    if (!ok) console.log("action:   run secret-check --fix, or redact the value manually before commit");
+    console.log(`result:   ${status === "PARTIAL" ? "PARTIAL (truncated)" : status}`);
+    if (status === "FAIL") console.log("action:   run secret-check --fix, or redact the value manually before commit");
+    else if (status === "PARTIAL") console.log("action:   rerun with a higher --max-files; a truncated scan is not a pass");
   }
-  process.exit(ok ? 0 : 1);
+  process.exit(result.findings.length > 0 ? 1 : result.truncated ? 3 : 0);
 }
 
 const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";

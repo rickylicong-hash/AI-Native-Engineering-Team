@@ -428,7 +428,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-34 权限矩阵与预检**：`permissions.json` 只保留破坏性 shell forbidden；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝。
 - **T-35 可选结构化执行器**：`team-shell.mjs --role <role> --action <action>` 可用于 git 读取、构建/测试、扫描和团队脚本，提供参数校验与结构化日志；gateway 只在通过它调用时生效，不是权限边界；简单命令直接 shell。
 - **T-36 Shell-first strict（1.6.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
-- **T-37 证据脱敏（P-27）**：`secret-check` 扫描 qa/work/release/security/logs；`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token。
+- **T-37 证据脱敏（P-27/P-44）**：`secret-check` 扫描 qa/work/release/security/logs，默认上限 2000；截断时 `PARTIAL` + exit 3，findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token；`artifact-check` 在 `secrets.truncated` 时以 `secret-scan-truncated` 失败。
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
 
 ### 7.7 跨项目持续优化（1.7.0）
@@ -436,7 +436,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 `/ai-improve <project>` 由 `build` 维护者运行，用项目的真实使用证据优化团队本身：
 
 1. 读取项目 `GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md`、状态与交付证据；
-2. 运行 `improve-scan.mjs` 汇总会话/消息/工具错误/权限拒绝/角色分布；
+2. 运行 `improve-scan.mjs` 汇总会话/消息/工具错误/权限拒绝/角色分布；`session_part` 为空时从 `session_message.data.content` 读取工具明细，并注明数据源；
 3. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策；
 4. 需要改团队源时先请求用户批准；批准后实现、审查、验证、更新版本与文档；
 5. 回填项目 GROWTH 的提案处置索引，运行 `growth-check`。

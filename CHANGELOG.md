@@ -3,6 +3,29 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.5] - 2026-11-07
+
+### Fixed
+
+- **`improve-scan` tool telemetry (P-43)**: when `session_part`/`part` has no tool rows, parse `session_message.data.content` tool items; count `state.status="error"` and `state.error.type="permission.rejected"`; emit `no-tool-data` only when both sources are empty; deduplicate by call id and report the data source. riccon-ai now reports 25,728 tools / 445 errors / 174 permission denials across 231 sessions instead of 0/0/0.
+- **`secret-check` coverage and output (P-44 / security P1-01)**: default scan cap 500 → 2000; truncation prints `PARTIAL (truncated)` and exits 3 instead of PASS; invalid `--max-files` exits 2; findings export only `kind/file/line/len/sha256` (no raw `value`), so `--json` and evidence logs cannot re-leak plaintext. `--fix` keeps its internal redaction path.
+- **`artifact-check` secret-truncation gate (security P1-02)**: default cap 500 → 2000; a truncated `scanSecrets` result now adds error `secret-scan-truncated` and fails the gate; `state-check`/`checkpoint-check` inherit the error through `checkArtifacts`; invalid `--max-files` exits 2.
+
+### Verified
+
+- `node scripts/verify.mjs` — 195/195; installed verify — 197/197.
+- `audit-team-consistency` — 183 checks / 0 failed; `audit-git-permissions` — 10 agents / 0 failed; `permission-lint` — 570 PASS.
+- riccon-ai: `artifact-check` 802 evidence / 1,035 secrets / 0 error / 0 warning; `secret-check` 1,035 / 0 findings / PASS; `--max-files 500` → PARTIAL / exit 3; `improve-scan` 25,728 / 445 / 174.
+- `sourceHash === installedHash` (`1d45b794...`), version `1.8.5`.
+- Reviews: `REV-IMPROVE-2026-11-07` (R2, modified pass, P0=0/P1=0), `SEC-IMPROVE-2026-11-07` (R1, modified pass, P1-01/P1-02 closed).
+
+### Known issues
+
+- `improve-scan` selects the tool source globally: any `session_part` tool row suppresses the message fallback for the whole database; mixed/partial parts can undercount (`RISK-TEAM-003`). Current riccon-ai has 0 `session_part` rows, so the real count is unaffected.
+- `secret-check` still silently skips UTF-16/binary/unreadable files, `.jsonl`, and overlong lines; line/value exemptions can miss some forms; `--fix` may over-redact non-findings (`TASK-IMPROVE-2026-11-07-FU3/FU4`, P3 accepted).
+- `secret-check` still does not scan `.ai-team/state|tasks|reviews|team` (P3 accepted).
+- `improve-scan` has no `--help`; invoking `--help` runs a full scan (P3 accepted).
+
 ## [1.8.4] - 2026-11-06
 
 ### Fixed

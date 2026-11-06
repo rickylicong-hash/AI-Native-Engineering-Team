@@ -204,7 +204,7 @@ Checkpoint 由 `ai-team/devops-engineer` 执行；Chief 只提供明确路径、
 | 触发 | 阈值 |
 |---|---|
 | 工作区未提交文件 | ≥20 个（默认，可用 `--max-files` 调整） |
-| 证据文件扫描 | 默认 2000（可用 `--max-evidence-files` 调整；与 `artifact-check` 的 500 默认解耦） |
+| 证据文件扫描 | 默认 2000（可用 `--max-evidence-files` 调整；与 `artifact-check`/`secret-check` 的 2000 默认对齐） |
 | 门禁 | 进入 G5/G7/G8 前 |
 | 交接 | 写 `HANDOFF.md` 前（`--handoff`） |
 | 任务节奏 | 已有 `CHECKPOINT.json` 基线后，每 10 个 `done` |
@@ -325,7 +325,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" -
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project . --fix
 ```
 
-`artifact-check` / `state-check` / `checkpoint-check --mark` 已内置同一扫描；明文凭据会阻断。
+`artifact-check` / `state-check` / `checkpoint-check --mark` 已内置同一扫描；明文凭据会阻断。`secret-check` 默认扫描 2000 文件；截断时输出 `PARTIAL (truncated)` 并以 exit 3 失败，findings 只打印 `kind/file/line/len/sha256`，不打印明文；`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`。
 
 ### 3.6 会话审计水位（1.3.1）
 

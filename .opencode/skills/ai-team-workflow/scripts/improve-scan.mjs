@@ -200,6 +200,65 @@ function tableColumns(db, table) {
   return new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((row) => row.name));
 }
 
+/**
+ * 从 session_message.data.content 读取工具调用明细（P-43）。
+ *
+ * 兼容两种历史格式：content 是 parts 数组（每个元素可能 type="tool"），
+ * 或 content 本身就是单个 tool 对象。只返回 type="tool" 的项；调用方仅在
+ * session_part 没有工具数据时使用本结果，保证不重复计数。
+ */
+function readMessageToolParts(db, table, sessionIds) {
+  const items = [];
+  for (let offset = 0; offset < sessionIds.length; offset += 500) {
+    const chunk = sessionIds.slice(offset, offset + 500);
+    const placeholders = chunk.map(() => "?").join(",");
+    try {
+      const rows = db.prepare(`
+        SELECT m.session_id AS session_id, j.value AS item
+        FROM ${table} m, json_each(m.data, '$.content') j
+        WHERE m.session_id IN (${placeholders})
+          AND (CASE WHEN j.type = 'object' THEN json_extract(j.value, '$.type') END) = 'tool'
+      `).all(...chunk);
+      for (const row of rows) items.push({ session_id: row.session_id, data: row.item });
+    } catch {
+      // SQLite 没有 JSON1 时退化为全量解析；只影响老环境，不改变统计口径。
+      let rows = [];
+      try {
+        rows = db.prepare(`SELECT session_id, data FROM ${table} WHERE session_id IN (${placeholders})`).all(...chunk);
+      } catch {
+        continue;
+      }
+      for (const row of rows) {
+        let data;
+        try {
+          data = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        } catch {
+          continue;
+        }
+        const content = data && data.content;
+        if (Array.isArray(content)) {
+          for (const item of content) {
+            if (item && item.type === "tool") items.push({ session_id: row.session_id, data: item });
+          }
+        } else if (content && typeof content === "object" && content.type === "tool") {
+          items.push({ session_id: row.session_id, data: content });
+        }
+      }
+    }
+    try {
+      const rows = db.prepare(`
+        SELECT session_id, json_extract(data, '$.content') AS item
+        FROM ${table}
+        WHERE session_id IN (${placeholders}) AND json_extract(data, '$.content.type') = 'tool'
+      `).all(...chunk);
+      for (const row of rows) items.push({ session_id: row.session_id, data: row.item });
+    } catch {
+      // 对象型 content 仅在 JSON1 可用时解析；数组型已由上一段处理。
+    }
+  }
+  return items;
+}
+
 function scanDatabase(dbPath) {
   if (!DatabaseSync) {
     return { path: dbPath, error: "node:sqlite unavailable; session scan requires Node 22.5+", sessions: [] };
@@ -237,7 +296,7 @@ function scanDatabase(dbPath) {
       if (row.project_id && projectIds.has(row.project_id)) return true;
       return normalize(row.directory) === normalize(project);
     });
-    if (sessions.length === 0) return { path: dbPath, scanned: 0, sessions: [] };
+    if (sessions.length === 0) return { path: dbPath, scanned: 0, toolSource: "none", toolItems: 0, sessions: [] };
 
     const messageCounts = new Map();
     let messageMax = 0;
@@ -253,7 +312,9 @@ function scanDatabase(dbPath) {
       }
     }
 
+    const matched = new Set(sessions.map((row) => row.id));
     const toolParts = [];
+    let toolSource = null;
     if (partTable) {
       if (partTable === "session_part") {
         const columns = tableColumns(db, partTable);
@@ -268,10 +329,20 @@ function scanDatabase(dbPath) {
           toolParts.push(...db.prepare(`SELECT session_id, data FROM ${partTable}`).all());
         }
       }
+      // session_part 可能只有其他类型或属于别的项目；只保留本项目会话的工具行。
+      const matchedParts = toolParts.filter((row) => matched.has(row.session_id));
+      toolParts.length = 0;
+      toolParts.push(...matchedParts);
+      if (toolParts.length > 0) toolSource = partTable;
+    }
+    if (toolParts.length === 0 && messageTable) {
+      // P-43：session_part 为空时，工具明细实际存放在 session_message.data.content。
+      toolParts.push(...readMessageToolParts(db, messageTable, [...matched]));
+      if (toolParts.length > 0) toolSource = "session_message.data.content";
     }
 
-    const matched = new Set(sessions.map((row) => row.id));
     const perSession = new Map();
+    const seenCalls = new Map();
     for (const row of sessions) {
       perSession.set(row.id, {
         id: row.id,
@@ -305,19 +376,40 @@ function scanDatabase(dbPath) {
       } catch {
         continue;
       }
+      if (!data || typeof data !== "object") continue;
+      // 同一 call id 只计一次，防止历史数据同时出现在两处或重复写入。
+      const callId = data.id ? String(data.id) : "";
+      if (callId) {
+        const seen = seenCalls.get(row.session_id) || new Set();
+        if (seen.has(callId)) continue;
+        seen.add(callId);
+        seenCalls.set(row.session_id, seen);
+      }
       item.toolCalls += 1;
-      const tool = data.tool || "unknown";
+      // session_part 用 tool 字段，session_message.data.content 用 name 字段。
+      const tool = data.tool || data.name || "unknown";
       item.tools[tool] = (item.tools[tool] || 0) + 1;
-      const status = data.state && data.state.status ? String(data.state.status) : "";
-      const output = data.state && data.state.output ? String(data.state.output) : "";
+      const state = data.state && typeof data.state === "object" ? data.state : {};
+      const status = state.status ? String(state.status) : "";
+      const output = state.output ? String(state.output) : "";
+      const errorType = state.error && state.error.type ? String(state.error.type) : "";
+      const errorMessage = state.error && state.error.message ? String(state.error.message) : "";
       if (status === "error") item.toolErrors += 1;
-      if (/permission denied|permission\.rejected|denied by permission/i.test(output)) item.permissionDenied += 1;
+      if (
+        errorType === "permission.rejected"
+        || /permission denied|permission\.rejected|denied by permission/i.test(output)
+        || /permission denied|permission\.rejected|denied by permission/i.test(errorMessage)
+      ) item.permissionDenied += 1;
     }
+    // P3-03：toolItems 与工具调用口径一致，必须是去重后的计数，而不是原始数组长度。
+    const countedToolItems = [...perSession.values()].reduce((sum, item) => sum + item.toolCalls, 0);
     return {
       path: dbPath,
       schema: sessionTable,
       scanned: sessions.length,
       messageMax,
+      toolSource: toolSource || "none",
+      toolItems: countedToolItems,
       sessions: [...perSession.values()],
     };
   } catch (error) {
@@ -378,6 +470,8 @@ const now = Date.now();
 const lastCreated = sessions.reduce((max, session) => Math.max(max, session.created), 0);
 const lastUpdated = sessions.reduce((max, session) => Math.max(max, session.updated), 0);
 const lastMessage = scanned.reduce((max, item) => Math.max(max, item.messageMax || 0), 0);
+const toolSources = [...new Set(scanned.filter((item) => (item.scanned || 0) > 0).map((item) => item.toolSource || "none"))];
+const toolDataSource = toolSources.join("+") || "none";
 const daysSinceAudit = audit.exists && audit.data && audit.data.last_full_audit_at
   ? Math.floor((now - Date.parse(audit.data.last_full_audit_at)) / 86400000)
   : null;
@@ -394,7 +488,7 @@ if (daysSinceAudit !== null && daysSinceAudit > 30) {
   signals.push({ id: "stale-audit", level: "warn", detail: `上次全量审计在 ${daysSinceAudit} 天前；先做增量审计。` });
 }
 if (sessions.length === 0) signals.push({ id: "no-project-sessions", level: "warn", detail: "当前数据库没有匹配该项目的会话；检查项目路径、OpenCode DB 或改用最近审计报告。" });
-if (messages > 0 && toolCalls === 0) signals.push({ id: "no-tool-data", level: "warn", detail: "会话有消息但没有可用工具调用明细（parts 可能已清理）；工具错误/权限拒绝无法从本次数据判断。" });
+if (messages > 0 && toolCalls === 0) signals.push({ id: "no-tool-data", level: "warn", detail: "会话有消息，但 session_part 与 session_message.data.content 都没有工具明细；工具错误/权限拒绝无法从本次数据判断。" });
 if (permissionDenied > 0) signals.push({ id: "permission-denials", level: "warn", detail: `${permissionDenied} 次工具调用出现 permission denied；先区分破坏性命令与旧会话缓存。` });
 if (toolCalls >= 20 && toolErrors / toolCalls > 0.05) {
   signals.push({ id: "tool-error-rate", level: "warn", detail: `工具错误率 ${((toolErrors / toolCalls) * 100).toFixed(1)}%（${toolErrors}/${toolCalls}）；检查命令、环境与工具契约。` });
@@ -415,7 +509,14 @@ const report = {
   },
   sessions: {
     filter: allAgents ? "all-agents" : "ai-team",
-    databases: scanned.map((item) => ({ path: item.path, schema: item.schema || null, scanned: item.scanned || 0, error: item.error || null })),
+    databases: scanned.map((item) => ({
+      path: item.path,
+      schema: item.schema || null,
+      scanned: item.scanned || 0,
+      toolSource: item.toolSource || null,
+      toolItems: item.toolItems || 0,
+      error: item.error || null,
+    })),
     total: sessions.length,
     root: root.length,
     subagents: subagents.length,
@@ -423,6 +524,7 @@ const report = {
     toolCalls,
     toolErrors,
     permissionDenied,
+    toolDataSource,
     tokens,
     lastCreated: lastCreated || null,
     lastUpdated: lastUpdated || null,
@@ -478,6 +580,7 @@ function markdown(result) {
   lines.push(`| 工具调用 | ${result.sessions.toolCalls} |`);
   lines.push(`| 工具错误 | ${result.sessions.toolErrors} |`);
   lines.push(`| 权限拒绝 | ${result.sessions.permissionDenied} |`);
+  lines.push(`| 工具数据源 | ${result.sessions.toolDataSource} |`);
   lines.push(`| tokens input/output | ${result.sessions.tokens.input} / ${result.sessions.tokens.output} |`);
   lines.push(`| cost | ${result.sessions.tokens.cost} |`);
   lines.push(`| 水位候选（created/updated/message） | ${result.sessions.lastCreated || 0} / ${result.sessions.lastUpdated || 0} / ${result.sessions.lastMessage || 0} |`);
@@ -501,7 +604,7 @@ function markdown(result) {
   lines.push("## 4. 数据质量");
   lines.push("");
   for (const database of result.sessions.databases) {
-    lines.push(`- \`${database.path}\`：schema=${database.schema || "unknown"}，匹配会话=${database.scanned}${database.error ? `，error=${database.error}` : ""}`);
+    lines.push(`- \`${database.path}\`：schema=${database.schema || "unknown"}，匹配会话=${database.scanned}，工具数据源=${database.toolSource || "none"}（${database.toolItems || 0} 项）${database.error ? `，error=${database.error}` : ""}`);
   }
   lines.push("- 本报告只提供证据与信号；是否优化、优化范围、版本级别和用户批准由 `/ai-improve` 决策。");
   return `${lines.join("\n")}\n`;

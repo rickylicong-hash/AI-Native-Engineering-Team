@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.8.4**。§1–§3 为 1.8.4 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.8.5**。§1–§3 为 1.8.5 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -867,6 +867,26 @@ permission-lint:             570 checks, 0 failed
 sourceHash === installedHash: 1d571aae...
 ```
 
+### 5.35 证据门禁假绿修复（1.8.5）
+
+- **P-43 `improve-scan`**：`session_part` 为空时从 `session_message.data.content` 解析 tool 项；权限拒绝按 `state.error.type="permission.rejected"` 计数；两处都空才报 `no-tool-data`；`toolItems` 去重。riccon-ai 231 会话实测 **25,728 工具 / 445 错误 / 174 权限拒绝**（旧版报 0/0/0）。
+- **P-44 `secret-check`**：默认上限 500→2000；截断输出 `PARTIAL (truncated)` 且 exit 3；非法 `--max-files` exit 2；findings 只保留 `kind/file/line/len/sha256`，`--json` 不再打印明文（security P1-01）。
+- **P1-02 `artifact-check`**：默认 2000；`secrets.truncated` 追加 error `secret-scan-truncated`；`state-check`/`checkpoint-check` 通过 `checkArtifacts` 继承失败。
+- riccon-ai：`artifact-check` 802 evidence / 1,035 secrets / 0 error / 0 warning；`--max-files 500` → `secret-scan-truncated` exit 1；`secret-check` 默认 1,035 / 0 / PASS，500 → PARTIAL exit 3。
+- 审查：`REV-IMPROVE-2026-11-07`（R2，修改后通过，P0=0/P1=0）；安全：`SEC-IMPROVE-2026-11-07`（R1，修改后通过，P1-01/P1-02 closed）。
+- 已知遗留：`improve-scan` 全局数据源选择（混合 parts 可能低估，`RISK-TEAM-003`）；`secret-check` 静默跳过 UTF-16/二进制/不可读/`.jsonl`/超长行（FU3），行级豁免可能漏报（FU4）；不扫 `.ai-team/state|tasks|reviews|team`。
+
+验证：
+
+```text
+source verify:               195/195
+installed verify:            197/197
+audit-team-consistency:      183 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+sourceHash === installedHash: 1d45b794...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -896,12 +916,12 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.4 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.5 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
 - 一致性审计：通过（183 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令与版本握手检查）。
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；具体项目状态以该项目 GROWTH 为准。
-- Shell 权限：通过（1.8.4 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- Shell 权限：通过（1.8.5 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake）。
 - 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；GROWTH/会话/文档闭环）。
 - 提交归属：通过（build 提交团队源；Chief 不提交项目状态；DevOps 管项目 `.ai-team` checkpoint；push 需批准）。

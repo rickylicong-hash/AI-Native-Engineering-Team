@@ -94,12 +94,12 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 
 - QA 逃逸缺陷、flaky 率；
 - 安全 Critical/High 的发现阶段（越晚成本越高）；
-- `artifact-check` / `secret-check` 失败次数；
+- `artifact-check` / `secret-check` 失败次数；`secret-check` 截断（exit 3 / `PARTIAL`）视为未完成扫描，不得计为通过；
 - 独立验证是否真的执行了命令。
 
 ### 3.3 会话与协作
 
-- 会话/消息/工具调用；
+- 会话/消息/工具调用；`improve-scan` 在 `session_part` 为空时从 `session_message.data.content` 取工具明细，并注明数据源；
 - 工具错误率、权限拒绝；
 - 角色分布、子会话深度；
 - 上下文压缩/交接频率；

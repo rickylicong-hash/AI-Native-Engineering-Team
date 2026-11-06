@@ -20,7 +20,7 @@
  * 退出码：
  *   0 = 无 error（warning 不阻断；--strict 下 warning 也阻断）
  *   1 = 有 error，或 --strict 下有 warning
- *   2 = 项目目录不存在
+ *   2 = 参数错误或项目目录不存在
  *   3 = 读取/转换失败
  */
 
@@ -30,7 +30,8 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { scanSecrets } from "./secret-check.mjs";
 
-const DEFAULT_MAX_EVIDENCE_FILES = 500;
+// P1-02：与 secret-check/state-check/checkpoint-check 对齐；500 会让 500+ 文件项目漏扫。
+const DEFAULT_MAX_EVIDENCE_FILES = 2000;
 const SKIP_DIRS = new Set([".git", "node_modules", "target", "dist", "build", ".idea", ".vscode", ".mvn"]);
 
 function normalize(file) {
@@ -270,6 +271,14 @@ export function checkArtifacts(project, options = {}) {
       suggestion: "运行 secret-check --fix，或手工替换为 <redacted len=.. sha256=..>；不要提交明文",
     });
   }
+  if (secrets.truncated) {
+    errors.push({
+      code: "secret-scan-truncated",
+      path: ".",
+      message: `凭据扫描只覆盖了 ${secrets.scanned} 个文本文件，其余文件未扫描，不能当作 clean`,
+      suggestion: "用 --max-files 2000 或更高重新扫描；未扫完不能作为放行依据",
+    });
+  }
   return {
     errors,
     warnings,
@@ -296,7 +305,17 @@ function runCli() {
   const quiet = hasFlag("--quiet");
   const fixAll = hasFlag("--fix-all");
   const fix = fixAll || hasFlag("--fix");
-  const maxFiles = Number.parseInt(getArg("--max-files", String(DEFAULT_MAX_EVIDENCE_FILES)), 10) || DEFAULT_MAX_EVIDENCE_FILES;
+  const maxFilesArg = args.includes("--max-files") ? getArg("--max-files", null) : null;
+  let maxFiles = DEFAULT_MAX_EVIDENCE_FILES;
+
+  // P1-02：与 secret-check 同口径，非法上限在扫描或 --fix 前退出 2。
+  if (args.includes("--max-files")) {
+    if (maxFilesArg === null || !/^[1-9]\d*$/.test(maxFilesArg) || !Number.isSafeInteger(Number(maxFilesArg))) {
+      console.error(`ERROR  --max-files must be a positive integer, got: ${maxFilesArg === null ? "(missing value)" : maxFilesArg}`);
+      process.exit(2);
+    }
+    maxFiles = Number(maxFilesArg);
+  }
 
   let fixResult = { fixed: [], scanned: 0 };
   if (fix) {
@@ -340,6 +359,7 @@ function runCli() {
     }
     if (result.warnings.length > 5) console.log(`  ... and ${result.warnings.length - 5} more warning(s)`);
     console.log(`evidence: ${result.scanned} file(s) scanned${result.truncated ? " (truncated)" : ""}`);
+    console.log(`secrets:  ${result.secrets.scanned} file(s) scanned${result.secrets.truncated ? " (truncated)" : ""}`);
     console.log(`result:   ${failed ? "FAIL" : "PASS"}${strict ? " (strict)" : ""}`);
   }
   process.exit(failed ? 1 : 0);
