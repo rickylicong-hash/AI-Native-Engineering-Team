@@ -181,9 +181,12 @@ Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定�
 4. 改进提案必须有 ≥2 次证据；一次性问题写 `RISKS.md`，不写 GROWTH。
 5. 只写提案，不改 `.opencode/**`；团队变更需用户批准。
 6. 轻量复盘三段：保留什么 / 哪里疼（证据）/ 一个最小改动。完整复盘（G8）另加指标与 per-role 评估。
-7. **每条提案必须登记到“提案处置索引”**：新增为 `proposed`；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。未处置项保持 `proposed/accepted/in_progress/deferred/partial`。
-8. 复盘、交接、门禁前运行 `growth-check`；有缺失状态不得交接。全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/`。
+7. **每条提案必须登记到“提案处置索引”**：新增为 `proposed`，并写 `scope`（`team`/`project`）；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。未处置项保持 `proposed/accepted/in_progress/deferred/partial`。
+8. 复盘、交接、门禁前运行 `growth-check --debt`；有缺失状态或净零违规不得交接。全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/`。
 9. 归档不删除历史：主文件保留索引和归档导航，完整原文进 `team/archive/GROWTH-<year>.md`。
+10. **三层入口（1.9.0）**：`TEAM-CORE` 只收跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`）；一次性现象归 `OBSERVE`（`RISKS.md` + 复查日期）。只有 `scope: team` 计入团队 open。
+11. **净零（1.9.0）**：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债。`PROJECT-PROFILE` 不占团队 open，但必须写 owner、验收、复查日期。
+12. `deferred` 必须写复查日期/触发点；长期停在 `proposed` 的提案由 `--debt` 的年龄视图暴露，不得用新增提案掩盖。
 
 **检查命令（随本 skill 安装）：**
 
@@ -268,21 +271,41 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\artifact-check.mjs"
 | `状态` | `proposed` / `accepted` / `in_progress` / `deferred` / `partial` / `done` / `rejected` / `superseded` |
 | `落地版本/任务` | `done` 必填，如 `1.3.0` 或 `TASK-0048` |
 | `证据` | `done`/`rejected` 必填，如 `CHANGELOG.md#130`、`TASK-*-EVIDENCE.md` |
-| `更新日期` | `done`/`rejected` 必填 |
+| `更新日期` | `done`/`rejected` 必填；open 项的年龄按此字段计算 |
+| `scope` | `team`（默认）/ `project`；`project` 不计入团队 open |
+| `复查日期` | `deferred` 必填；或证据列写复查触发点 |
 
 检查命令：
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" --project .
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\growth-check.mjs" --project . --debt
 ```
 
 规则：
 
-- 默认只把“索引缺失/状态非法/终端缺证据”视为 error；未处置提案只报 open；
-- `--strict` 把未处置提案也算失败，可用于 G8 或用户要求；
+- 默认只把“索引缺失/状态非法/scope 非法/终端缺证据/净零违规”视为 error；未处置提案只报 open；
+- `--debt` 输出 team/project open、年龄、重复簇和净零字段；
+- `--strict` 把 team 未处置提案也算失败，可用于 G8 或用户要求；
 - `--archive` 只输出归档计划；`--archive --yes` 才移动“全部提案已处置且非最近一轮”的 RETRO 到 `team/archive/GROWTH-<year>.md`；
 - 归档后主文件保留索引与归档导航，不删除历史；
-- 复盘、交接、门禁前运行 `growth-check`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
+- 复盘、交接、门禁前运行 `growth-check --debt`；本轮处置过的提案必须同一轮回填，不得留到下一次会话。
+
+### 3.4.1 项目 Profile（1.9.0）
+
+单项目策略（迁移号、worktree、CI/BOM、状态格式、VEX 例外）不进团队核心；放到项目 `.ai-team/tasks` 或本 skill 的 `profiles/` 示例层。初始化新项目时：
+
+1. 读 `profiles/README.md`，选择 `java-spring` / `vue` / `strict-security` 或组合；
+2. 在项目 `PROJECT.md`/`DECISIONS.md` 记录 profile、覆盖项、owner、复查日期；
+3. brief 引用 profile 条目，不复制团队 core 规则；
+4. 同一策略在 ≥2 个项目出现后，才按 `TEAM-CORE` 提提案。
+
+Profile 文件：
+
+- `profiles/README.md`
+- `profiles/java-spring.md`
+- `profiles/vue.md`
+- `profiles/strict-security.md`
 
 ### 3.5 Shell 与 brief 预检（1.3.1；1.6.0 Shell-first strict）
 

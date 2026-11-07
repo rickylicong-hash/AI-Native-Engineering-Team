@@ -89,7 +89,7 @@ function parseFrontmatter(text) {
 function readGrowth() {
   const file = path.join(aiTeamDir, "team", "GROWTH.md");
   if (!fs.existsSync(file)) {
-    return { path: file, exists: false, frontmatter: {}, proposals: [], counts: {}, open: 0, done: 0, retros: [] };
+    return { path: file, exists: false, frontmatter: {}, proposals: [], counts: {}, open: 0, teamOpen: 0, projectOpen: 0, openAll: 0, done: 0, retros: [] };
   }
   const text = readText(file);
   const lines = text.split(/\r?\n/);
@@ -117,11 +117,13 @@ function readGrowth() {
     }
     const statusIndex = header.findIndex((cell) => cell === "状态" || cell.toLowerCase() === "status");
     const dateIndex = header.findIndex((cell) => cell === "更新日期" || cell.toLowerCase() === "updated");
+    const scopeIndex = header.findIndex((cell) => cell.toLowerCase() === "scope");
     proposals.push({
       id: cells[0],
       retro: cells[1] || "",
       title: cells[2] || "",
       status: (cells[statusIndex >= 0 ? statusIndex : 3] || "").toLowerCase(),
+      scope: ((scopeIndex >= 0 ? cells[scopeIndex] : "team") || "team").toLowerCase(),
       landing: cells[4] || "",
       evidence: cells[5] || "",
       updated: dateIndex >= 0 ? cells[dateIndex] : (cells[6] || ""),
@@ -131,13 +133,19 @@ function readGrowth() {
   const counts = {};
   for (const proposal of proposals) counts[proposal.status || "unknown"] = (counts[proposal.status || "unknown"] || 0) + 1;
   const retros = [...text.matchAll(/^##\s+(RETRO-\d+)[^\r\n]*/gm)].map((match) => match[1]);
+  const openAll = proposals.filter((item) => ["proposed", "accepted", "in_progress", "deferred", "partial"].includes(item.status));
+  const projectOpen = openAll.filter((item) => item.scope === "project");
+  const teamOpen = openAll.filter((item) => item.scope !== "project");
   return {
     path: file,
     exists: true,
     frontmatter: parseFrontmatter(text),
     proposals,
     counts,
-    open: proposals.filter((item) => ["proposed", "accepted", "in_progress", "deferred", "partial"].includes(item.status)).length,
+    open: teamOpen.length,
+    teamOpen: teamOpen.length,
+    projectOpen: projectOpen.length,
+    openAll: openAll.length,
     done: proposals.filter((item) => ["done", "rejected", "superseded"].includes(item.status)).length,
     retros,
   };
@@ -478,9 +486,10 @@ const daysSinceAudit = audit.exists && audit.data && audit.data.last_full_audit_
 
 const signals = [];
 if (!growth.exists) signals.push({ id: "missing-growth", level: "warn", detail: "项目没有 .ai-team/team/GROWTH.md；先补复盘或确认项目是否使用该团队。" });
-if (growth.open > 0) signals.push({ id: "open-proposals", level: "info", detail: `${growth.open} 条提案未处置；逐条核对证据、落地版本和关闭条件。` });
-if (growth.exists && Number(growth.frontmatter.open_proposals) !== growth.open) {
-  signals.push({ id: "growth-index-mismatch", level: "warn", detail: `frontmatter open_proposals=${growth.frontmatter.open_proposals || "missing"}，索引实际 ${growth.open}。` });
+if (growth.teamOpen > 0) signals.push({ id: "open-proposals", level: "info", detail: `${growth.teamOpen} 条团队提案未处置；逐条核对证据、落地版本和关闭条件。` });
+if (growth.projectOpen > 0) signals.push({ id: "project-open-proposals", level: "info", detail: `${growth.projectOpen} 条项目 profile 提案未处置；不计入团队 open，按项目复查日期跟踪。` });
+if (growth.exists && Number(growth.frontmatter.open_proposals) !== growth.teamOpen) {
+  signals.push({ id: "growth-index-mismatch", level: "warn", detail: `frontmatter open_proposals=${growth.frontmatter.open_proposals || "missing"}，团队 open ${growth.teamOpen}。` });
 }
 if (!audit.exists) signals.push({ id: "missing-audit", level: "warn", detail: "没有 AUDIT.json；本次只能做全量或基于最近审计报告的分析。" });
 if (audit.exists && audit.error) signals.push({ id: "audit-parse-error", level: "warn", detail: `AUDIT.json 无法解析：${audit.error}` });
@@ -553,7 +562,9 @@ function markdown(result) {
   lines.push("|---|---|");
   lines.push(`| GROWTH | ${growth.exists ? `\`${growth.path}\`` : "缺失"} |`);
   lines.push(`| 提案总数 | ${growth.proposals.length} |`);
-  lines.push(`| 未处置 | ${growth.open} |`);
+  lines.push(`| 团队未处置 | ${growth.teamOpen} |`);
+  lines.push(`| 项目 profile 未处置 | ${growth.projectOpen} |`);
+  lines.push(`| 未处置合计 | ${growth.openAll} |`);
   lines.push(`| 已处置 | ${growth.done} |`);
   lines.push(`| 最近复盘 | ${growth.frontmatter.last_retro || "unknown"} |`);
   lines.push(`| TASKS done | ${tasks.done} / ${tasks.total} |`);
@@ -562,10 +573,10 @@ function markdown(result) {
   if (growth.proposals.length > 0) {
     lines.push("### 未处置提案");
     lines.push("");
-    lines.push("| ID | 状态 | 提案 | 更新 |");
-    lines.push("|---|---|---|---|");
+    lines.push("| ID | scope | 状态 | 提案 | 更新 |");
+    lines.push("|---|---|---|---|---|");
     for (const item of growth.proposals.filter((proposal) => ["proposed", "accepted", "in_progress", "deferred", "partial"].includes(proposal.status))) {
-      lines.push(`| ${item.id} | ${item.status} | ${item.title.replace(/\|/g, "\\|")} | ${item.updated} |`);
+      lines.push(`| ${item.id} | ${item.scope || "team"} | ${item.status} | ${item.title.replace(/\|/g, "\\|")} | ${item.updated} |`);
     }
     lines.push("");
   }

@@ -80,6 +80,24 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 
 默认不新增角色；优先扩展现有角色或改流程。
 
+### 2.4 三层入口与净零（1.9.0）
+
+| 层 | 判定 | 落地位置 | 计入团队 open |
+|---|---|---|---|
+| `TEAM-CORE` | 跨项目复用；通用脚本/模板缺陷；≥2 个项目或 ≥3 个任务证据 | 团队源 / 项目 `GROWTH.md`（`scope: team`） | 是 |
+| `PROJECT-PROFILE` | 单项目策略：迁移号、worktree、CI/BOM、状态格式、VEX 例外 | 项目 `.ai-team/tasks` 或 `profiles/`；索引可留 `scope: project` 追踪 | 否 |
+| `OBSERVE` | 一次性现象 | 项目 `RISKS.md` + 复查日期 | 否 |
+
+净零规则：
+
+- 每轮新增 `TEAM-CORE` 提案 ≤2；
+- 新增 `TEAM-CORE` ≤ 本轮关闭/合并数；
+- 团队 open 连续两轮上升 → 停止新增，先合并/关闭/延期至少 2 条；
+- 每条提案写 scope、owner、验收、复查日期；`deferred` 必须有复查触发点；
+- `growth-check --debt` 输出 team/project open、年龄、重复簇；债务上升时先清债，不靠新增规则掩盖。
+
+单项目特例不得写入团队核心；如果同一策略在 ≥2 个项目重复出现，再按 `TEAM-CORE` 提提案。`profiles/` 提供 Java/Spring、Vue、严格安全三个示例，新项目按 profile 初始化，不携带其他项目的路径或值。
+
 ## 3. 证据与指标
 
 指标用于发现趋势，不用于给个人打分。
@@ -132,7 +150,9 @@ proposed → accepted → in_progress → done
 - `in_progress`：正在实施，必须有 owner 和验收；
 - `done`：必须写落地版本/任务、证据、日期；
 - `rejected` / `superseded`：写理由，不删除历史；
-- 每条提案必须能回答：证据是什么、改什么、怎么验收、怎么回滚、影响哪些文档。
+- 每条提案必须有 `scope`（`team`/`project`）；只有 `team` 计入团队 open；
+- `PROJECT-PROFILE` 提案落到项目 profile 或项目任务，不进入团队核心；
+- 每条提案必须能回答：证据是什么、改什么、怎么验收、怎么回滚、影响哪些文档、复查日期。
 
 ## 5. 节奏与触发
 
@@ -144,6 +164,7 @@ proposed → accepted → in_progress → done
 | P0/P1 事故/回滚后 | 无责复盘；先修系统，不先追责 |
 | 同类问题第 2 次出现 | 登记 `RISK-*`；第 3 次考虑提案 |
 | GROWTH 未处置 ≥3 | 先清债，再开新功能 |
+| team open 连续两轮上升 | 停止新增，先合并/关闭/延期 ≥2 条 |
 | 文档/命令不一致 | 立即 `DOCS-ONLY` 修复，不等到下次发布 |
 
 ## 6. 实验与回滚
@@ -163,12 +184,13 @@ proposed → accepted → in_progress → done
 任何团队改动都必须检查：
 
 - `team-manifest.json`：版本、命令/角色/技能清单；
-- `scripts/verify.mjs`：预期数量；
-- `README.md`：命令表、目录、验证数字；
-- `INSTALL.md`：安装/升级/验证数字；
+- `scripts/verify.mjs`：预期数量、profile 示例、GROWTH 模板字段；
+- `README.md`：命令表、目录、验证数字、profile 说明；
+- `INSTALL.md`：安装/升级/验证数字、profile 使用；
 - `docs/WORKFLOW.md`、`docs/TEAM.md`、`docs/IMPROVEMENT.md`；
 - `docs/VERIFICATION.md`：当前版本、计数、hash、验证记录；
 - `CHANGELOG.md`：本版本改了什么、验证结果；
+- `skills/ai-team-workflow/profiles/`：示例与 README 同步；
 - 所有命令示例实际执行；
 - `rg` 搜索旧版本/旧计数/旧权限描述；
 - 相对链接可解析。

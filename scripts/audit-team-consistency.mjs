@@ -194,6 +194,44 @@ check(
   "GROWTH template does not track per-proposal disposition",
 );
 check(
+  "growth template has three-tier scope and net-zero",
+  growthTemplate.includes("TEAM-CORE") && growthTemplate.includes("scope") && (growthTemplate.includes("net-zero") || growthTemplate.includes("净零")),
+  "GROWTH template is missing 1.9.0 scope/net-zero fields",
+);
+const growthCheckText = read(path.join(skillsDir, "ai-team-workflow", "scripts", "growth-check.mjs"));
+check(
+  "growth-check supports scope and debt",
+  growthCheckText.includes("--debt") && growthCheckText.includes("SCOPES") && growthCheckText.includes("net-zero"),
+  "growth-check is missing 1.9.0 scope/debt/net-zero support",
+);
+const profilesDir = path.join(skillsDir, "ai-team-workflow", "profiles");
+const profileFiles = ["README.md", "java-spring.md", "vue.md", "strict-security.md"];
+for (const profile of profileFiles) {
+  check(
+    `workflow profile ${profile} exists`,
+    fs.existsSync(path.join(profilesDir, profile)),
+    "missing project profile example",
+  );
+}
+if (fs.existsSync(profilesDir)) {
+  const profileText = profileFiles
+    .filter((profile) => fs.existsSync(path.join(profilesDir, profile)))
+    .map((profile) => read(path.join(profilesDir, profile)))
+    .join("\n");
+  check(
+    "project profiles are project-agnostic",
+    !/riccon|agentscope|MAX_PER_TENANT|D:[\\/]{1,2}Development/i.test(profileText),
+    "profile examples contain project-specific values",
+  );
+}
+check(
+  "retro command enforces three-tier and net-zero",
+  read(path.join(commandsDir, "ai-retro.md")).includes("TEAM-CORE")
+    && read(path.join(commandsDir, "ai-retro.md")).includes("--debt")
+    && read(path.join(commandsDir, "ai-retro.md")).includes("净零"),
+  "ai-retro is missing the 1.9.0 intake/net-zero rules",
+);
+check(
   "state-check detects duplicate TASK-ID",
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",

@@ -3,6 +3,36 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.9.0] - 2026-11-07
+
+### Added
+
+- **Three-tier intake (P-54)**: `ai-retro` now classifies every proposal as `TEAM-CORE`, `PROJECT-PROFILE` or `OBSERVE`. Only `TEAM-CORE` enters the team ledger/open count; project policies go to project `.ai-team/tasks` or the new `profiles/` examples; one-off observations go to `RISKS.md` with a review date.
+- **Net-zero rule (P-54)**: each retro may add at most 2 `TEAM-CORE` proposals and no more than it closes/merges. If team open rises two retros in a row, no new proposals are accepted until debt is triaged. `GROWTH.md` frontmatter records `last_retro_new`, `last_retro_closed` and `team_open_at_{last,prev,prev2}_retro`.
+- **Scope-aware ledger**: `templates/GROWTH.md` adds a trailing `scope` column (`team`/`project`); missing scope defaults to `team` for backward compatibility. `growth-check` validates scope and reports `teamOpen`/`projectOpen` separately; `open` now means team-core open, with `openAll` for all open rows.
+- **Debt dashboard (P-42 absorbs P-30)**: `growth-check --debt` reports team/project open, open-proposal age (average/oldest), duplicate-title clusters and net-zero violations. JSON output includes a `debt` object.
+- **Project profile examples**: `skills/ai-team-workflow/profiles/` with `README.md`, `java-spring.md`, `vue.md`, `strict-security.md`; examples are project-agnostic and contain no riccon-specific paths/values.
+- **Docs**: `docs/IMPROVEMENT.md` (three-tier/net-zero/debt), `docs/WORKFLOW.md` T-26, `SKILL.md` §3.1/§3.4, README and INSTALL profile guidance.
+
+### Changed
+
+- `ai-retro` and `ai-handoff` now require triage-before-new, scope/owner/acceptance/review date, and `growth-check --debt`; net-zero violations block handoff.
+- `improve-scan` now reports team/project open separately (`teamOpen`/`projectOpen`/`openAll`) and no longer flags project-scope debt as a team-index mismatch.
+- `GROWTH.md` index adds a trailing `复查日期` column; `growth-check --debt` treats index-only proposals and deferred items without a review date/trigger as errors.
+- `scripts/verify.mjs` checks the four profile examples and the GROWTH template's scope/net-zero fields.
+- `scripts/audit-team-consistency.mjs` checks three-tier intake, `--debt`, profile examples and project-agnostic profile content; the Windows-path guard now catches both `D:\Development` and `D:\\Development`.
+- P-30 is merged into P-42; P-37 is merged into P-50; P-28/P-38/P-48 are routed to project profile.
+
+### Verified
+
+- `node scripts/verify.mjs` → 204/204.
+- `audit-team-consistency.mjs` → 191 checks, 0 failed.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- Fixtures: `scope: project` excluded from team open; duplicate cluster detected; net-zero `new > closed`, `new > 2`, two consecutive rises → FAIL; legacy `schema: 2` ledger still passes.
+- Review: `REV-IMPROVE-2026-11-07-R4` + `REV-IMPROVE-2026-11-07-R4-R1` modified pass (P0=0/P1=0; P2-01..05 → `TASK-IMPROVE-2026-11-07-R5`).
+- `sourceHash === installedHash` (`4ca6cbe0...`), version `1.9.0`.
+
 ## [1.8.7] - 2026-11-07
 
 ### Fixed

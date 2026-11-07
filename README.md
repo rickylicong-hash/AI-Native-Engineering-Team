@@ -216,18 +216,18 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.8.7 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.9.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 195, passed: 195, failed: 0
+# 期望：checks: 204, passed: 204, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 197, passed: 197, failed: 0
+# 期望：checks: 206, passed: 206, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。
@@ -470,6 +470,12 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **跨平台**：安装脚本支持 Windows PowerShell 与 Linux/macOS；命令以项目为准。
 - **模型无关**：subagent 默认继承当前会话模型；也可在 agent frontmatter 里覆盖。
 
+### 项目 Profile（1.9.0）
+
+单项目策略不再污染团队核心。`skills/ai-team-workflow/profiles/` 提供 `java-spring`、`vue`、`strict-security` 三个示例；新项目初始化时选择 profile，在项目 `PROJECT.md`/`DECISIONS.md` 记录覆盖项、owner 和复查日期。只有跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据的提案才进 `TEAM-CORE`；其余归 `PROJECT-PROFILE` 或 `OBSERVE`。
+
+净零规则：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；`growth-check --debt` 输出 team/project open、年龄和重复簇。团队核心保持通用、可分享。
+
 ### 编码约定
 
 - **代码注释默认中文**：行内、块、doc comment、`TODO`/`FIXME`、迁移/SQL/配置注释。
@@ -518,7 +524,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 │  ├─ agents/ai-team/          # 10 个角色
 │  ├─ commands/                # /ai 等 13 个命令
 │  └─ skills/
-│     ├─ ai-team-workflow/     # 流程、状态、证据、模板
+│     ├─ ai-team-workflow/     # 流程、状态、证据、模板、profiles
 │     ├─ ai-team-standards/    # 工程标准、质量门禁、栈 playbook
 │     ├─ ai-team-release/      # 一键部署、CI、回滚
 │     └─ ai-team-ai-native/    # eval、guardrail、RAG、agent

@@ -244,8 +244,8 @@ for (const dir of skillDirs) {
   addCheck(`skill ${id} description`, typeof data.description === "string" && data.description.length >= 20);
   if (manifestSkills.size > 0) addCheck(`skill ${id} in manifest`, manifestSkills.has(id));
 
-  // Check every references/... and templates/... backtick path mentioned in SKILL.md.
-  const refs = [...text.matchAll(/`((?:references|templates)\/[^`]+)`/g)].map((m) => m[1]);
+  // Check every references/..., templates/... and profiles/... backtick path mentioned in SKILL.md.
+  const refs = [...text.matchAll(/`((?:references|templates|profiles)\/[^`]+)`/g)].map((m) => m[1]);
   for (const ref of new Set(refs)) {
     addCheck(`skill ${id} reference ${ref}`, fs.existsSync(path.join(dir, ref)));
   }
@@ -261,6 +261,16 @@ if (fs.existsSync(workflowDir)) {
   for (const t of expected) {
     addCheck(`workflow template ${t}`, fs.existsSync(path.join(workflowDir, "templates", t)));
   }
+  const profiles = ["README.md", "java-spring.md", "vue.md", "strict-security.md"];
+  for (const profile of profiles) {
+    addCheck(`workflow profile ${profile}`, fs.existsSync(path.join(workflowDir, "profiles", profile)));
+  }
+  const growthTemplate = readText(path.join(workflowDir, "templates", "GROWTH.md"));
+  addCheck(
+    "workflow GROWTH template has scope and net-zero",
+    growthTemplate.includes("scope") && (growthTemplate.includes("net-zero") || growthTemplate.includes("净零")) && growthTemplate.includes("TEAM-CORE"),
+    "GROWTH template is missing the 1.9.0 scope/net-zero fields",
+  );
 }
 
 // ---------------------------------------------------------------------------

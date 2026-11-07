@@ -2,15 +2,19 @@
 /**
  * 检查 GROWTH.md 的提案处置台账。
  *
- * 规则（1.3.0）：
+ * 规则（1.9.0）：
  *   - 每条提案必须在“提案处置索引”中有一行；
  *   - 状态只能是 proposed / accepted / in_progress / deferred / done / rejected / superseded / partial；
  *   - done / rejected / superseded 为已处置；其余为未处置；
  *   - done 必须有落地版本/任务、证据和更新日期；
- *   - --strict 下未处置提案也算失败；默认只报 warning。
+ *   - scope 只能是 team / project；缺省按 team；
+ *   - 只有 scope=team 的未处置提案计入团队 open（open）；
+ *   - 净零：last_retro_new ≤ 2 且 ≤ last_retro_closed；team open 连续两轮上升报 error；
+ *   - --strict 下 team 未处置提案也算失败；默认只报 warning。
  *
  * 用法：
  *   node growth-check.mjs [--project <dir>] [--json] [--open] [--strict]
+ *   node growth-check.mjs --debt [--json] [--project <dir>]
  *   node growth-check.mjs --archive [--yes] [--project <dir>]
  *
  * 退出码：
@@ -40,10 +44,12 @@ const json = hasFlag("--json");
 const openOnly = hasFlag("--open");
 const strict = hasFlag("--strict");
 const archive = hasFlag("--archive");
+const debt = hasFlag("--debt");
 const yes = hasFlag("--yes");
 
 const TERMINAL = new Set(["done", "rejected", "superseded"]);
 const VALID = new Set(["proposed", "accepted", "in_progress", "deferred", "partial", ...TERMINAL]);
+const SCOPES = new Set(["team", "project"]);
 
 function read(file) {
   return fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
@@ -106,7 +112,7 @@ function proposalTables(section) {
   const lines = section.split(/\r?\n/);
   const rows = [];
   for (let i = 0; i < lines.length; i += 1) {
-    if (!/^\|\s*ID\s*\|\s*提案\s*\|/.test(lines[i])) continue;
+    if (!/^\|\s*ID\s*\|/.test(lines[i])) continue;
     const table = [];
     let j = i;
     while (j < lines.length && lines[j].trim().startsWith("|")) {
@@ -164,23 +170,35 @@ for (const row of indexRows) {
     continue;
   }
   const status = normalizeStatus(row["状态"]);
+  const scopeRaw = (row.scope || row.SCOPE || "").trim().toLowerCase();
+  const scope = scopeRaw || "team";
   const entry = {
     id,
     retro: (row.RETRO || "").trim(),
     title: (row["提案"] || "").trim(),
     status,
+    scope,
     landing: (row["落地版本/任务"] || "").trim(),
     evidence: (row["证据"] || "").trim(),
     date: (row["更新日期"] || "").trim(),
+    review: (row["复查日期"] || "").trim(),
   };
   index.set(id, entry);
   if (!VALID.has(status)) {
     errors.push(`${id}: invalid status '${row["状态"] || ""}'`);
   }
+  if (!SCOPES.has(scope)) {
+    errors.push(`${id}: invalid scope '${row.scope || row.SCOPE || ""}' (expected team|project)`);
+  }
   if (TERMINAL.has(status)) {
     if (status === "done" && isMissing(entry.landing)) errors.push(`${id}: done requires 落地版本/任务`);
     if (isMissing(entry.evidence)) errors.push(`${id}: ${status} requires 证据`);
     if (isMissing(entry.date)) errors.push(`${id}: ${status} requires 更新日期`);
+  }
+  if (status === "deferred" && isMissing(entry.review) && !/复查/.test(entry.evidence)) {
+    const message = `${id}: deferred requires 复查日期 或证据中的复查触发点`;
+    if (debt) errors.push(message);
+    else warnings.push(message);
   }
 }
 
@@ -222,15 +240,138 @@ for (const [id, proposal] of proposals) {
 for (const id of index.keys()) {
   const row = index.get(id);
   if (!proposals.has(id) && !(row && archivedNav.has(row.retro))) {
-    warnings.push(`${id}: index row has no matching RETRO proposal`);
+    const message = `${id}: index row has no matching RETRO proposal`;
+    if (debt) errors.push(`${message}（index-only 提案必须登记到 RETRO 表）`);
+    else warnings.push(message);
   }
 }
 
-// 3) 统计。
+// 3) 统计：open 只算 team-core；project scope 单列（1.9.0）。
 const rows = [...index.values()];
-const open = rows.filter((row) => !TERMINAL.has(row.status));
+const openAll = rows.filter((row) => !TERMINAL.has(row.status));
+const open = openAll.filter((row) => row.scope === "team");
+const projectOpen = openAll.filter((row) => row.scope === "project");
 const done = rows.filter((row) => TERMINAL.has(row.status));
 const missing = rows.filter((row) => !VALID.has(row.status));
+
+// 3.1) 净零校验：字段存在才检查，保持旧台账兼容。
+const meta = frontmatter(text);
+function intField(name) {
+  if (!(name in meta)) return null;
+  const value = Number.parseInt(meta[name], 10);
+  return Number.isFinite(value) ? value : null;
+}
+const lastRetroNew = intField("last_retro_new");
+const lastRetroClosed = intField("last_retro_closed");
+const teamOpenLast = intField("team_open_at_last_retro");
+const teamOpenPrev = intField("team_open_at_prev_retro");
+const teamOpenPrev2 = intField("team_open_at_prev2_retro");
+if ((meta.scope_model === "three-tier" || meta.net_zero === "enforced") && lastRetroNew === null) {
+  errors.push("net-zero: scope_model/net_zero 已启用，但 frontmatter 缺少 last_retro_new；必须由本轮索引新增加总，不得手填 0");
+}
+if (lastRetroNew !== null && lastRetroNew > 2) {
+  errors.push(`net-zero: last_retro_new=${lastRetroNew} > 2；每轮新增 TEAM-CORE 提案最多 2 条`);
+}
+if (lastRetroNew !== null && lastRetroClosed !== null && lastRetroNew > lastRetroClosed) {
+  errors.push(`net-zero: last_retro_new=${lastRetroNew} > last_retro_closed=${lastRetroClosed}；新增不得高于关闭/合并数`);
+}
+if (teamOpenLast !== null && teamOpenPrev !== null && teamOpenPrev2 !== null
+  && teamOpenLast > teamOpenPrev && teamOpenPrev > teamOpenPrev2) {
+  errors.push(`net-zero: team open 连续两轮上升（${teamOpenPrev2} → ${teamOpenPrev} → ${teamOpenLast}）；本轮不得新增，先清债`);
+}
+
+// 3.2) 债务指标：年龄 + 重复簇。
+function daysSince(date) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date || "").trim());
+  if (!match) return null;
+  const then = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (!Number.isFinite(then)) return null;
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((today - then) / 86400000));
+}
+
+function normalizeTitle(value) {
+  return (value || "")
+    .toLowerCase()
+    .replace(/[`*_>#]/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function titleTokens(value) {
+  const normalized = normalizeTitle(value);
+  const tokens = new Set();
+  for (const word of normalized.split(/\s+/)) {
+    if (word.length >= 2 && !/^[\u4e00-\u9fff]+$/.test(word)) tokens.add(word);
+  }
+  const cjk = normalized.replace(/[^\u4e00-\u9fff]/g, "");
+  for (let i = 0; i + 1 < cjk.length; i += 1) tokens.add(cjk.slice(i, i + 2));
+  return tokens;
+}
+
+function jaccard(left, right) {
+  if (left.size === 0 || right.size === 0) return 0;
+  let intersection = 0;
+  for (const token of left) if (right.has(token)) intersection += 1;
+  return intersection / (left.size + right.size - intersection);
+}
+
+function duplicateClusters(list) {
+  const clusters = [];
+  const consumed = new Set();
+  for (let i = 0; i < list.length; i += 1) {
+    const first = list[i];
+    if (consumed.has(first.id)) continue;
+    const group = [first.id];
+    const firstNorm = normalizeTitle(first.title);
+    const firstTokens = titleTokens(first.title);
+    for (let j = i + 1; j < list.length; j += 1) {
+      const other = list[j];
+      if (consumed.has(other.id)) continue;
+      const otherNorm = normalizeTitle(other.title);
+      const similar = jaccard(firstTokens, titleTokens(other.title)) >= 0.5
+        || (firstNorm.length >= 8 && otherNorm.length >= 8
+          && (firstNorm.includes(otherNorm) || otherNorm.includes(firstNorm)));
+      if (similar) {
+        group.push(other.id);
+        consumed.add(other.id);
+      }
+    }
+    if (group.length > 1) {
+      consumed.add(first.id);
+      clusters.push(group);
+    }
+  }
+  return clusters;
+}
+
+const ages = openAll.map((row) => ({ row, ageDays: daysSince(row.date) }));
+const knownAges = ages.map((item) => item.ageDays).filter((value) => value !== null);
+const oldest = ages
+  .filter((item) => item.ageDays !== null)
+  .sort((a, b) => b.ageDays - a.ageDays)
+  .slice(0, 5)
+  .map((item) => ({ id: item.row.id, scope: item.row.scope, ageDays: item.ageDays, title: item.row.title }));
+const debtSummary = {
+  teamOpen: open.length,
+  projectOpen: projectOpen.length,
+  openAll: openAll.length,
+  done: done.length,
+  averageAgeDays: knownAges.length
+    ? Math.round((knownAges.reduce((sum, value) => sum + value, 0) / knownAges.length) * 10) / 10
+    : null,
+  unknownAge: openAll.length - knownAges.length,
+  oldest,
+  duplicates: duplicateClusters(openAll),
+  netZero: {
+    lastRetroNew,
+    lastRetroClosed,
+    teamOpenLast,
+    teamOpenPrev,
+    teamOpenPrev2,
+  },
+};
 
 // 4) 归档：只归档“全部提案已处置”的旧 RETRO；索引行一并移入归档。
 function archivePlan() {
@@ -294,9 +435,9 @@ if (archive) {
   const indexTable = [
     "## 提案处置索引（归档）",
     "",
-    "| ID | RETRO | 提案 | 状态 | 落地版本/任务 | 证据 | 更新日期 |",
-    "|---|---|---|---|---|---|---|",
-    ...archivedRows.map((row) => `| ${row.id} | ${row.retro} | ${row.title} | ${row.status} | ${row.landing || "-"} | ${row.evidence || "-"} | ${row.date || "-"} |`),
+    "| ID | RETRO | 提案 | 状态 | 落地版本/任务 | 证据 | 更新日期 | scope |",
+    "|---|---|---|---|---|---|---|---|",
+    ...archivedRows.map((row) => `| ${row.id} | ${row.retro} | ${row.title} | ${row.status} | ${row.landing || "-"} | ${row.evidence || "-"} | ${row.date || "-"} | ${row.scope || "team"} |`),
     "",
   ].join("\n");
   const archiveBody = eligible.map((item) => item.section.trim()).join("\n\n");
@@ -326,7 +467,7 @@ if (archive) {
       next = `${next.slice(0, indexEnd)}${nav}${next.slice(indexEnd)}`;
     }
   }
-  const remainingOpen = [...index.values()].filter((row) => !TERMINAL.has(row.status) && !eligible.some((item) => item.rows.some((p) => p.id === row.id))).length;
+  const remainingOpen = [...index.values()].filter((row) => row.scope === "team" && !TERMINAL.has(row.status) && !eligible.some((item) => item.rows.some((p) => p.id === row.id))).length;
   next = next.replace(/^open_proposals:\s*\d+\s*$/m, `open_proposals: ${remainingOpen}`);
   next = next.replace(/^last_disposition:\s*.*$/m, `last_disposition: ${today()}`);
   fs.writeFileSync(growthFile, next, "utf8");
@@ -348,22 +489,55 @@ const summary = {
   proposals: rows.length,
   done: done.length,
   open: open.length,
+  openAll: openAll.length,
+  teamOpen: open.length,
+  projectOpen: projectOpen.length,
   missing: missing.length,
   errors,
   warnings,
-  openProposals: open.map((row) => ({ id: row.id, retro: row.retro, title: row.title, status: row.status })),
+  debt: debtSummary,
+  openProposals: openAll.map((row) => ({
+    id: row.id,
+    scope: row.scope,
+    retro: row.retro,
+    title: row.title,
+    status: row.status,
+  })),
 };
 
 if (json) {
   console.log(JSON.stringify(summary, null, 2));
+} else if (debt) {
+  console.log("AI Team growth debt");
+  console.log(`project:   ${project}`);
+  console.log(`proposals: ${rows.length} (done ${done.length}, team open ${open.length}, project open ${projectOpen.length}, invalid ${missing.length})`);
+  console.log(`team open: ${open.length}${open.length ? ` — ${open.map((row) => row.id).join(", ")}` : ""}`);
+  console.log(`project open: ${projectOpen.length}${projectOpen.length ? ` — ${projectOpen.map((row) => row.id).join(", ")}` : ""}`);
+  console.log(`age:       average ${debtSummary.averageAgeDays === null ? "n/a" : `${debtSummary.averageAgeDays}d`}, unknown ${debtSummary.unknownAge}`);
+  if (debtSummary.oldest.length) {
+    console.log(`oldest:    ${debtSummary.oldest.map((item) => `${item.id}(${item.scope}, ${item.ageDays}d)`).join(", ")}`);
+  }
+  const duplicateText = debtSummary.duplicates.length
+    ? debtSummary.duplicates.map((group) => `[${group.join(", ")}]`).join(" ")
+    : "none";
+  console.log(`duplicates: ${duplicateText}`);
+  const nz = debtSummary.netZero;
+  const nzParts = [];
+  if (nz.lastRetroNew !== null) nzParts.push(`new ${nz.lastRetroNew}`);
+  if (nz.lastRetroClosed !== null) nzParts.push(`closed ${nz.lastRetroClosed}`);
+  if (nz.teamOpenLast !== null) nzParts.push(`team open ${nz.teamOpenPrev2 ?? "?"} -> ${nz.teamOpenPrev ?? "?"} -> ${nz.teamOpenLast}`);
+  console.log(`net-zero:  ${nzParts.length ? nzParts.join(", ") : "not recorded (legacy ledger)"}`);
+  for (const error of errors) console.log(`  ERROR ${error}`);
+  for (const warning of warnings) console.log(`  WARN  ${warning}`);
+  console.log(`result:   ${failed ? "FAIL" : "PASS"}${strict ? " (strict)" : ""}`);
 } else {
   console.log("AI Team growth check");
   console.log(`project:   ${project}`);
-  console.log(`proposals: ${rows.length} (done ${done.length}, open ${open.length}, invalid ${missing.length})`);
+  console.log(`proposals: ${rows.length} (done ${done.length}, open ${open.length} team / ${projectOpen.length} project, invalid ${missing.length})`);
   if (openOnly) {
-    for (const row of open) console.log(`  OPEN  ${row.id} [${row.status}] ${row.retro} ${row.title}`);
+    for (const row of openAll) console.log(`  OPEN  ${row.id} [${row.scope}/${row.status}] ${row.retro} ${row.title}`);
   } else {
-    for (const row of open) console.log(`  OPEN  ${row.id} [${row.status}] ${row.retro} ${row.title}`);
+    for (const row of openAll) console.log(`  OPEN  ${row.id} [${row.scope}/${row.status}] ${row.retro} ${row.title}`);
   }
   for (const error of errors) console.log(`  ERROR ${error}`);
   for (const warning of warnings) console.log(`  WARN  ${warning}`);

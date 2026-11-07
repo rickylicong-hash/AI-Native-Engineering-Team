@@ -106,6 +106,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -SetDe
 
 不设置也可以：每次用 `/ai ...`，或在 TUI 选择 `ai-team/chief`。
 
+### 项目 Profile（1.9.0）
+
+安装后 profile 示例位于：
+
+```text
+~/.config/opencode/skills/ai-team-workflow/profiles/
+  README.md
+  java-spring.md
+  vue.md
+  strict-security.md
+```
+
+新项目初始化时选择 profile，并在项目 `.ai-team/state/PROJECT.md` 或 `DECISIONS.md` 记录：profile id、覆盖项、owner、复查日期。单项目策略（迁移号、worktree、CI/BOM、状态格式、VEX 例外）留在项目侧；只有跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据的提案才进 `TEAM-CORE`。
+
+团队升级会覆盖 profile 示例；项目自己的覆盖值写在项目 `.ai-team/`，不要改安装副本。
+
 ## 5. 验证
 
 ### 结构验证
@@ -117,7 +133,7 @@ node scripts/verify.mjs
 期望：
 
 ```text
-checks: 195, passed: 195, failed: 0
+checks: 204, passed: 204, failed: 0
 OK: package is structurally valid.
 ```
 
@@ -132,7 +148,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed
 期望：
 
 ```text
-checks: 187, passed: 187, failed: 0
+checks: 196, passed: 196, failed: 0
 OK: package is structurally valid.
 ```
 
@@ -149,7 +165,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 ```text
 opencode lists ai-team/chief                             PASS
 ...
-checks: 197, passed: 197, failed: 0
+checks: 206, passed: 206, failed: 0
 ```
 
 ### OpenCode 识别验证

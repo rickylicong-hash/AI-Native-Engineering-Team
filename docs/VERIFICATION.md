@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.8.7**。§1–§3 为 1.8.7 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.9.0**。§1–§3 为 1.9.0 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -15,7 +15,7 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 195, passed: 195, failed: 0, warnings: 0
+checks: 204, passed: 204, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -24,7 +24,7 @@ OK: package is structurally valid.
 - 10 个 agent：frontmatter、mode、权限结构（仅 shell 破坏性 deny）、manifest、角色边界（流程约定）；
 - 13 个 command：description、agent 引用、body、参数、manifest；
 - 4 个 skill：SKILL.md、name/description、引用文件、manifest；
-- 12 个 workflow 模板（含 GROWTH）；
+- 12 个 workflow 模板（含 GROWTH）+ 4 个项目 profile 示例（README/Java/Spring/Vue/严格安全）；
 - 流程脚本：brief 生成/校验、secret 扫描、checkpoint 同步、review 门禁、持续优化扫描的语法与接线检查；
 - 无绝对路径/stack-specific 泄漏（warning 级）。
 
@@ -99,7 +99,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 结果：
 
 ```text
-checks: 197, passed: 197, failed: 0, warnings: 0
+checks: 206, passed: 206, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -928,6 +928,28 @@ review:                      REV-IMPROVE-2026-11-07-R2-R1 modified pass (P0=0/P1
 sourceHash === installedHash: f85f7995...
 ```
 
+### 5.38 三层入口与净零（1.9.0）
+
+- **P-54 三层入口**：`ai-retro` 先把提案分类为 `TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`；只有 `scope: team` 计入团队 open；`PROJECT-PROFILE` 落到项目 `.ai-team/tasks` 或 `profiles/`；`OBSERVE` 写 `RISKS.md` + 复查日期。
+- **P-54 净零**：每轮新增 `TEAM-CORE` ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增。frontmatter 记录 `last_retro_new`、`last_retro_closed`、`team_open_at_{last,prev,prev2}_retro`；字段缺失时按旧台账兼容。
+- **P-42 债务视图**：`growth-check --debt` 输出 team/project open、open 提案年龄（平均/最老）、重复标题簇和净零违规；`--json` 增加 `debt` 对象。`open` 从 1.9.0 起表示 team open，`openAll` 保留全部未处置数。
+- **P-30 并入 P-42**：checkpoint 任务隔离与 brief 自包含由债务视图和先处置规则覆盖；P-37 并入 P-50；P-28/P-38/P-48 转项目 profile。
+- **profiles**：`skills/ai-team-workflow/profiles/` 增加 `README.md`、`java-spring.md`、`vue.md`、`strict-security.md`；示例不含 riccon 专有路径/值。
+
+验证：
+
+```text
+source verify:               204/204
+installed verify:            196/196
+installed + OpenCode:        206/206
+audit-team-consistency:      191 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, 0 failed
+fixtures:                    scope:project excluded from team open; duplicate cluster; net-zero new>2 / new>closed / two rises FAIL; legacy schema 2 PASS; archive with scope column
+review:                      REV-IMPROVE-2026-11-07-R4 + R4-R1 modified pass (P0=0/P1=0; P2-01..05 -> TASK-IMPROVE-2026-11-07-R5)
+sourceHash === installedHash: 4ca6cbe0...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -957,13 +979,13 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.8.7 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.9.0 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
-- 一致性审计：通过（183 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令与版本握手检查）。
-- 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29。
-- 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；具体项目状态以该项目 GROWTH 为准。
-- Shell 权限：通过（1.8.7 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
-- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate）。
+- 一致性审计：通过（191 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令、版本握手与 profile/净零检查）。
+- 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54。
+- 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验。
+- Shell 权限：通过（1.9.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图）。
 - 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；默认分析、授权后实施）。
 - 授权门：通过（分析不调用子智能体、不改团队源；`--apply` 才实施）。
 - 提交归属：通过（build 提交团队源；Chief 不提交项目状态；DevOps 管项目 `.ai-team` checkpoint；push 需批准）。

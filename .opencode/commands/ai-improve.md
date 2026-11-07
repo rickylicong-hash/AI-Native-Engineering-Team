@@ -91,8 +91,10 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 硬规则：
 
 - 每轮最多推进 **2 个改动**，优先解决一个系统性瓶颈。
-- 不把单项目特例写进通用团队规则。
-- 提案必须有：目标、证据、验收标准、风险、回滚、文档影响、版本级别。
+- 不把单项目特例写进通用团队规则；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`），一次性现象写 `RISKS.md`。
+- 只有 `TEAM-CORE`（跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据）才进团队 GROWTH / AI Native 源。
+- 净零：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债。
+- 提案必须有：目标、证据、验收标准、风险、回滚、文档影响、版本级别、scope、复查日期。
 - 分析阶段**不修改** `GROWTH.md`、AI Native 源、版本或安装。
 - 报告必须写清“授权后将要改哪些文件、调用哪些角色、版本级别、风险”。
 
@@ -116,7 +118,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 
 ## 5. 实施（仅在授权后）
 
-1. 更新目标项目 `GROWTH.md`：新增 `P-*` 提案并登记 `proposed`；如果本轮已实施，授权后改为 `done` 并写落地版本/任务、证据、日期。
+1. 更新目标项目 `GROWTH.md`：新增 `P-*` 提案并登记 `proposed` + `scope`；如果本轮已实施，授权后改为 `done` 并写落地版本/任务、证据、日期。`scope: project` 的提案不计入团队 open。
 2. 在 AI Native 源建 `TASK-IMPROVE-*`；默认写本地 `.ai-team/`（gitignored），实施完成后归档/清理。
 3. 用 `brief-new.mjs` 生成 brief，`brief-lint` 通过后再派发。
 4. 按风险决定执行者：
@@ -156,6 +158,9 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 
 ## 6. 持续优化策略
 
+- **三层入口**：`TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`；单项目策略进 `profiles/` 或项目 `.ai-team/tasks`，不进团队核心。
+- **净零**：每轮新增 `TEAM-CORE` ≤2，且 ≤ 关闭/合并数；团队 open 连续两轮上升→停止新增，先清债。
+- **债务指标**：`growth-check --debt` 看 team/project open、年龄、重复簇；`improve-scan` 报告趋势。
 - **触发**：每 10 个 `done`、每月、每次团队版本发布后、P0/P1 事故后、同类问题第 2 次出现、GROWTH 未处置 ≥3。
 - **基线**：先记录当前指标，再改；至少保留一组改动前后对比。
 - **小步**：一次最多 2 个改动；优先 prompt/命令/模板，再脚本，最后才角色。

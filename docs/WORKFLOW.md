@@ -368,6 +368,14 @@ Co-authored-by: ai-team/qa-engineer <ai-team@local>
 
 **处置回传（1.3.0）**：每条提案必须登记到 `GROWTH.md` 的“提案处置索引”。新增为 `proposed`；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。复盘、交接、门禁前运行 `growth-check`；全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/GROWTH-<year>.md`，主文件保留索引与导航。
 
+**三层入口与净零（1.9.0）**：
+
+- `TEAM-CORE`（跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据）才进团队核心；
+- `PROJECT-PROFILE`（迁移号、worktree、CI/BOM、状态格式、VEX 例外）落到项目 `.ai-team/tasks` 或 `profiles/`，索引用 `scope: project` 追踪，不占团队 open；
+- `OBSERVE`（一次性现象）写 `RISKS.md` + 复查日期；
+- 每轮新增 `TEAM-CORE` ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债；
+- `growth-check --debt` 输出 team/project open、年龄、重复簇；`debt` 上升时先清债，再加规则。
+
 ### 7.3 Checkpoint 提交
 
 Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message。触发条件：
@@ -419,7 +427,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-23 状态自检**：`state-check` 检查重复 TASK-ID；每批 `state/**` 编辑后运行；交接前 0 error、0 重复。
 - **T-24 P2 债**：审查“修改后通过”的每个有实际风险 P2 必须有 `TASK-*`/`RISK-*` 或书面接受；只在报告里记录不算处置。
 - **T-25 权限/审计加固**：Engineer 不得编辑 QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计覆盖上述边界。
-- **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/落地/证据/日期；`growth-check` 检查；已处置旧 RETRO 可归档到 `team/archive/`。
+- **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/scope/落地/证据/日期；`growth-check --debt` 检查 team/project open、年龄、重复簇与净零；单项目策略走 `PROJECT-PROFILE`，已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
 - **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/`证据门禁`（`artifact-check --strict` + 允许的日志路径）/QA `测试路径`/Reviewer-Security `P2 处置`/`Done gate`/`运行时取证`/`构建隔离` 时不得派发。P-32/P-34 起，事务类 engineer brief 还缺 `事务边界与部分提交`/`旧行为反证`，reviewer/QA 缺 `边界四问` 时也不得派发；字段值不能是占位符或“不适用/N/A/无”（非运行时任务除外，但必须写明“不适用（无容器/外部依赖）”）。
 - **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；1.5.0 不再保留这些限制。
