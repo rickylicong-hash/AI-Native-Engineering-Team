@@ -65,6 +65,19 @@ const boundaryChecklist = agent === "ai-team/engineer"
 `
     : "";
 
+// P-46/P-49：运行时/容器/外部依赖任务的真实取证必须在 brief 中显式要求，
+// 不能把“单测全绿”当成运行时可用。非运行时任务写“不适用（无容器/外部依赖）”。
+const runtimeChecklist = agent === "ai-team/engineer" || agent === "ai-team/devops-engineer" || isReviewer || isQa
+  ? `运行时取证：<涉及容器/外部依赖/真实服务/E2E 时必填：真实命令、环境、断言、失败证据；无环境写 BLOCKED + 原始错误；单测全绿不能替代；非运行时写“不适用（无容器/外部依赖）”。>
+`
+  : "";
+
+// P-53：reviewer/security 的 done 门槛；P2 未处置只能保持 review。
+const doneGate = isReviewer
+  ? `Done gate：P0/P1=0，且每个有实际风险的 P2 已建 TASK-*/RISK-* 并有 owner/关闭条件；否则结论只能是“不通过/保持 review”，checkpoint 不得写 done（P-53）。
+`
+  : "";
+
 const template = `角色：${agent}
 技能：ai-team-workflow${agent === "ai-team/engineer" ? "；AI 功能加 ai-team-ai-native" : ""}
 任务 ID：${task}
@@ -77,12 +90,13 @@ Track / 阶段：T? / G?
 装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
 契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制字段定义；有变更时同一提交更新契约 + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
-${boundaryChecklist}验收标准：
+${boundaryChecklist}${runtimeChecklist}${doneGate}验收标准：
 - [ ] <3-6 条可检查条件>
 必须执行：<命令/测试/扫描；参数以对应脚本 --help 实跑为准；环境不允许时写 BLOCKED + 原始错误>
 脚本参数：以 \`<script> --help\` 实跑为准；不手抄参数
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；失败日志 .failed.log>
+证据门禁：回报前必须运行 \`artifact-check.mjs --strict --max-files 2000\` 且 0 error/0 warning；日志只允许 \`logs/<date>/\` 或 \`.ai-team/work/<TASK>-logs/\`；根 \`logs/*.log\` 与 UTF-16 直接判失败。
 测试路径：<${isQa ? "必填；" : "owner=qa-engineer 时必填；"}必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
 构建隔离：<共享工作区串行 / 独立 worktree <path>；并行构建或审查必填>
 P2 处置：<${isReviewer ? "必填；" : "修改后通过时必填；"}每个有实际风险的 P2 → TASK-* / RISK-* / 明确接受>

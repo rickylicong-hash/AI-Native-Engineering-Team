@@ -216,7 +216,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.8.6 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.8.7 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）

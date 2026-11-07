@@ -84,6 +84,7 @@ const fields = {
   contract_ref: ["契约影响：", "契约引用："],
   independent: ["独立验证"],
   evidence_location: ["证据位置"],
+  evidence_gate: ["证据门禁"],
   encoding: ["UTF-8", "utf8", "utf-8"],
   evidence_req: ["证据要求"],
   forbidden: ["禁止"],
@@ -93,9 +94,20 @@ const fields = {
 
 const required = [
   "role", "skill", "task", "track", "goal", "background", "ownership", "constraints",
-  "acceptance", "must", "script_help", "contract_ref", "evidence_location", "encoding",
+  "acceptance", "must", "script_help", "contract_ref", "evidence_location", "evidence_gate", "encoding",
   "evidence_req", "forbidden", "report", "build_isolation",
 ];
+
+const reviewerAgent = agent === "code-reviewer" || agent === "security-auditor";
+const runtimeAgent = agent === "engineer" || agent === "devops-engineer" || reviewerAgent || agent === "qa-engineer";
+if (runtimeAgent) {
+  fields.runtime_evidence = ["运行时取证"];
+  required.push("runtime_evidence");
+}
+if (reviewerAgent) {
+  fields.done_gate = ["Done gate", "完成门"];
+  required.push("done_gate");
+}
 
 if (agent === "code-reviewer" || agent === "security-auditor") {
   fields.independent = ["独立验证"];
@@ -122,13 +134,21 @@ for (const [key, needles] of Object.entries(fields)) {
 // 注意：不再整段删除“重试/幂等/事务/并发/回滚/迁移”枚举串——那会让
 // “本任务涉及重试/…”这类正文绕过 needs_transaction 判定。
 const keywordText = text
+  .replace(/^[ \t>*\-]*运行时取证[：:].*$/gm, "")
   .replace(/<[^<>]*>/g, "")
   .replace(/事务边界与部分提交/g, "")
   .replace(/旧行为反证/g, "")
   .replace(/边界四问/g, "")
+  .replace(/运行时取证/g, "")
+  .replace(/Done gate/g, "")
+  .replace(/不适用（无容器\/外部依赖）/g, "")
+  .replace(/无容器\/外部依赖/g, "")
+  .replace(/非运行时(?:任务|场景)?/g, "")
   .replace(/不涉及[^；。，,\n]*/g, (clause) => clause.replace(/重试|幂等|事务|并发|回滚|迁移/g, ""))
   .replace(/事务门禁/g, "");
 const needsTransaction = /重试|幂等|事务|并发|回滚|迁移/.test(keywordText);
+const runtimeText = keywordText.replace(/不涉及[^；。，,\n]*/g, "");
+const needsRuntime = /容器|docker|seccomp|attach|外部依赖|真实服务|E2E|redis|postgres(?:ql)?|mysql|kafka|rabbitmq?|数据库|缓存|消息队列|第三方\s*api/i.test(runtimeText);
 
 /**
  * “不适用/N/A/无”不是有效回答：关键词任务必须写具体边界或证明。
@@ -188,6 +208,71 @@ for (const item of valueChecks) {
   }
 }
 
+// P-46：证据门禁必须是可执行的 artifact-check --strict --max-files 2000，而不是“注意编码”。
+const evidenceGateValue = fieldValue(["证据门禁：", "证据门禁:"]);
+const evidenceGateOk = isFilled(evidenceGateValue)
+  && /artifact-check/.test(evidenceGateValue)
+  && /--strict/.test(evidenceGateValue)
+  && /--max-files\s*=?\s*2000/.test(evidenceGateValue)
+  && /0\s*error/i.test(evidenceGateValue)
+  && /(logs\/|\.ai-team\/work)/.test(evidenceGateValue);
+present.evidence_gate = evidenceGateOk;
+if (!evidenceGateOk && !missing.includes("evidence_gate")) {
+  missing.push("evidence_gate");
+  valueReasons.set("evidence_gate", "must require artifact-check --strict --max-files 2000, 0 errors and allowed log paths");
+}
+
+// P2-05：证据位置不能是项目外绝对路径或根 logs/*.log；只接受 logs/<date>/ 或 .ai-team/{work,reviews}/。
+const evidenceLocationValue = fieldValue(["证据位置：", "证据位置:"]);
+const evidenceLocationOk = isFilled(evidenceLocationValue)
+  && !/^[A-Za-z]:[\\/]/.test(evidenceLocationValue.trim())
+  && !/(^|\s)`?logs\/[^/\s]+\.log/i.test(evidenceLocationValue)
+  && /(logs\/\d{4}-\d{2}-\d{2}\/|\.ai-team\/(?:work|reviews)\/)/i.test(evidenceLocationValue);
+present.evidence_location = evidenceLocationOk;
+if (!evidenceLocationOk && !missing.includes("evidence_location")) {
+  missing.push("evidence_location");
+  valueReasons.set("evidence_location", "must be project-relative logs/<date>/ or .ai-team/work|reviews/; no absolute path or root logs/*.log");
+}
+
+// P-49：运行时任务必须有真实取证；非运行时允许“不适用（无容器/外部依赖）”。
+if (runtimeAgent) {
+  const runtimeValue = fieldValue(["运行时取证：", "运行时取证:"]);
+  const runtimeTrimmed = (runtimeValue || "").trim();
+  const runtimePlaceholder = /^(TODO|TBD|待补|待定|待办|待确认|占位|\.{3}|…)\b/i.test(runtimeTrimmed);
+  let runtimeOk = isFilled(runtimeValue) && !runtimePlaceholder;
+  if (runtimeOk && needsRuntime) {
+    if (/^(不适用|不涉及|无|n\/?a|none|not applicable)/i.test(runtimeTrimmed)) {
+      runtimeOk = false;
+    } else {
+      const hasCommand = /\b(mvn|docker|curl|psql|redis-cli|npm|node|java|kubectl|podman|pytest|playwright|go test|cargo test)\b/i.test(runtimeValue);
+      const hasResult = /(退出码|exit\s*[:=]?\s*\d+|断言|通过|失败|BLOCKED|pass|fail|结果)/i.test(runtimeValue);
+      const blocked = /BLOCKED/i.test(runtimeValue) && /(原始错误|error|错误|异常)/i.test(runtimeValue);
+      if (!hasCommand || !hasResult) runtimeOk = blocked;
+    }
+  }
+  present.runtime_evidence = runtimeOk;
+  if (!runtimeOk && !missing.includes("runtime_evidence")) {
+    missing.push("runtime_evidence");
+    valueReasons.set("runtime_evidence", runtimePlaceholder ? "placeholder is not runtime evidence" : needsRuntime ? "runtime task requires command + exit/result, or BLOCKED + raw error" : "value empty or placeholder");
+  }
+}
+
+// P-53：reviewer/security 的 Done gate 必须写清 P0/P1、P2 处置、owner 与关闭条件。
+if (reviewerAgent) {
+  const doneValue = fieldValue(["Done gate：", "Done gate:", "完成门："]);
+  const doneOk = isFilled(doneValue)
+    && /P0|P1|P2/i.test(doneValue)
+    && /(TASK-|RISK-)/.test(doneValue)
+    && /(owner|负责人)/i.test(doneValue)
+    && /(关闭条件|close)/i.test(doneValue)
+    && /done|review/i.test(doneValue);
+  present.done_gate = doneOk;
+  if (!doneOk && !missing.includes("done_gate")) {
+    missing.push("done_gate");
+    valueReasons.set("done_gate", "must state P0/P1=0, P2 TASK/RISK with owner and close condition, and done/review gate");
+  }
+}
+
 const ok = missing.length === 0;
 const result = {
   ok,
@@ -198,6 +283,7 @@ const result = {
   missing,
   value_issues: Object.fromEntries(valueReasons),
   needs_transaction: needsTransaction,
+  needs_runtime: needsRuntime,
 };
 
 if (json) {

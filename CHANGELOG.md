@@ -3,6 +3,25 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.8.7] - 2026-11-07
+
+### Fixed
+
+- **Checkpoint remote truth (P-39)**: `checkpoint-check` now computes `ahead` from `git ls-remote --heads origin <branch>` instead of the local `origin/*` ref. When the remote is unreachable or the remote SHA is not in the local object database, it falls back to the local upstream and prints `local` explicitly; it never reports an inferred value as `git ls-remote`.
+- **STATUS state lines (P-51)**: `checkpoint-check --mark --sync-docs` now also generates/refreshes `STATUS.md` `Retro`/`Growth`/`远程` lines (plus the existing `Checkpoint`/`HEAD`), using `GROWTH.md` frontmatter and `growth-check --json`. `ai-retro`/`ai-handoff` require `state-check` after ledger edits; duplicate TASK-ID must not be handed off.
+- **Evidence gate (P-46/P-33)**: `brief-new`/`brief-lint` require a `证据门禁` field that names `artifact-check --strict --max-files 2000` and the allowed log paths (`logs/<date>/` or `.ai-team/work/<TASK>-logs/`); root `logs/*.log` and UTF-16 remain hard failures.
+- **Runtime evidence and done gate (P-49/P-53)**: briefs for runtime/container/external-dependency tasks must include a `运行时取证` section; single-unit-test green is not accepted as runtime proof. Reviewer/security briefs and `REVIEW.md` add a `Done gate`: P0/P1=0 and every risk-bearing P2 has a `TASK-*`/`RISK-*` owner and close condition, otherwise the task stays in review and cannot be written as done.
+
+### Verified
+
+- `node scripts/verify.mjs` → 195/195.
+- `audit-team-consistency.mjs` → 183 checks, 0 failed.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- Fixtures: checkpoint remote SHA vs stale local ref (remote wins; offline fallback marked `local`); `brief-lint` runtime task without real evidence fails, non-runtime `不适用（无容器/外部依赖）` passes; reviewer brief without Done gate fails.
+- Reviews: `REV-IMPROVE-2026-11-07-R2-R1` (modified pass, P0=0/P1=0; P2-07/P2-08 → `TASK-IMPROVE-2026-11-07-R3`).
+- `sourceHash === installedHash` (`f85f7995...`), version `1.8.7`.
+
 ## [1.8.6] - 2026-11-07
 
 ### Changed

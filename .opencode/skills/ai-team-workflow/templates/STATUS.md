@@ -7,6 +7,9 @@
 - Last gate: —
 - Retro: not due (done 0, next 10)
 - Growth: open 0 / done 0 / last YYYY-MM-DD
+- Checkpoint: `<commit>`（done N）
+- 远程：`origin <url>`，`<branch>` ahead N（`<upstream>=<sha>`，实测 `git ls-remote`）
+- HEAD: `<short sha>`
 
 ## In progress
 

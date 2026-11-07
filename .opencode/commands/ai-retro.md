@@ -21,8 +21,8 @@ $ARGUMENTS
    - 需要用户批准的事项。
 6. 更新 frontmatter：`last_retro`、`last_gate`、`tasks_at_last_retro`、`next_due_at`（= 当前 done + 10）、`last_trigger`。
 6.1 在“提案处置索引”为每条新提案登记 `proposed`；本轮已处置的提案同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。
-7. 运行 `growth-check`；有缺失状态先补；输出 open/done 数量。全部处置且非最近一轮的 RETRO，给出 `growth-check --archive` 归档计划（需 `--yes` 才移动）。
-8. 更新 `state/STATUS.md` 的 `Retro:` 行、`state/HANDOFF.md` 和 `state/RUN_LOG.md`。
+7. 先运行 `state-check`（重复 TASK-ID、非标准 done、artifact/编码问题直接失败），再运行 `growth-check`；有缺失状态先补；输出 open/done 数量。全部处置且非最近一轮的 RETRO，给出 `growth-check --archive` 归档计划（需 `--yes` 才移动）。
+8. 更新 `state/STATUS.md` 的当前状态、`state/HANDOFF.md` 和 `state/RUN_LOG.md`；STATUS 的 `Retro`/`Growth`/`远程`/`Checkpoint` 行以 checkpoint 脚本生成为准，不要长期手写；更新后再跑一次 `state-check`。
 9. 若项目跟踪 `.ai-team`，写完后调度 `ai-team/devops-engineer` 做一次 checkpoint；你不得自己 `git add`/`git commit`，push 需用户批准。
 10. 汇报：覆盖任务数、3 个主要问题、3 个提案、处置状态（open/done）、到期状态和下一次触发点。
 

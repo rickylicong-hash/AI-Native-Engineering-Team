@@ -80,8 +80,8 @@ function read(file) {
   return fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
 }
 
-function git(gitArgs) {
-  return spawnSync("git", gitArgs, { cwd: project, encoding: "utf8" });
+function git(gitArgs, options = {}) {
+  return spawnSync("git", gitArgs, { cwd: project, encoding: "utf8", ...options });
 }
 
 function countDone(text) {
@@ -190,25 +190,88 @@ function stripUserinfo(url) {
  * 所有外部字符串先脱敏/清洗，避免凭据或换行进入被提交的 HANDOFF.md。
  */
 function remoteLine() {
-  const origin = git(["remote", "get-url", "origin"]);
-  const originUrl = origin.status === 0 ? stripUserinfo(origin.stdout) : "";
   const branchResult = git(["rev-parse", "--abbrev-ref", "HEAD"]);
   const branchRaw = branchResult.status === 0 ? branchResult.stdout.trim() : "";
   const upstreamResult = git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
   const upstreamRaw = upstreamResult.status === 0 ? upstreamResult.stdout.trim() : "";
-  if (!originUrl || !upstreamRaw || !branchRaw) {
+  if (!branchRaw || branchRaw === "HEAD" || !upstreamRaw) {
     return "- 远程：(no upstream)";
   }
-  // R3 L-03：git 调用必须用**原始** refname。sanitizeInline 会把反引号换成
-  // 单引号，若先清洗再查 git，`feat'x` 查不到，ahead/SHA 会退化成 ?。
-  // 清洗只作用于最终展示。
-  const aheadResult = git(["rev-list", "--count", `${upstreamRaw}..HEAD`]);
-  const ahead = aheadResult.status === 0 ? sanitizeInline(aheadResult.stdout) : "(unknown)";
-  const shaResult = git(["rev-parse", "--short", upstreamRaw]);
-  const sha = shaResult.status === 0 ? sanitizeInline(shaResult.stdout) : "(unknown)";
+  const remoteName = upstreamRaw.split("/")[0] || "origin";
+  const remoteUrlResult = git(["remote", "get-url", remoteName]);
+  const remoteUrl = remoteUrlResult.status === 0 ? stripUserinfo(remoteUrlResult.stdout) : "";
+  if (!remoteUrl) {
+    return "- 远程：(no upstream)";
+  }
   const branch = sanitizeInline(branchRaw);
   const upstream = sanitizeInline(upstreamRaw);
-  return `- 远程：\`origin ${originUrl}\`，\`${branch}\` ahead ${ahead}（\`${upstream}=${sha}\`）`;
+  // P-39：ahead 以远端实测 SHA 为准，避免本地 origin/master 过期导致“假 ahead”。
+  // ls-remote 是只读网络调用；失败/超时/远端 SHA 不在本地对象库时回退本地 upstream，
+  // 并在输出中显式标记 local，不能把推断值写成“实测”。
+  let ahead = "(unknown)";
+  let sha = "(unknown)";
+  let source = "local";
+  const remoteResult = git(["ls-remote", "--heads", remoteName], { timeout: 15000 });
+  if (remoteResult.status === 0 && remoteResult.stdout.trim()) {
+    const ref = `refs/heads/${branchRaw}`;
+    const line = remoteResult.stdout.trim().split(/\r?\n/).find((row) => row.split(/\s+/)[1] === ref);
+    const remoteSha = line ? line.split(/\s+/)[0] : "";
+    if (/^[0-9a-f]{40,64}$/i.test(remoteSha)) {
+      const aheadResult = git(["rev-list", "--count", `${remoteSha}..HEAD`]);
+      if (aheadResult.status === 0) {
+        ahead = sanitizeInline(aheadResult.stdout);
+        sha = remoteSha.slice(0, 7);
+        source = "ls-remote";
+      }
+    }
+  }
+  if (source === "local") {
+    const aheadResult = git(["rev-list", "--count", `${upstreamRaw}..HEAD`]);
+    ahead = aheadResult.status === 0 ? sanitizeInline(aheadResult.stdout) : "(unknown)";
+    const shaResult = git(["rev-parse", "--short", upstreamRaw]);
+    sha = shaResult.status === 0 ? sanitizeInline(shaResult.stdout) : "(unknown)";
+  }
+  const sourceText = source === "ls-remote" ? "实测 `git ls-remote`" : "local";
+  return `- 远程：\`${remoteName} ${remoteUrl}\`，\`${branch}\` ahead ${ahead}（\`${upstream}=${sha}\`，${sourceText}）`;
+}
+
+/**
+ * 读取 GROWTH frontmatter，供 STATUS 的 Retro 行使用（P-51）。
+ * 只读；缺失/解析失败返回 null，不阻断 checkpoint。
+ */
+function growthMeta() {
+  const file = path.join(project, ".ai-team", "team", "GROWTH.md");
+  if (!fs.existsSync(file)) return null;
+  const match = read(file).match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+  const data = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (m) data[m[1]] = m[2].trim();
+  }
+  return data;
+}
+
+/**
+ * 读取 growth-check 的 JSON 摘要（P-51），供 STATUS 的 Growth 行使用。
+ * 失败返回 null，保留原行；不因为 GROWTH 临时不可读而阻断 checkpoint。
+ */
+function growthSummary() {
+  const file = path.join(project, ".ai-team", "team", "GROWTH.md");
+  if (!fs.existsSync(file)) return null;
+  const result = spawnSync(process.execPath, [path.join(path.dirname(process.argv[1]), "growth-check.mjs"), "--project", project, "--json"], {
+    cwd: project,
+    encoding: "utf8",
+    timeout: 15000,
+  });
+  if (result.status !== 0 || !result.stdout) return null;
+  try {
+    const data = JSON.parse(result.stdout);
+    if (!Number.isFinite(data.open) || !Number.isFinite(data.done)) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -229,8 +292,10 @@ function buildStateDocs(commit, doneCount) {
   const handoffText = read(handoffFile);
   const handoffEol = handoffText.includes("\r\n") ? "\r\n" : "\n";
   const handoffLines = handoffText.split(/\r?\n/);
-  // P-35：远程/ahead 由脚本读取，避免 HANDOFF/STATUS 手写数字漂移。
+  // P-35/P-39：远程/ahead 由脚本读取；P-51：STATUS 的 Retro/Growth/远程行也由脚本生成。
   const remote = remoteLine();
+  const growth = growthSummary();
+  const meta = growthMeta();
   const remoteIndexes = [];
   let gitIndex = -1;
   let baselineIndex = -1;
@@ -277,6 +342,9 @@ function buildStateDocs(commit, doneCount) {
   const statusLines = statusText.split(/\r?\n/);
   let statusCheckpoint = false;
   let statusHeadChanged = false;
+  let statusRemote = false;
+  let statusRetro = false;
+  let statusGrowth = false;
   for (let i = 0; i < statusLines.length; i += 1) {
     const line = statusLines[i];
     if (/^-\s*Checkpoint[：:]/.test(line)) {
@@ -288,12 +356,47 @@ function buildStateDocs(commit, doneCount) {
       const updated = replaceFirstHash(line, commit);
       if (updated !== line) statusHeadChanged = true;
       statusLines[i] = updated;
+    } else if (!statusRemote && /^-\s*远程[：:]/.test(line)) {
+      if (line !== remote) changes.push("STATUS.md 远程");
+      statusLines[i] = remote;
+      statusRemote = true;
+    } else if (!statusRetro && /^-\s*Retro[：:]/.test(line) && meta?.last_retro) {
+      const updated = `- Retro: ${meta.last_retro}（done ${doneCount} → next ${meta.next_due_at || "?"}）`;
+      if (updated !== line) changes.push("STATUS.md Retro");
+      statusLines[i] = updated;
+      statusRetro = true;
+    } else if (!statusGrowth && /^-\s*Growth[：:]/.test(line) && growth) {
+      const updated = `- Growth: open ${growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`;
+      if (updated !== line) changes.push("STATUS.md Growth");
+      statusLines[i] = updated;
+      statusGrowth = true;
     }
   }
   if (!statusCheckpoint) {
     return { ok: false, error: "STATUS.md needs a '- Checkpoint:' line", changes };
   }
   if (statusHeadChanged) changes.push("STATUS.md HEAD");
+  if (!statusRemote) {
+    const checkpointIndex = statusLines.findIndex((line) => /^-\s*Checkpoint[：:]/.test(line));
+    if (checkpointIndex >= 0) {
+      statusLines.splice(checkpointIndex + 1, 0, remote);
+      changes.push("STATUS.md 远程");
+    }
+  }
+  if (!statusRetro && meta?.last_retro) {
+    const anchor = statusLines.findIndex((line) => /^-\s*Last gate[：:]/.test(line));
+    if (anchor >= 0) {
+      statusLines.splice(anchor + 1, 0, `- Retro: ${meta.last_retro}（done ${doneCount} → next ${meta.next_due_at || "?"}）`);
+      changes.push("STATUS.md Retro");
+    }
+  }
+  if (!statusGrowth && growth) {
+    const anchor = statusLines.findIndex((line) => /^-\s*Retro[：:]/.test(line));
+    if (anchor >= 0) {
+      statusLines.splice(anchor + 1, 0, `- Growth: open ${growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`);
+      changes.push("STATUS.md Growth");
+    }
+  }
   const nextStatus = statusLines.join(statusEol);
 
   // 只把真正有变化的文件放进计划，避免无谓改写（保留 CRLF/原内容）。
