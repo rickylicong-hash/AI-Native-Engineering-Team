@@ -932,7 +932,9 @@ sourceHash === installedHash: f85f7995...
 
 - **P-54 三层入口**：`ai-retro` 先把提案分类为 `TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`；只有 `scope: team` 计入团队 open；`PROJECT-PROFILE` 落到项目 `.ai-team/tasks` 或 `profiles/`；`OBSERVE` 写 `RISKS.md` + 复查日期。
 - **P-54 净零**：每轮新增 `TEAM-CORE` ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增。frontmatter 记录 `last_retro_new`、`last_retro_closed`、`team_open_at_{last,prev,prev2}_retro`；字段缺失时按旧台账兼容。
-- **P-42 债务视图**：`growth-check --debt` 输出 team/project open、open 提案年龄（平均/最老）、重复标题簇和净零违规；`--json` 增加 `debt` 对象。`open` 从 1.9.0 起表示 team open，`openAll` 保留全部未处置数。
+- **P-42 债务视图**：`growth-check --debt` 输出 team/project open、open 提案年龄（平均/最老）、重复标题簇和净零违规；`--json` 增加 `debt` 对象。`open` 从 1.9.0 起表示 team open，`openAll` 保留全部未处置数。`--debt` 对 index-only 提案、deferred 缺复查日期/触发点、启用净零但缺 `last_retro_new` 报 error。
+- **improve-scan 口径**：`improve-scan` 解析 `scope`，输出 `teamOpen`/`projectOpen`/`openAll`；`open-proposals` 只用 team open，不再把 project profile 债报成团队索引不一致。
+- **复查日期**：GROWTH 索引新增 `复查日期` 列；项目 P-28/P-48 回填 `2026-12-07` 与复查触发点。
 - **P-30 并入 P-42**：checkpoint 任务隔离与 brief 自包含由债务视图和先处置规则覆盖；P-37 并入 P-50；P-28/P-38/P-48 转项目 profile。
 - **profiles**：`skills/ai-team-workflow/profiles/` 增加 `README.md`、`java-spring.md`、`vue.md`、`strict-security.md`；示例不含 riccon 专有路径/值。
 
