@@ -22,7 +22,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 - `node scripts/verify.mjs` → 206/206.
 - `scripts/test-gates.mjs` → 28/28.
 - Review: `REV-IMPROVE-2026-11-08-R6`（含 R1 复审）**通过** (P0=0/P1=0/P2=0; P3 -> `TASK-IMPROVE-2026-11-08-R7`); `SEC-IMPROVE-2026-11-08-R6`（含 R1 复审）**通过** (P0=0/P1=0/P2=0; P3 -> R7).
-- `sourceHash === installedHash` (`a6357244...`), version `1.9.1`.
+- `sourceHash === installedHash` (`219f1408...`), version `1.9.1`.
 
 ## [1.9.0] - 2026-11-07
 

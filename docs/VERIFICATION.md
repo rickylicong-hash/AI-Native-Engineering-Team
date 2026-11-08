@@ -973,7 +973,7 @@ gate fixtures:               28/28 PASS
 riccon-ai default scan:      2159 text files / 0 findings / PASS (auto limit 4000)
 riccon-ai state-check:       PASS
 riccon-ai growth-check --debt: PASS (team open 8 -> 11 -> 11; raw new 3 / closed 3 with net_zero_exception)
-sourceHash === installedHash: a6357244...
+sourceHash === installedHash: 219f1408...
 ```
 
 ## 6. 未执行项
