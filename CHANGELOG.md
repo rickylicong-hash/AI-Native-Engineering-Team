@@ -14,6 +14,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 ### Changed
 
 - `ai-retro`, `SKILL.md`, `docs/IMPROVEMENT.md`, `docs/WORKFLOW.md`, `docs/TEAM.md`, `docs/TROUBLESHOOTING.md`, `README.md` and `INSTALL.md` document the 1.9.1 semantics and 20000 ceiling.
+- `checkpoint-check --mark --sync-docs` writes STATUS `Growth` using total open (`openAll`) so “team + project” stays 13, not team-only 11.
 - `team-manifest.json` version is `1.9.1`; source verify is `206/206`.
 
 ### Verified

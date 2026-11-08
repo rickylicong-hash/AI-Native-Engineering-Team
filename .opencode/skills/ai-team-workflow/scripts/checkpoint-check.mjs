@@ -366,7 +366,7 @@ function buildStateDocs(commit, doneCount) {
       statusLines[i] = updated;
       statusRetro = true;
     } else if (!statusGrowth && /^-\s*Growth[：:]/.test(line) && growth) {
-      const updated = `- Growth: open ${growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`;
+      const updated = `- Growth: open ${growth.openAll ?? growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`;
       if (updated !== line) changes.push("STATUS.md Growth");
       statusLines[i] = updated;
       statusGrowth = true;
@@ -393,7 +393,7 @@ function buildStateDocs(commit, doneCount) {
   if (!statusGrowth && growth) {
     const anchor = statusLines.findIndex((line) => /^-\s*Retro[：:]/.test(line));
     if (anchor >= 0) {
-      statusLines.splice(anchor + 1, 0, `- Growth: open ${growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`);
+      statusLines.splice(anchor + 1, 0, `- Growth: open ${growth.openAll ?? growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`);
       changes.push("STATUS.md Growth");
     }
   }
