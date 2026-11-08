@@ -358,6 +358,21 @@ check(
   "improve command is missing GROWTH/session/documentation steps",
 );
 check(
+  "improve command restates team goals before analysis",
+  read(path.join(commandsDir, "ai-improve.md")).includes("目标校准") &&
+    read(path.join(commandsDir, "ai-improve.md")).includes("docs/TEAM.md") &&
+    read(path.join(commandsDir, "ai-improve.md")).includes("一次通过率"),
+  "improve command must restate docs/TEAM.md team goals before analysis",
+);
+check(
+  "team docs define tiered first-pass targets",
+  read(path.resolve("docs", "TEAM.md")).includes("一次通过率") &&
+    read(path.resolve("docs", "TEAM.md")).includes("70%") &&
+    read(path.resolve("docs", "TEAM.md")).includes("90%") &&
+    read(path.resolve("docs", "IMPROVEMENT.md")).includes("review-ready"),
+  "team/improvement docs are missing the first-pass definition or tiered targets",
+);
+check(
   "improvement strategy doc exists",
   fs.existsSync(path.resolve("docs", "IMPROVEMENT.md")),
   "missing docs/IMPROVEMENT.md",

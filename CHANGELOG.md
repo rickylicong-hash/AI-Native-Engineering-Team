@@ -3,6 +3,26 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.9.2] - 2026-11-08
+
+### Added
+
+- **Team-level quality goal (`docs/TEAM.md` §0/§0.1)**: continuously improve first-pass acceptance while keeping P1 escapes flat, review rounds ≤2 and security coverage unchanged. Definition: only implementation tasks entering review; no R1/R2, reviewer P0/P1=0, no cross-role rework, no checkpoint block. Baseline 56.8%; overall 10-task ≥70%, 30-task ≥80%, long-term ~85%; T1/T2 long-term ≥90%; review-ready 10-task ≥90%. Not a hard gate.
+- **`/ai-improve` goal calibration**: every run must first restate the team mission, six goals and the tiered first-pass target from `docs/TEAM.md` §0/§0.1, then proceed; stop only if the request conflicts with a goal. This prevents goal drift without adding a new role or command.
+
+### Changed
+
+- `README.md`, `docs/TEAM.md`, `docs/IMPROVEMENT.md` document the goal, metric definition, targets and guardrails.
+- `scripts/audit-team-consistency.mjs` checks that `/ai-improve` restates the goals and that the tiered targets remain documented.
+
+### Verified
+
+- `node scripts/verify.mjs` → 206/206.
+- `audit-team-consistency.mjs` → 193 checks, 0 failed.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- `sourceHash === installedHash` (`486bab87...`), version `1.9.2`.
+
 ## [1.9.1] - 2026-11-08
 
 ### Fixed

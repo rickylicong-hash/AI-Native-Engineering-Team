@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.9.1**。§1–§3 为 1.9.1 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.9.2**。§1–§3 为 1.9.2 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -976,6 +976,27 @@ riccon-ai growth-check --debt: PASS (team open 8 -> 11 -> 11; raw new 3 / closed
 sourceHash === installedHash: 219f1408...
 ```
 
+### 5.40 团队目标与一次通过率（1.9.2）
+
+- **团队目标**：`docs/TEAM.md` §0 固化一句话使命与 6 条目标；§0.1 新增“持续提高一次通过率”质量目标。
+- **口径**：只统计实现任务首次进入 review；无 R1/R2、reviewer P0/P1=0、无跨角色返工、无 checkpoint 阻断。review 任务、R1/R2 不计入分母。
+- **基线/目标**：基线 56.8%（6/10、8/15、8/14）；整体 10 任务 ≥70%、30 任务 ≥80%、长期约 85%；T1/T2 长期 ≥90%；T3/T4 长期约 80%；review-ready 10 任务 ≥90%、30 任务 ≥95%。
+- **护栏**：P1 逃逸不上升、审查轮次 ≤2、安全覆盖不降；一次通过率是趋势指标，不作为硬门禁；禁止用缩小 review 范围、隐藏缺陷或“重跑通过”抬数字。
+- **`/ai-improve` 目标校准**：命令先复述 `docs/TEAM.md` §0/§0.1（使命、6 条目标、质量目标），再开始分析；请求与目标冲突时先停，否则不额外等待确认。
+- **一致性审计**：新增 2 项检查（`ai-improve` 必须先复述目标；团队文档必须保留分层目标）。
+
+验证：
+
+```text
+source verify:               206/206
+installed verify:            196/196
+installed + OpenCode:        206/206
+audit-team-consistency:      193 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, PASS
+sourceHash === installedHash: 486bab87...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -1005,13 +1026,13 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.9.1 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.9.2 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
-- 一致性审计：通过（191 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令、版本握手与 profile/净零检查）。
-- 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）。
-- 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应。
+- 一致性审计：通过（193 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令、版本握手、profile/净零检查与团队目标校准检查）。
+- 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）；1.9.2 团队目标/一次通过率分层目标与 `/ai-improve` 目标校准。
+- 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应；1.9.2 增加团队目标与 `/ai-improve` 目标校准。
 - Shell 权限：通过（1.9.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
-- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应）。
+- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准）。
 - 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；默认分析、授权后实施）。
 - 授权门：通过（分析不调用子智能体、不改团队源；`--apply` 才实施）。
 - 提交归属：通过（build 提交团队源；Chief 不提交项目状态；DevOps 管项目 `.ai-team` checkpoint；push 需批准）。
