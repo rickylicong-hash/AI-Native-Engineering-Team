@@ -373,6 +373,21 @@ check(
   "team/improvement docs are missing the first-pass definition or tiered targets",
 );
 check(
+  "brief-lint requires review-entry fields",
+  read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs")).includes("Review-entry 自检") &&
+    read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs")).includes("门禁面") &&
+    read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs")).includes("必然受影响测试/脚本") &&
+    read(path.join(skillsDir, "ai-team-workflow", "scripts", "brief-lint.mjs")).includes("请求参数断言"),
+  "brief-lint is missing review-entry/slice/test-whitelist/request-assertion fields",
+);
+check(
+  "review template and reviewer enforce review-entry + horizontal surfaces",
+  read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md")).includes("Review-entry 核对") &&
+    read(path.join(skillsDir, "ai-team-workflow", "templates", "REVIEW.md")).includes("首轮横向面") &&
+    read(path.join(agentsDir, "code-reviewer.md")).includes("Review-entry 闸门"),
+  "REVIEW template or code-reviewer is missing the review-entry gate",
+);
+check(
   "improvement strategy doc exists",
   fs.existsSync(path.resolve("docs", "IMPROVEMENT.md")),
   "missing docs/IMPROVEMENT.md",

@@ -3,6 +3,22 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.9.3] - 2026-11-08
+
+### Added
+
+- **Review-entry contract (P-58/P-57/P-65/P-40)**: engineer briefs now require `Review-entry 自检` (semantic source table ADR/contract → implementation → tests, plus P1 scenarios), `门禁面` (≤2; split if more), `必然受影响测试/脚本` whitelist, and `请求参数断言` for server query/idempotency/filter tasks. `brief-lint` enforces these fields; missing or placeholder values block dispatch.
+- **First-review scope (P-61/P-64/P-62)**: `templates/REVIEW.md` adds a Review-entry checklist and a first-round horizontal-surface checklist (production wiring, exception classification, preflight/parsing, permissions, migration, config defaults). `code-reviewer` returns the task without full review when the review-entry table is missing; slice >2 or unapproved cross-role test edits are P1.
+
+### Verified
+
+- `node scripts/verify.mjs` → 206/206.
+- `audit-team-consistency.mjs` → 195 checks, 0 failed.
+- `scripts/test-gates.mjs` → 32/32.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- `sourceHash === installedHash` (`9610a87c...`), version `1.9.3`.
+
 ## [1.9.2] - 2026-11-08
 
 ### Added

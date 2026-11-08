@@ -90,6 +90,10 @@ const fields = {
   forbidden: ["禁止"],
   report: ["## 回报格式", "回报格式"],
   build_isolation: ["构建隔离"],
+  review_entry: ["Review-entry 自检"],
+  gate_surfaces: ["门禁面"],
+  test_whitelist: ["必然受影响测试/脚本"],
+  request_assertion: ["请求参数断言"],
 };
 
 const required = [
@@ -118,6 +122,9 @@ if (agent === "qa-engineer") {
   fields.independent = ["独立验证"];
   fields.test_path = ["测试路径"];
   required.push("independent", "test_path");
+}
+if (agent === "engineer") {
+  required.push("review_entry", "gate_surfaces", "test_whitelist");
 }
 
 const missing = [];
@@ -149,6 +156,8 @@ const keywordText = text
 const needsTransaction = /重试|幂等|事务|并发|回滚|迁移/.test(keywordText);
 const runtimeText = keywordText.replace(/不涉及[^；。，,\n]*/g, "");
 const needsRuntime = /容器|docker|seccomp|attach|外部依赖|真实服务|E2E|redis|postgres(?:ql)?|mysql|kafka|rabbitmq?|数据库|缓存|消息队列|第三方\s*api/i.test(runtimeText);
+const requestText = keywordText.replace(/^[ \t>*\-]*事务边界与部分提交[：:].*$/gm, "");
+const needsRequestAssertion = /查询|筛选|分页|query|filter|idempot|幂等/i.test(requestText);
 
 /**
  * “不适用/N/A/无”不是有效回答：关键词任务必须写具体边界或证明。
@@ -177,6 +186,16 @@ if (agent === "engineer" && needsTransaction) {
     { key: "old_behavior", labels: ["旧行为反证：", "旧行为反证:"], rejectNotApplicable: true },
   );
 }
+if (agent === "engineer") {
+  valueChecks.push(
+    { key: "review_entry", labels: ["Review-entry 自检：", "Review-entry 自检:"], validate: (value) => /语义源|ADR|契约/.test(value) && /P1/.test(value) && /测试/.test(value) },
+    { key: "gate_surfaces", labels: ["门禁面：", "门禁面:"], validate: (value) => /(≤|<=)\s*2|两个|2\s*个|拆分/.test(value) },
+    { key: "test_whitelist", labels: ["必然受影响测试/脚本：", "必然受影响测试/脚本:"], validate: (value) => /(无|TASK-|测试|脚本)/.test(value) },
+  );
+  if (needsRequestAssertion) {
+    valueChecks.push({ key: "request_assertion", labels: ["请求参数断言：", "请求参数断言:"], validate: (value) => /断言/.test(value) && /请求参数/.test(value) && /(禁止\s*mock|不\s*mock|真实请求)/i.test(value) });
+  }
+}
 if (agent === "code-reviewer" || agent === "security-auditor" || agent === "qa-engineer") {
   valueChecks.push({ key: "boundary_four", labels: ["边界四问：", "边界四问:"], minBoundaryDimensions: 2 });
 }
@@ -198,6 +217,10 @@ for (const item of valueChecks) {
       filled = false;
       reason = `boundary four must cover at least ${item.minBoundaryDimensions} dimensions (got ${hits})`;
     }
+  }
+  if (filled && item.validate && !item.validate(value)) {
+    filled = false;
+    reason = "value does not satisfy the required review-entry format";
   }
   present[item.key] = filled;
   required.push(item.key);

@@ -78,6 +78,15 @@ const doneGate = isReviewer
 `
   : "";
 
+// P-58/P-64/P-62/P-40：review-entry 合同、切片上限、测试白名单、请求参数断言。
+const reviewEntryChecklist = agent === "ai-team/engineer"
+  ? `Review-entry 自检：<语义源对照表：ADR/契约章节 → 实现位置 → 测试；P1 场景逐项对照；无表不得转 review（P-58/P-65）>
+门禁面：<≤2 个；超过 2 个必须拆 TASK 并列出拆分子任务（P-64）>
+必然受影响测试/脚本：<白名单；无则写“无（仅生产代码）”；跨角色修改先报告（P-62）>
+请求参数断言：<涉及服务端查询/幂等/筛选时必填：断言真实请求参数，禁止 mock 被校验字段；非此类写“不适用（非查询/幂等/筛选）”（P-40）>
+`
+  : "";
+
 const template = `角色：${agent}
 技能：ai-team-workflow${agent === "ai-team/engineer" ? "；AI 功能加 ai-team-ai-native" : ""}
 任务 ID：${task}
@@ -90,7 +99,7 @@ Track / 阶段：T? / G?
 装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
 契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制字段定义；有变更时同一提交更新契约 + 契约测试>
 回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
-${boundaryChecklist}${runtimeChecklist}${doneGate}验收标准：
+${reviewEntryChecklist}${boundaryChecklist}${runtimeChecklist}${doneGate}验收标准：
 - [ ] <3-6 条可检查条件>
 必须执行：<命令/测试/扫描；参数以对应脚本 --help 实跑为准；环境不允许时写 BLOCKED + 原始错误>
 脚本参数：以 \`<script> --help\` 实跑为准；不手抄参数

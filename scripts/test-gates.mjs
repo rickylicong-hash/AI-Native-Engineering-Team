@@ -112,6 +112,38 @@ function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev,
   return frontmatter;
 }
 
+function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）" } = {}) {
+  return `角色：ai-team/engineer
+技能：ai-team-workflow
+任务 ID：TASK-BRIEF-FIXTURE
+Track / 阶段：T2 / G4
+目标：${goal}
+背景与输入：fixture
+所有权：只允许修改 fixture
+约束：无
+契约影响：不适用（无契约变更）
+回归范围：fixture
+Review-entry 自检：${reviewEntry}
+门禁面：${gateSurfaces}
+必然受影响测试/脚本：${testWhitelist}
+请求参数断言：${requestAssertion}
+验收标准：
+- [ ] fixture
+必须执行：node scripts/test-gates.mjs
+脚本参数：以 \`<script> --help\` 实跑为准
+独立验证：node scripts/test-gates.mjs
+证据位置：.ai-team/work/TASK-BRIEF-FIXTURE-logs/；UTF-8
+证据门禁：回报前必须运行 \`artifact-check.mjs --strict --max-files 2000\` 且 0 error/0 warning；日志只允许 \`logs/<date>/\` 或 \`.ai-team/work/<TASK>-logs/\`
+运行时取证：node scripts/test-gates.mjs 退出码 0
+测试路径：owner=qa-engineer 时必填
+构建隔离：共享工作区串行
+P2 处置：修改后通过时必填
+证据要求：命令 + 退出码
+禁止：不得伪造证据
+回报格式：结论 / 改动 / 证据
+`;
+}
+
 async function main() {
   const dir = tmp("growth");
   try {
@@ -375,6 +407,25 @@ async function main() {
     check("archive keeps total open count", /^open_proposals:\s*2\s*$/m.test(archivedText), "open_proposals should be 2 (team + project)");
   } finally {
     fs.rmSync(archiveDir, { recursive: true, force: true });
+  }
+
+  const briefLint = path.join(workflowScripts, "brief-lint.mjs");
+  const briefDir = tmp("brief");
+  try {
+    const briefScenarios = [
+      { name: "brief-compliant", expect: 0, text: engineerBrief() },
+      { name: "brief-missing-review-entry", expect: 1, text: engineerBrief({ reviewEntry: "已填" }) },
+      { name: "brief-missing-test-whitelist", expect: 1, text: engineerBrief({ testWhitelist: "TBD" }) },
+      { name: "brief-query-without-assertion", expect: 1, text: engineerBrief({ goal: "实现服务端查询与筛选", requestAssertion: "不适用（非查询/幂等/筛选）" }) },
+    ];
+    for (const scenario of briefScenarios) {
+      const briefFile = path.join(briefDir, `${scenario.name}.md`);
+      write(briefFile, scenario.text);
+      const result = run(briefLint, ["--brief", briefFile, "--agent", "ai-team/engineer"], briefDir);
+      check(`brief ${scenario.name}`, result.status === scenario.expect, `expected exit ${scenario.expect}, got ${result.status}; ${(result.stdout || result.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    }
+  } finally {
+    fs.rmSync(briefDir, { recursive: true, force: true });
   }
 
   const scanDir = tmp("scan");

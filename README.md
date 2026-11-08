@@ -233,7 +233,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.9.2 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.9.3 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -464,7 +464,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **Shell-first strict**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`。
 - **破坏性命令 deny**：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
 - **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有工具权限强制。
-- **Brief 自动化（P-24）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`。
+- **Brief 自动化（P-24，1.9.3 review-entry）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`；engineer 还必须填 `Review-entry 自检`、`门禁面 ≤2`、`必然受影响测试/脚本`，查询/幂等/筛选任务填 `请求参数断言`。
 - **证据脱敏（P-27/P-44，1.9.1 自适应）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token，默认 2000 文件起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3。findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
 - **Checkpoint 收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF/STATUS，减少一次纯文档 subagent。
 - **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存。

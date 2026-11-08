@@ -253,7 +253,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" --ta
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/engineer
 ```
 
-缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。
+缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。
 
 P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。`brief-lint` 校验字段值，不校验字段名。
 
@@ -429,7 +429,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-25 权限/审计加固**：Engineer 不得编辑 QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计覆盖上述边界。
 - **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/scope/落地/证据/日期；`growth-check --debt` 检查 team/project open、年龄、重复簇与净零；单项目策略走 `PROJECT-PROFILE`，已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
-- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/`证据门禁`（`artifact-check --strict` + 允许的日志路径）/QA `测试路径`/Reviewer-Security `P2 处置`/`Done gate`/`运行时取证`/`构建隔离` 时不得派发。P-32/P-34 起，事务类 engineer brief 还缺 `事务边界与部分提交`/`旧行为反证`，reviewer/QA 缺 `边界四问` 时也不得派发；字段值不能是占位符或“不适用/N/A/无”（非运行时任务除外，但必须写明“不适用（无容器/外部依赖）”）。
+- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/`证据门禁`（`artifact-check --strict` + 允许的日志路径）/QA `测试路径`/Reviewer-Security `P2 处置`/`Done gate`/`运行时取证`/`构建隔离` 时不得派发。engineer 还缺 `Review-entry 自检`/`门禁面`/`必然受影响测试/脚本`/`请求参数断言`（查询/幂等/筛选任务）时也不得派发。P-32/P-34 起，事务类 engineer brief 还缺 `事务边界与部分提交`/`旧行为反证`，reviewer/QA 缺 `边界四问` 时也不得派发；字段值不能是占位符或“不适用/N/A/无”（非运行时任务除外，但必须写明“不适用（无容器/外部依赖）”）。
 - **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；1.5.0 不再保留这些限制。
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
