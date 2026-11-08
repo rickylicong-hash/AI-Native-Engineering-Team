@@ -111,7 +111,7 @@ function readGrowth() {
       continue;
     }
     if (!inIndex || !header) continue;
-    if (!/^P-\d+/i.test(cells[0] || "")) {
+    if (!/^[PT]-\d+/i.test(cells[0] || "")) {
       if (parsed) break;
       continue;
     }
@@ -488,8 +488,8 @@ const signals = [];
 if (!growth.exists) signals.push({ id: "missing-growth", level: "warn", detail: "项目没有 .ai-team/team/GROWTH.md；先补复盘或确认项目是否使用该团队。" });
 if (growth.teamOpen > 0) signals.push({ id: "open-proposals", level: "info", detail: `${growth.teamOpen} 条团队提案未处置；逐条核对证据、落地版本和关闭条件。` });
 if (growth.projectOpen > 0) signals.push({ id: "project-open-proposals", level: "info", detail: `${growth.projectOpen} 条项目 profile 提案未处置；不计入团队 open，按项目复查日期跟踪。` });
-if (growth.exists && Number(growth.frontmatter.open_proposals) !== growth.teamOpen) {
-  signals.push({ id: "growth-index-mismatch", level: "warn", detail: `frontmatter open_proposals=${growth.frontmatter.open_proposals || "missing"}，团队 open ${growth.teamOpen}。` });
+if (growth.exists && Number(growth.frontmatter.open_proposals) !== growth.openAll) {
+  signals.push({ id: "growth-index-mismatch", level: "warn", detail: `frontmatter open_proposals=${growth.frontmatter.open_proposals || "missing"}，总 open ${growth.openAll}（team ${growth.teamOpen} / project ${growth.projectOpen}）。` });
 }
 if (!audit.exists) signals.push({ id: "missing-audit", level: "warn", detail: "没有 AUDIT.json；本次只能做全量或基于最近审计报告的分析。" });
 if (audit.exists && audit.error) signals.push({ id: "audit-parse-error", level: "warn", detail: `AUDIT.json 无法解析：${audit.error}` });

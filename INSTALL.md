@@ -133,7 +133,7 @@ node scripts/verify.mjs
 期望：
 
 ```text
-checks: 204, passed: 204, failed: 0
+checks: 206, passed: 206, failed: 0
 OK: package is structurally valid.
 ```
 

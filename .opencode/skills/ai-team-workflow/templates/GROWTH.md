@@ -24,7 +24,7 @@ team_open_at_prev2_retro: 0
 > 改进提案必须有 ≥2 次证据；一次性问题写 `state/RISKS.md`。
 > 新复盘追加新条目，不覆盖历史；只更新 frontmatter 的计数与日期。
 > **三层入口（1.9.0）**：`TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`；只有 `scope: team` 计入团队 open。
-> **净零（1.9.0）**：每轮新增团队提案 ≤ min(2, 本轮关闭/合并数)；团队 open 连续两轮上升时停止新增，先清债。
+> **净零（1.9.0，1.9.1 真值校验）**：每轮新增团队提案 ≤ min(2, 本轮关闭/合并数)；`last_retro_new` 必须等于最新 RETRO 的 team 新增数，`team_open_at_last_retro` 必须等于实际 team open；frontmatter 陈旧即 error。历史违规只能通过显式 `net_zero_exception` 记录 RETRO 号、原因和批准日期。团队 open 连续两轮上升时停止新增，先清债。
 
 ## 三层入口
 

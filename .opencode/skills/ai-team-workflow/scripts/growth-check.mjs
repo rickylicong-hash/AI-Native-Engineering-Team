@@ -2,14 +2,17 @@
 /**
  * 检查 GROWTH.md 的提案处置台账。
  *
- * 规则（1.9.0）：
+ * 规则（1.9.1）：
  *   - 每条提案必须在“提案处置索引”中有一行；
  *   - 状态只能是 proposed / accepted / in_progress / deferred / done / rejected / superseded / partial；
  *   - done / rejected / superseded 为已处置；其余为未处置；
  *   - done 必须有落地版本/任务、证据和更新日期；
  *   - scope 只能是 team / project；缺省按 team；
  *   - 只有 scope=team 的未处置提案计入团队 open（open）；
- *   - 净零：last_retro_new ≤ 2 且 ≤ last_retro_closed；team open 连续两轮上升报 error；
+ *   - 净零：last_retro_new 必须等于最新 RETRO 表里的 team 新增数（含同轮合并/关闭），
+ *     team_open_at_last_retro 必须等于实际 team open；陈旧 frontmatter 直接 error；
+ *   - last_retro_new ≤ 2 且 ≤ last_retro_closed；历史 3+ 新增必须有显式 net_zero_exception；
+ *     team open 连续两轮上升报 error；
  *   - --strict 下 team 未处置提案也算失败；默认只报 warning。
  *
  * 用法：
@@ -124,6 +127,7 @@ function proposalTables(section) {
   return rows;
 }
 
+
 function normalizeStatus(value) {
   return (value || "").replace(/`/g, "").replace(/@.*$/, "").trim().toLowerCase();
 }
@@ -152,9 +156,11 @@ try {
 
 const errors = [];
 const warnings = [];
-const archivedNav = new Set(
-  [...text.matchAll(/^-\s+(RETRO-\d+)\s+[—-]\s+/gm)].map((m) => m[1]),
-);
+const archivedNav = new Set([
+  ...[...text.matchAll(/^-\s+(RETRO-\d+)\s+[—-]\s+/gm)].map((m) => m[1]),
+  ...[...text.matchAll(/^##\s+(RETRO-\d+)\s+[—-]\s+archived\b/gm)].map((m) => m[1]),
+]);
+const strictLedger = /^scope_model:\s*three-tier\s*$/m.test(text) || /^net_zero:\s*enforced\s*$/m.test(text);
 
 // 1) 索引表：唯一状态源。
 const indexRows = parseTable(
@@ -234,7 +240,9 @@ for (const [id, proposal] of proposals) {
     continue;
   }
   if (row.retro && row.retro !== proposal.retro) {
-    warnings.push(`${id}: index RETRO=${row.retro}, proposal table RETRO=${proposal.retro}`);
+    const message = `${id}: index RETRO=${row.retro}, proposal table RETRO=${proposal.retro}`;
+    if (strictLedger) errors.push(message);
+    else warnings.push(message);
   }
 }
 for (const id of index.keys()) {
@@ -254,6 +262,45 @@ const projectOpen = openAll.filter((row) => row.scope === "project");
 const done = rows.filter((row) => TERMINAL.has(row.status));
 const missing = rows.filter((row) => !VALID.has(row.status));
 
+// 3.0) 1.9.1：从最新 RETRO 表和索引推导真值，禁止只信 frontmatter 自报。
+// last_retro_new 表示“本轮新增且本轮结束后仍为 open 的 TEAM-CORE 数”；
+// 同轮合并/关闭的重复项不计入 open 增量，但必须保留在 RETRO 表和索引里。
+const retroSections = retroMatches.map((match, indexInFile) => {
+  const start = match.index;
+  const end = indexInFile + 1 < retroMatches.length ? retroMatches[indexInFile + 1].index : text.length;
+  const section = text.slice(start, end);
+  return {
+    match,
+    number: Number.parseInt(match[1].replace("RETRO-", ""), 10),
+    // 1.9.1：扫描 RETRO 段内所有 ID+提案 表；不能只认第一个 `### 4`，
+    // 否则遗留小节或 `### 5` 里的真实提案会被漏算。索引/RETRO 不一致会单独 error。
+    rows: proposalTables(section),
+  };
+});
+const latestRetro = retroSections
+  .filter((item) => !/\barchived\b/i.test(item.match[0]))
+  .sort((a, b) => b.number - a.number)[0] || null;
+const latestRetroDate = latestRetro
+  ? (latestRetro.match[0].match(/\b(20\d{2}-\d{2}-\d{2})\b/) || [])[1] || null
+  : null;
+const latestRetroIds = latestRetro
+  ? latestRetro.rows
+    .map((row) => (row.ID || "").trim())
+    .filter((id) => /^[PT]-\d+/.test(id))
+  : [];
+const latestRetroTeamIds = latestRetroIds.filter((id) => index.get(id)?.scope === "team");
+const actualNewRawTeam = latestRetroTeamIds.length;
+const actualNewOpenTeam = latestRetroTeamIds.filter((id) => {
+  const row = index.get(id);
+  return row && !TERMINAL.has(row.status);
+}).length;
+const actualNewAll = latestRetroIds.length;
+const actualClosed = latestRetroDate
+  ? rows.filter((row) => TERMINAL.has(row.status) && row.date === latestRetroDate).length
+  : 0;
+const actualTeamOpen = open.length;
+const staleNetZeroFields = [];
+
 // 3.1) 净零校验：字段存在才检查，保持旧台账兼容。
 const meta = frontmatter(text);
 function intField(name) {
@@ -266,10 +313,58 @@ const lastRetroClosed = intField("last_retro_closed");
 const teamOpenLast = intField("team_open_at_last_retro");
 const teamOpenPrev = intField("team_open_at_prev_retro");
 const teamOpenPrev2 = intField("team_open_at_prev2_retro");
-if ((meta.scope_model === "three-tier" || meta.net_zero === "enforced") && lastRetroNew === null) {
+const netZeroEnabled = meta.scope_model === "three-tier" || meta.net_zero === "enforced";
+if (netZeroEnabled && lastRetroNew === null) {
   errors.push("net-zero: scope_model/net_zero 已启用，但 frontmatter 缺少 last_retro_new；必须由本轮索引新增加总，不得手填 0");
 }
-if (lastRetroNew !== null && lastRetroNew > 2) {
+if (netZeroEnabled && lastRetroClosed === null) {
+  errors.push("net-zero: scope_model/net_zero 已启用，但 frontmatter 缺少 last_retro_closed；不得省略关闭/合并数");
+}
+if (netZeroEnabled && latestRetro && teamOpenLast === null) {
+  errors.push("net-zero: scope_model/net_zero 已启用，但 frontmatter 缺少 team_open_at_last_retro；必须由索引计算实际 team open");
+}
+if (netZeroEnabled && latestRetro) {
+  if (lastRetroNew !== null && lastRetroNew !== actualNewRawTeam) {
+    staleNetZeroFields.push("last_retro_new");
+    errors.push(`net-zero: last_retro_new=${lastRetroNew} 与最新 ${latestRetro.match[1]} 的新增 team 提案 ${actualNewRawTeam} 不一致；必须由索引加总，不得手填`);
+  }
+  if (teamOpenLast !== null && teamOpenLast !== actualTeamOpen) {
+    const dispositionAtOrBeforeRetro = !meta.last_disposition || !meta.last_retro || meta.last_disposition <= meta.last_retro;
+    // 只允许“实际 open 低于声明值”的滞后（之后关闭了提案）降级为 warning；
+    // 实际 open 高于声明值说明债务被低报，必须 error，不能用未来日期绕过。
+    if (dispositionAtOrBeforeRetro || actualTeamOpen > teamOpenLast) {
+      staleNetZeroFields.push("team_open_at_last_retro");
+      errors.push(`net-zero: team_open_at_last_retro=${teamOpenLast} 与实际 team open ${actualTeamOpen} 不一致；陈旧 frontmatter 不得 PASS`);
+    } else {
+      warnings.push(`net-zero: team_open_at_last_retro=${teamOpenLast} 高于实际 team open ${actualTeamOpen}；last_disposition=${meta.last_disposition} 晚于 last_retro=${meta.last_retro}，按 warning 兼容`);
+    }
+  }
+  if (lastRetroClosed !== null && lastRetroClosed !== actualClosed) {
+    staleNetZeroFields.push("last_retro_closed");
+    errors.push(`net-zero: last_retro_closed=${lastRetroClosed} 与按最新 RETRO 日期 ${latestRetroDate} 推导的关闭/合并 ${actualClosed} 不一致；请核对索引日期`);
+  }
+  if (actualNewRawTeam > 2) {
+    const exception = (meta.net_zero_exception || "").trim();
+    const exceptionHasRetro = exception.includes(latestRetro.match[1]);
+    const exceptionHasDate = /\b(20\d{2}-\d{2}-\d{2})\b/.test(exception);
+    const exceptionHasReason = /(approved|批准|用户|migration|迁移|over|超出|合并|关闭)/i.test(exception);
+    const overageClosed = actualNewRawTeam - actualNewOpenTeam >= actualNewRawTeam - 2;
+    if (exceptionHasRetro && exceptionHasDate && exceptionHasReason && actualNewOpenTeam <= 2 && overageClosed) {
+      warnings.push(`net-zero: ${latestRetro.match[1]} 新增 team 提案 ${actualNewRawTeam} > 2，已由 net_zero_exception 记录；本轮不得再新增`);
+    } else {
+      const reasons = [];
+      if (!exceptionHasRetro) reasons.push("缺少 RETRO 号");
+      if (!exceptionHasDate) reasons.push("缺少批准日期");
+      if (!exceptionHasReason) reasons.push("缺少原因/批准说明");
+      if (actualNewOpenTeam > 2) reasons.push(`本轮仍有 ${actualNewOpenTeam} 条新 open`);
+      if (!overageClosed) reasons.push("超出 2 条的部分未全部关闭/合并");
+      errors.push(`net-zero: ${latestRetro.match[1]} 新增 team 提案 ${actualNewRawTeam} > 2；${reasons.join("；")}；历史违规必须显式 net_zero_exception（RETRO 号/原因/批准日期）`);
+    }
+  }
+} else if (netZeroEnabled && !latestRetro) {
+  warnings.push("net-zero: scope_model/net_zero 已启用，但没有可解析的 RETRO 段；无法校验 last_retro_new");
+}
+if (lastRetroNew !== null && lastRetroNew > 2 && !latestRetro) {
   errors.push(`net-zero: last_retro_new=${lastRetroNew} > 2；每轮新增 TEAM-CORE 提案最多 2 条`);
 }
 if (lastRetroNew !== null && lastRetroClosed !== null && lastRetroNew > lastRetroClosed) {
@@ -278,6 +373,10 @@ if (lastRetroNew !== null && lastRetroClosed !== null && lastRetroNew > lastRetr
 if (teamOpenLast !== null && teamOpenPrev !== null && teamOpenPrev2 !== null
   && teamOpenLast > teamOpenPrev && teamOpenPrev > teamOpenPrev2) {
   errors.push(`net-zero: team open 连续两轮上升（${teamOpenPrev2} → ${teamOpenPrev} → ${teamOpenLast}）；本轮不得新增，先清债`);
+}
+if (netZeroEnabled && latestRetro && teamOpenLast !== null && teamOpenPrev !== null
+  && actualTeamOpen > teamOpenLast && teamOpenLast > teamOpenPrev) {
+  errors.push(`net-zero: team open 连续两轮上升（declared ${teamOpenPrev} → ${teamOpenLast}，actual ${actualTeamOpen}）；本轮不得新增，先清债`);
 }
 
 // 3.2) 债务指标：年龄 + 重复簇。
@@ -370,6 +469,15 @@ const debtSummary = {
     teamOpenLast,
     teamOpenPrev,
     teamOpenPrev2,
+    actualNewRawTeam,
+    actualNewOpenTeam,
+    actualNewAll,
+    actualClosed,
+    actualTeamOpen,
+    latestRetro: latestRetro ? latestRetro.match[1] : null,
+    latestRetroDate,
+    exception: (meta.net_zero_exception || "").trim() || null,
+    staleFields: staleNetZeroFields,
   },
 };
 
@@ -467,7 +575,7 @@ if (archive) {
       next = `${next.slice(0, indexEnd)}${nav}${next.slice(indexEnd)}`;
     }
   }
-  const remainingOpen = [...index.values()].filter((row) => row.scope === "team" && !TERMINAL.has(row.status) && !eligible.some((item) => item.rows.some((p) => p.id === row.id))).length;
+  const remainingOpen = [...index.values()].filter((row) => !TERMINAL.has(row.status) && !eligible.some((item) => item.rows.some((p) => p.id === row.id))).length;
   next = next.replace(/^open_proposals:\s*\d+\s*$/m, `open_proposals: ${remainingOpen}`);
   next = next.replace(/^last_disposition:\s*.*$/m, `last_disposition: ${today()}`);
   fs.writeFileSync(growthFile, next, "utf8");
@@ -523,10 +631,15 @@ if (json) {
   console.log(`duplicates: ${duplicateText}`);
   const nz = debtSummary.netZero;
   const nzParts = [];
-  if (nz.lastRetroNew !== null) nzParts.push(`new ${nz.lastRetroNew}`);
-  if (nz.lastRetroClosed !== null) nzParts.push(`closed ${nz.lastRetroClosed}`);
-  if (nz.teamOpenLast !== null) nzParts.push(`team open ${nz.teamOpenPrev2 ?? "?"} -> ${nz.teamOpenPrev ?? "?"} -> ${nz.teamOpenLast}`);
+  if (nz.lastRetroNew !== null) nzParts.push(`new ${nz.lastRetroNew}${nz.actualNewRawTeam !== nz.lastRetroNew ? ` (actual ${nz.actualNewRawTeam})` : ""}`);
+  if (nz.lastRetroClosed !== null) nzParts.push(`closed ${nz.lastRetroClosed}${nz.actualClosed !== nz.lastRetroClosed ? ` (actual ${nz.actualClosed})` : ""}`);
+  if (nz.teamOpenLast !== null) nzParts.push(`team open ${nz.teamOpenPrev2 ?? "?"} -> ${nz.teamOpenPrev ?? "?"} -> ${nz.teamOpenLast}${nz.actualTeamOpen !== nz.teamOpenLast ? ` (actual ${nz.actualTeamOpen})` : ""}`);
   console.log(`net-zero:  ${nzParts.length ? nzParts.join(", ") : "not recorded (legacy ledger)"}`);
+  if (nz.latestRetro) {
+    console.log(`retro:     ${nz.latestRetro} @ ${nz.latestRetroDate ?? "?"} (raw new ${nz.actualNewRawTeam}, open new ${nz.actualNewOpenTeam}, closed/merged ${nz.actualClosed})`);
+  }
+  if (nz.exception) console.log(`exception: ${nz.exception}`);
+  if (nz.staleFields?.length) console.log(`stale:     ${nz.staleFields.join(", ")}`);
   for (const error of errors) console.log(`  ERROR ${error}`);
   for (const warning of warnings) console.log(`  WARN  ${warning}`);
   console.log(`result:   ${failed ? "FAIL" : "PASS"}${strict ? " (strict)" : ""}`);

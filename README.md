@@ -216,12 +216,12 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.9.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.9.1 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 204, passed: 204, failed: 0
+# 期望：checks: 206, passed: 206, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
@@ -448,7 +448,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **破坏性命令 deny**：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
 - **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有工具权限强制。
 - **Brief 自动化（P-24）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`。
-- **证据脱敏（P-27/P-44）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token，默认 2000 文件；截断时 `PARTIAL` + exit 3，findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
+- **证据脱敏（P-27/P-44，1.9.1 自适应）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token，默认 2000 文件起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3。findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
 - **Checkpoint 收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF/STATUS，减少一次纯文档 subagent。
 - **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存。
 - **密钥**：`.env`/`.env.*` 的 `read` 由 agent 规则显式 `allow`（覆盖 base 的 `.env` ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定。仍禁止把密钥写入聊天、日志或提交。
@@ -474,7 +474,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 
 单项目策略不再污染团队核心。`skills/ai-team-workflow/profiles/` 提供 `java-spring`、`vue`、`strict-security` 三个示例；新项目初始化时选择 profile，在项目 `PROJECT.md`/`DECISIONS.md` 记录覆盖项、owner 和复查日期。只有跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据的提案才进 `TEAM-CORE`；其余归 `PROJECT-PROFILE` 或 `OBSERVE`。
 
-净零规则：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；`growth-check --debt` 输出 team/project open、年龄和重复簇。团队核心保持通用、可分享。
+净零规则：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭），历史 3+ 新增只能通过显式 `net_zero_exception` 记录 RETRO 号/原因/批准日期。`growth-check --debt` 从最新 RETRO/索引推导真值，frontmatter 陈旧即 FAIL。团队核心保持通用、可分享。
 
 ### 编码约定
 

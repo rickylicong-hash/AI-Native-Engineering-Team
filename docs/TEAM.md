@@ -182,8 +182,8 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 - 只读角色不再有 shell 强制边界；Chief/PM/UX/Architect/Reviewer/Security 不提交是**流程约定**，不是权限保证；
 - 权限矩阵：`permissions.json` 维护 `shellDestructiveDeny` / `shellMustAllow` 与各角色可选 `gateway`；`permission-lint` 校验 agent 只含 42 shell + 2 read allow；
 - 可选结构化执行器：`team-shell.mjs --role <role> --action <action>` 只在需要参数校验/结构化日志/跨平台映射时使用；简单命令直接 shell，gateway 不是权限边界；
-- **checkpoint 自动收口（P-26/P-35）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF 的 远程/Git/Baseline 与 STATUS 的 Checkpoint；远程行读取 origin/upstream/ahead/SHA 并剥离 userinfo；`--max-evidence-files` 默认 2000；
-- **证据脱敏（P-27/P-44）**：`secret-check` 扫描 qa/work/release/security/logs，默认 2000；截断时 `PARTIAL` + exit 3，findings 不输出原始值；`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断；`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`。
+- **checkpoint 自动收口（P-26/P-35，1.9.1 自适应扫描）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF 的 远程/Git/Baseline 与 STATUS 的 Checkpoint；远程行读取 origin/upstream/ahead/SHA 并剥离 userinfo；`--max-evidence-files` 默认 2000 起步，截断时自动升限到 20000；
+- **证据脱敏（P-27/P-44，1.9.1 自适应扫描）**：`secret-check` 扫描 qa/work/release/security/logs，默认 2000 起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3；findings 不输出原始值；`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断；`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`。
 - **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；
 - 残余风险：shell 可以写文件、提交、发布、读取密钥；需要强隔离时用 OS ACL 或容器只读挂载。
 

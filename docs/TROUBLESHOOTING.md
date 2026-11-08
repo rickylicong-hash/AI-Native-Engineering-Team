@@ -92,7 +92,7 @@ commit/push、publish/deploy、`.env`/密钥、`git add -A` 都**不再**被权�
 
 **处理**：
 
-1. 先确认版本 ≥ `1.9.0`（在团队仓库根目录；安装副本不含 `scripts/`）：
+1. 先确认版本 ≥ `1.9.1`（在团队仓库根目录；安装副本不含 `scripts/`）：
 
 ```bash
 node scripts/version.mjs --update
@@ -189,7 +189,7 @@ Shell mvn -v                                                  Permission denied
 处理：
 
 1. 看提示里的 action/resource；
-2. 确认已安装 1.9.0：`node scripts/version.mjs --check`；
+2. 确认已安装 1.9.1：`node scripts/version.mjs --check`；
 3. 重开 `/ai-resume` 或新会话，让 OpenCode 重新加载 agent 配置；`version.mjs --update` 后会提示 `RESTART REQUIRED`；
 4. 如果新会话仍弹 `ask`，用 `permission-doctor` 检查是否有旧的 `ask` 规则；
 5. 项目级可覆盖：项目 `.opencode/opencode.jsonc` 的 `agents`。
@@ -216,7 +216,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" -
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project . --fix
 ```
 
-`--fix` 会把值替换为 `<redacted len=NN sha256=前12位>`，保留长度和交叉核对能力。`secret-check` 默认扫描 2000 文件；若输出 `PARTIAL (truncated)` 且 exit 3，说明还有文件未扫完，必须提高 `--max-files` 后重跑，不能当作 PASS。`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`，`state-check`/`checkpoint-check` 会继承失败。已经提交到历史的明文不能靠 `--fix` 消除；需要用户决定轮换、接受或改写历史（force push 属于破坏性操作，必须明确批准）。
+`--fix` 会把值替换为 `<redacted len=NN sha256=前12位>`，保留长度和交叉核对能力。`secret-check` 默认从 2000 文件起步，截断时自动升限到 20000；UTF-16 证据先解码再扫描；无 BOM 的二进制/不可读文本计 `skipped`，按 `PARTIAL`/exit 3 处理，不能当作 PASS。到硬上限仍截断时，`--max-files` 不能超过 20000，必须归档旧证据后重跑。`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`，对 `secrets.skipped` 报 `credential-scan-skipped`，`state-check`/`checkpoint-check` 会继承失败。已经提交到历史的明文不能靠 `--fix` 消除；需要用户决定轮换、接受或改写历史（force push 属于破坏性操作，必须明确批准）。
 
 ## 6. 技能没有出现在可用列表
 

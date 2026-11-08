@@ -28,10 +28,12 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { scanSecrets } from "./secret-check.mjs";
+import { scanSecrets, MAX_SCAN_CEILING } from "./secret-check.mjs";
 
 // P1-02：与 secret-check/state-check/checkpoint-check 对齐；500 会让 500+ 文件项目漏扫。
+// 1.9.1：2000 是起点，不是硬上限；截断时自动升限到 20000，到上限仍截断才失败。
 const DEFAULT_MAX_EVIDENCE_FILES = 2000;
+const MAX_EVIDENCE_CEILING = MAX_SCAN_CEILING;
 const SKIP_DIRS = new Set([".git", "node_modules", "target", "dist", "build", ".idea", ".vscode", ".mvn"]);
 
 function normalize(file) {
@@ -190,6 +192,20 @@ function checkEvidence(project, errors, warnings, maxFiles) {
   return { scanned, truncated };
 }
 
+// 1.9.1：证据扫描同样自动升限；中间轮次的 warning 不返回，避免重复。
+function checkEvidenceAuto(project, maxFiles, ceiling = MAX_EVIDENCE_CEILING) {
+  let limit = maxFiles;
+  while (true) {
+    const errors = [];
+    const warnings = [];
+    const result = checkEvidence(project, errors, warnings, limit);
+    if (!result.truncated || limit >= ceiling) {
+      return { ...result, errors, warnings, limit, ceiling };
+    }
+    limit = Math.min(ceiling, limit * 2);
+  }
+}
+
 function decodeUtf16(buffer) {
   if (buffer.length < 2) return null;
   const littleEndian = buffer[0] === 0xFF && buffer[1] === 0xFE;
@@ -249,20 +265,27 @@ export function fixEvidence(project, options = {}) {
 /**
  * 运行检查并返回结构化结果。
  * @param {string} project 项目根目录
- * @param {{maxEvidenceFiles?: number}} [options]
+ * @param {{maxEvidenceFiles?: number, maxEvidenceCeiling?: number}} [options]
  */
 export function checkArtifacts(project, options = {}) {
   const root = path.resolve(project);
   if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
     throw new Error(`project directory does not exist: ${root}`);
   }
-  const maxFiles = Number.parseInt(options.maxEvidenceFiles ?? DEFAULT_MAX_EVIDENCE_FILES, 10) || DEFAULT_MAX_EVIDENCE_FILES;
+  const requestedMax = Number.parseInt(options.maxEvidenceFiles ?? DEFAULT_MAX_EVIDENCE_FILES, 10) || DEFAULT_MAX_EVIDENCE_FILES;
+  const maxFiles = Math.min(requestedMax, MAX_EVIDENCE_CEILING);
+  const ceiling = Math.min(
+    MAX_EVIDENCE_CEILING,
+    Math.max(maxFiles, Number.parseInt(options.maxEvidenceCeiling ?? MAX_EVIDENCE_CEILING, 10) || MAX_EVIDENCE_CEILING),
+  );
   const errors = [];
   const warnings = [];
   checkRootArtifacts(root, errors, warnings);
-  const evidence = checkEvidence(root, errors, warnings, maxFiles);
+  const evidence = checkEvidenceAuto(root, maxFiles, ceiling);
+  errors.push(...evidence.errors);
+  warnings.push(...evidence.warnings);
   // P-27：证据中的明文 Cookie / Authorization / 口令 / token 直接阻断。
-  const secrets = scanSecrets(root, { maxFiles });
+  const secrets = scanSecrets(root, { maxFiles, maxFilesCeiling: ceiling });
   for (const finding of secrets.findings) {
     errors.push({
       code: "credential-plaintext",
@@ -275,8 +298,16 @@ export function checkArtifacts(project, options = {}) {
     errors.push({
       code: "secret-scan-truncated",
       path: ".",
-      message: `凭据扫描只覆盖了 ${secrets.scanned} 个文本文件，其余文件未扫描，不能当作 clean`,
-      suggestion: "用 --max-files 2000 或更高重新扫描；未扫完不能作为放行依据",
+      message: `凭据扫描在 ${secrets.limit} 文件上限下仍未扫完（已扫 ${secrets.scanned}，硬上限 ${secrets.ceiling}），不能当作 clean`,
+      suggestion: `归档旧证据；硬上限 ${secrets.ceiling}，--max-files 不能超过它；未扫完不能作为放行依据`,
+    });
+  }
+  if (secrets.skipped > 0) {
+    errors.push({
+      code: "credential-scan-skipped",
+      path: ".",
+      message: `${secrets.skipped} 个文本扩展名文件无法解码（二进制/损坏），凭据扫描未覆盖`,
+      suggestion: "把证据转为 UTF-8（PowerShell 用 -Encoding utf8），或移除二进制文件；跳过不等于 clean",
     });
   }
   return {
@@ -284,10 +315,15 @@ export function checkArtifacts(project, options = {}) {
     warnings,
     scanned: evidence.scanned,
     truncated: evidence.truncated,
+    limit: evidence.limit,
+    ceiling,
     secrets: {
       findings: secrets.findings.length,
       scanned: secrets.scanned,
+      skipped: secrets.skipped,
       truncated: secrets.truncated,
+      limit: secrets.limit,
+      ceiling: secrets.ceiling,
     },
   };
 }
@@ -358,8 +394,8 @@ function runCli() {
       console.log(`  WARN  [${issue.code}] ${issue.path}: ${issue.message}; ${issue.suggestion}`);
     }
     if (result.warnings.length > 5) console.log(`  ... and ${result.warnings.length - 5} more warning(s)`);
-    console.log(`evidence: ${result.scanned} file(s) scanned${result.truncated ? " (truncated)" : ""}`);
-    console.log(`secrets:  ${result.secrets.scanned} file(s) scanned${result.secrets.truncated ? " (truncated)" : ""}`);
+    console.log(`evidence: ${result.scanned} file(s) scanned (limit ${result.limit}${result.truncated ? ", truncated" : ""})`);
+    console.log(`secrets:  ${result.secrets.scanned} file(s) scanned (limit ${result.secrets.limit}${result.secrets.truncated ? ", truncated" : ""})`);
     console.log(`result:   ${failed ? "FAIL" : "PASS"}${strict ? " (strict)" : ""}`);
   }
   process.exit(failed ? 1 : 0);

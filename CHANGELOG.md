@@ -3,6 +3,26 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.9.1] - 2026-11-08
+
+### Fixed
+
+- **Net-zero truth (R5 P2-02, P2-01)**: `growth-check` now derives `last_retro_new` and `team_open_at_last_retro` from the latest RETRO table and the index instead of trusting frontmatter. Stale values are errors, not passes; `last_retro_new` counts raw team additions (including same-round merges/closes); raw new >2 requires an explicit `net_zero_exception` with RETRO id, approval date and reason, and the overage must be closed/merged. `improve-scan` compares `open_proposals` with total open (`openAll`), not team open, removing the false `16 vs 14` mismatch.
+- **Evidence scan adaptation (P-44 follow-up, R5 P2-06)**: `artifact-check` and `secret-check` start at 2000 files and auto-escalate to a hard ceiling of 20000 when truncated. `--max-files` is clamped to 20000; `PARTIAL`/exit 3 is used for “still truncated at the ceiling” or “binary/unreadable text skipped”. A project with 2159 text files now passes by default instead of failing with a suggestion to use the default 2000. UTF-16 evidence is decoded before scanning; binary/unreadable text is reported as `credential-scan-skipped`, not a silent pass.
+- **Fixtures**: `scripts/test-gates.mjs` covers stale frontmatter, raw new>2, new>closed, same-round merges (with/without exception), missing team-open/closed, malformed exception, carried-over, project scope, `T-*`, archive, auto-escalation, ceiling, UTF-16, binary skip and `--fix`. `verify.mjs` runs it and fails if the fixture file is missing.
+
+### Changed
+
+- `ai-retro`, `SKILL.md`, `docs/IMPROVEMENT.md`, `docs/WORKFLOW.md`, `docs/TEAM.md`, `docs/TROUBLESHOOTING.md`, `README.md` and `INSTALL.md` document the 1.9.1 semantics and 20000 ceiling.
+- `team-manifest.json` version is `1.9.1`; source verify is `206/206`.
+
+### Verified
+
+- `node scripts/verify.mjs` → 206/206.
+- `scripts/test-gates.mjs` → 28/28.
+- Review: `REV-IMPROVE-2026-11-08-R6`（含 R1 复审）**通过** (P0=0/P1=0/P2=0; P3 -> `TASK-IMPROVE-2026-11-08-R7`); `SEC-IMPROVE-2026-11-08-R6`（含 R1 复审）**通过** (P0=0/P1=0/P2=0; P3 -> R7).
+- `sourceHash === installedHash` (`a6357244...`), version `1.9.1`.
+
 ## [1.9.0] - 2026-11-07
 
 ### Added

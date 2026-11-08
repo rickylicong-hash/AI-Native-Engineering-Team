@@ -305,6 +305,19 @@ if (!installed) {
   }
 }
 
+// 1.9.1：净零真值与证据扫描上限的行为回归（fixtures 在 scripts/test-gates.mjs）。
+// 安装副本不含 scripts/，只在源码树强制；缺失即 FAIL，不能静默降计数。
+if (!installed) {
+  const gateTest = path.join(root, "scripts", "test-gates.mjs");
+  if (!fs.existsSync(gateTest)) {
+    addCheck("gate regression fixtures", false, "scripts/test-gates.mjs missing");
+  } else {
+    const result = spawnSync(process.execPath, [gateTest, "--skills", paths.skills], { cwd: root, encoding: "utf8", timeout: 120000 });
+    const detail = result.status === 0 ? "" : `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim().split(/\r?\n/).filter(Boolean).slice(-3).join(" | ");
+    addCheck("gate regression fixtures", result.status === 0, detail);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Portability checks
 // ---------------------------------------------------------------------------

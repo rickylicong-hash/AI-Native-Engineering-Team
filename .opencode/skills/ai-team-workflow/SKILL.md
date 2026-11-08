@@ -184,8 +184,8 @@ Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定�
 7. **每条提案必须登记到“提案处置索引”**：新增为 `proposed`，并写 `scope`（`team`/`project`）；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。未处置项保持 `proposed/accepted/in_progress/deferred/partial`。
 8. 复盘、交接、门禁前运行 `growth-check --debt`；有缺失状态或净零违规不得交接。全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/`。
 9. 归档不删除历史：主文件保留索引和归档导航，完整原文进 `team/archive/GROWTH-<year>.md`。
-10. **三层入口（1.9.0）**：`TEAM-CORE` 只收跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`）；一次性现象归 `OBSERVE`（`RISKS.md` + 复查日期）。只有 `scope: team` 计入团队 open。
-11. **净零（1.9.0）**：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债。`PROJECT-PROFILE` 不占团队 open，但必须写 owner、验收、复查日期。
+10. **三层入口（1.9.0，1.9.1 真值校验）**：`TEAM-CORE` 只收跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`）；一次性现象归 `OBSERVE`（`RISKS.md` + 复查日期）。只有 `scope: team` 计入团队 open。
+11. **净零（1.9.0，1.9.1 真值校验）**：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭），历史 3+ 新增只能通过显式 `net_zero_exception` 记录 RETRO 号/原因/批准日期；`growth-check` 从最新 RETRO/索引校验 frontmatter，陈旧即 error；团队 open 连续两轮上升时停止新增，先清债。`PROJECT-PROFILE` 不占团队 open，但必须写 owner、验收、复查日期。
 12. `deferred` 必须写复查日期/触发点；长期停在 `proposed` 的提案由 `--debt` 的年龄视图暴露，不得用新增提案掩盖。
 
 **检查命令（随本 skill 安装）：**
@@ -207,7 +207,7 @@ Checkpoint 由 `ai-team/devops-engineer` 执行；Chief 只提供明确路径、
 | 触发 | 阈值 |
 |---|---|
 | 工作区未提交文件 | ≥20 个（默认，可用 `--max-files` 调整） |
-| 证据文件扫描 | 默认 2000（可用 `--max-evidence-files` 调整；与 `artifact-check`/`secret-check` 的 2000 默认对齐） |
+| 证据文件扫描 | 默认 2000 起步，截断时自动升限到 20000（可用 `--max-evidence-files` 调整起点；到硬上限仍截断才失败） |
 | 门禁 | 进入 G5/G7/G8 前 |
 | 交接 | 写 `HANDOFF.md` 前（`--handoff`） |
 | 任务节奏 | 已有 `CHECKPOINT.json` 基线后，每 10 个 `done` |
@@ -239,8 +239,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mj
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
-# 500+ 证据文件项目可显式提高扫描上限（默认 2000）
-node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project . --max-evidence-files 2000
+# 500+ 证据文件项目：默认 2000 起步，截断时自动升限到 20000
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project . --max-evidence-files 4000
 ```
 
 检查：
@@ -348,7 +348,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" -
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\secret-check.mjs" --project . --fix
 ```
 
-`artifact-check` / `state-check` / `checkpoint-check --mark` 已内置同一扫描；明文凭据会阻断。`secret-check` 默认扫描 2000 文件；截断时输出 `PARTIAL (truncated)` 并以 exit 3 失败，findings 只打印 `kind/file/line/len/sha256`，不打印明文；`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`。
+`artifact-check` / `state-check` / `checkpoint-check --mark` 已内置同一扫描；明文凭据会阻断。`secret-check` 默认从 2000 文件起步，截断时自动升限到 20000；到上限仍截断才输出 `PARTIAL (truncated at ceiling)` 并以 exit 3 失败；UTF-16 证据先解码再扫描，无 BOM 的二进制/不可读文本计 `skipped` 并按 PARTIAL 处理，不能当作 PASS。findings 只打印 `kind/file/line/len/sha256`，不打印明文；`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`，对 `secrets.skipped` 报 `credential-scan-skipped`。
 
 ### 3.6 会话审计水位（1.3.1）
 

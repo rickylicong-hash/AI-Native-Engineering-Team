@@ -80,7 +80,7 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 
 默认不新增角色；优先扩展现有角色或改流程。
 
-### 2.4 三层入口与净零（1.9.0）
+### 2.4 三层入口与净零（1.9.0，1.9.1 真值校验）
 
 | 层 | 判定 | 落地位置 | 计入团队 open |
 |---|---|---|---|
@@ -92,9 +92,11 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 
 - 每轮新增 `TEAM-CORE` 提案 ≤2；
 - 新增 `TEAM-CORE` ≤ 本轮关闭/合并数；
+- `last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭）；同轮合并不能绕过 ≤2，历史 3+ 新增只能通过显式 `net_zero_exception`（含 RETRO 号/原因/批准日期）记录；
+- `growth-check` 从最新 RETRO 表和索引推导 `last_retro_new`、`team_open_at_last_retro`；frontmatter 陈旧即 error，不再只信自报值；
 - 团队 open 连续两轮上升 → 停止新增，先合并/关闭/延期至少 2 条；
 - 每条提案写 scope、owner、验收、复查日期；`deferred` 必须有复查触发点；
-- `growth-check --debt` 输出 team/project open、年龄、重复簇；债务上升时先清债，不靠新增规则掩盖。
+- `growth-check --debt` 输出 team/project open、年龄、重复簇和 `declared` vs `actual`；债务上升时先清债，不靠新增规则掩盖。
 
 单项目特例不得写入团队核心；如果同一策略在 ≥2 个项目重复出现，再按 `TEAM-CORE` 提提案。`profiles/` 提供 Java/Spring、Vue、严格安全三个示例，新项目按 profile 初始化，不携带其他项目的路径或值。
 

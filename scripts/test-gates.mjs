@@ -1,0 +1,450 @@
+#!/usr/bin/env node
+/**
+ * 1.9.1 gate regression fixtures.
+ *
+ * 覆盖：
+ *   - 净零真值：latest RETRO 新增 3 条 open + last_retro_new: 0 → FAIL；
+ *   - 陈旧 frontmatter：team_open_at_last_retro 与实际不符 → FAIL；
+ *   - 同轮合并：3 条新增全部 superseded，last_retro_new: 0 / closed: 3 → PASS；
+ *   - 既有规则：new > 2、new > closed → FAIL；
+ *   - 旧台账（无 scope_model/net_zero）→ PASS；
+ *   - 证据扫描：默认 2000 起点自动升限；到硬上限仍截断 → PARTIAL/error。
+ *
+ * 用法：node scripts/test-gates.mjs [--skills <dir>]
+ */
+
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import process from "node:process";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
+
+const args = process.argv.slice(2);
+const getArg = (name, fallback = null) => {
+  const i = args.indexOf(name);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+};
+const skillsRoot = path.resolve(getArg("--skills", path.join(process.cwd(), ".opencode", "skills")));
+const workflowScripts = path.join(skillsRoot, "ai-team-workflow", "scripts");
+const growthCheck = path.join(workflowScripts, "growth-check.mjs");
+const secretCheck = path.join(workflowScripts, "secret-check.mjs");
+const artifactCheck = path.join(workflowScripts, "artifact-check.mjs");
+
+const failures = [];
+const checks = [];
+function check(name, ok, detail = "") {
+  checks.push({ name, ok, detail });
+  if (!ok) failures.push(`${name}${detail ? `: ${detail}` : ""}`);
+}
+
+function tmp(prefix) {
+  return fs.mkdtempSync(path.join(os.tmpdir(), `ai-team-${prefix}-`));
+}
+
+function write(file, text) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text, "utf8");
+}
+
+function run(script, runArgs, cwd) {
+  return spawnSync(process.execPath, [script, ...runArgs], {
+    cwd,
+    encoding: "utf8",
+    timeout: 120000,
+  });
+}
+
+function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev, teamOpenPrev2, rows, tableRows = rows, previousRows = [], archivedRetros = [], legacy = false, exception = "", omitTeamOpen = false, omitClosed = false }) {
+  const open = rows.filter((row) => !["done", "rejected", "superseded"].includes(row.status)).length;
+  const frontmatter = [
+    "---",
+    "schema: 3",
+    "project: fixture",
+    "last_retro: 2026-01-02",
+    "last_gate: G4",
+    "tasks_at_last_retro: 1",
+    "next_due_at: 11",
+    "last_trigger: fixture",
+    `open_proposals: ${open}`,
+    "last_disposition: 2026-01-02",
+    ...(legacy ? [] : [
+      "scope_model: three-tier",
+      "net_zero: enforced",
+      `last_retro_new: ${lastRetroNew}`,
+      ...(omitClosed ? [] : [`last_retro_closed: ${lastRetroClosed}`]),
+      ...(omitTeamOpen ? [] : [`team_open_at_last_retro: ${teamOpenLast}`]),
+      `team_open_at_prev_retro: ${teamOpenPrev}`,
+      `team_open_at_prev2_retro: ${teamOpenPrev2}`,
+      ...(exception ? [`net_zero_exception: ${JSON.stringify(exception)}`] : []),
+    ]),
+    "---",
+    "",
+    "# GROWTH — fixture",
+    "",
+    "## 提案处置索引",
+    "",
+    "| ID | RETRO | 提案 | 状态 | 落地版本/任务 | 证据 | 更新日期 | scope | 复查日期 |",
+    "|---|---|---|---|---|---|---|---|---|",
+    ...rows.map((row) => `| ${row.id} | ${row.retro || "RETRO-0001"} | ${row.title} | ${row.status} | ${row.landing || "-"} | ${row.evidence || "-"} | ${row.date || "2026-01-02"} | ${row.scope || "team"} | 2026-02-01 |`),
+    "",
+    "## RETRO-0001 — 2026-01-02 — fixture",
+    "",
+    "### 4. 改进提案",
+    "",
+    "| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |",
+    "|---|---|---|---|---|---|---|---|",
+    ...tableRows.map((row) => `| ${row.id} | ${row.scope || "team"} | ${row.title} | G-01 | x | y | 2026-02-01 | 用户 |`),
+    "",
+    "## RETRO-0000 — 2025-12-31 — previous",
+    "",
+    "### 4. 改进提案",
+    "",
+    "| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |",
+    "|---|---|---|---|---|---|---|---|",
+    ...previousRows.map((row) => `| ${row.id} | ${row.scope || "team"} | ${row.title} | G-01 | x | y | 2026-02-01 | 用户 |`),
+    "",
+    "## 已归档复盘",
+    "",
+    ...archivedRetros.map((retro) => `- ${retro} — \`team/archive/GROWTH-2026.md\``),
+    "",
+  ].join("\n");
+  return frontmatter;
+}
+
+async function main() {
+  const dir = tmp("growth");
+  try {
+    const baseRow = { id: "P-01", scope: "team", status: "proposed", title: "alpha gate", landing: "-", evidence: "-", date: "2026-01-02" };
+    const closedRow = { id: "P-02", retro: "RETRO-0000", scope: "team", status: "superseded", title: "beta duplicate", landing: "并入 P-01", evidence: "fixture", date: "2026-01-02" };
+
+    const scenarios = [
+      {
+        name: "compliant",
+        expect: 0,
+        text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "stale-new",
+        expect: 1,
+        text: growthText({ lastRetroNew: 0, lastRetroClosed: 1, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "stale-open",
+        expect: 1,
+        text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 0, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "new-over-two",
+        expect: 1,
+        text: growthText({
+          lastRetroNew: 3,
+          lastRetroClosed: 3,
+          teamOpenLast: 3,
+          teamOpenPrev: 3,
+          teamOpenPrev2: 3,
+          rows: [
+            baseRow,
+            { ...baseRow, id: "P-03", title: "gamma gate" },
+            { ...baseRow, id: "P-04", title: "delta gate" },
+          ],
+        }),
+      },
+      {
+        name: "new-over-closed",
+        expect: 1,
+        text: growthText({
+          lastRetroNew: 2,
+          lastRetroClosed: 1,
+          teamOpenLast: 2,
+          teamOpenPrev: 2,
+          teamOpenPrev2: 2,
+          rows: [baseRow, { ...baseRow, id: "P-03", title: "gamma gate" }],
+        }),
+      },
+      {
+        name: "same-round-merged",
+        expect: 0,
+        text: growthText({
+          lastRetroNew: 3,
+          lastRetroClosed: 3,
+          teamOpenLast: 0,
+          teamOpenPrev: 0,
+          teamOpenPrev2: 0,
+          exception: "RETRO-0001: 3 new (>2); approved 2026-01-02; merged same round",
+          rows: [
+            { ...baseRow, status: "superseded", landing: "并入 P-10", evidence: "fixture", title: "merged alpha" },
+            { ...baseRow, id: "P-03", status: "superseded", landing: "并入 P-11", evidence: "fixture", title: "merged beta" },
+            { ...baseRow, id: "P-04", status: "superseded", landing: "并入 P-12", evidence: "fixture", title: "merged gamma" },
+          ],
+        }),
+      },
+      {
+        name: "same-round-merged-no-exception",
+        expect: 1,
+        text: growthText({
+          lastRetroNew: 3,
+          lastRetroClosed: 3,
+          teamOpenLast: 0,
+          teamOpenPrev: 0,
+          teamOpenPrev2: 0,
+          rows: [
+            { ...baseRow, status: "superseded", landing: "并入 P-10", evidence: "fixture", title: "merged alpha" },
+            { ...baseRow, id: "P-03", status: "superseded", landing: "并入 P-11", evidence: "fixture", title: "merged beta" },
+            { ...baseRow, id: "P-04", status: "superseded", landing: "并入 P-12", evidence: "fixture", title: "merged gamma" },
+          ],
+        }),
+      },
+      {
+        name: "missing-team-open",
+        expect: 1,
+        text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, omitTeamOpen: true, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "closed-self-report",
+        expect: 1,
+        text: growthText({ lastRetroNew: 1, lastRetroClosed: 99, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "missing-closed",
+        expect: 1,
+        text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, omitClosed: true, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "exception-malformed",
+        expect: 1,
+        text: growthText({
+          lastRetroNew: 3,
+          lastRetroClosed: 3,
+          teamOpenLast: 0,
+          teamOpenPrev: 0,
+          teamOpenPrev2: 0,
+          exception: "RETRO-0001",
+          rows: [
+            { ...baseRow, status: "superseded", landing: "并入 P-10", evidence: "fixture", title: "merged alpha" },
+            { ...baseRow, id: "P-03", status: "superseded", landing: "并入 P-11", evidence: "fixture", title: "merged beta" },
+            { ...baseRow, id: "P-04", status: "superseded", landing: "并入 P-12", evidence: "fixture", title: "merged gamma" },
+          ],
+        }),
+      },
+      {
+        name: "exception-open",
+        expect: 1,
+        text: growthText({
+          lastRetroNew: 3,
+          lastRetroClosed: 3,
+          teamOpenLast: 3,
+          teamOpenPrev: 3,
+          teamOpenPrev2: 3,
+          exception: "RETRO-0001: 3 new (>2); approved 2026-01-02; migration",
+          rows: [
+            baseRow,
+            { ...baseRow, id: "P-03", title: "gamma gate" },
+            { ...baseRow, id: "P-04", title: "delta gate" },
+          ],
+        }),
+      },
+      {
+        name: "carried-over",
+        expect: 1,
+        text: growthText({
+          lastRetroNew: 1,
+          lastRetroClosed: 1,
+          teamOpenLast: 2,
+          teamOpenPrev: 2,
+          teamOpenPrev2: 2,
+          rows: [
+            baseRow,
+            closedRow,
+            { ...baseRow, id: "P-99", retro: "RETRO-0000", status: "proposed", landing: "-", evidence: "-", date: "2025-12-31", title: "carried open" },
+          ],
+          tableRows: [
+            baseRow,
+            { ...baseRow, id: "P-99", retro: "RETRO-0000", status: "proposed", landing: "-", evidence: "-", date: "2025-12-31", title: "carried open" },
+          ],
+          archivedRetros: ["RETRO-0000"],
+        }),
+      },
+      {
+        name: "project-scope",
+        expect: 0,
+        text: growthText({
+          lastRetroNew: 1,
+          lastRetroClosed: 1,
+          teamOpenLast: 1,
+          teamOpenPrev: 2,
+          teamOpenPrev2: 2,
+          rows: [
+            baseRow,
+            closedRow,
+            { ...baseRow, id: "P-03", scope: "project", title: "project policy", date: "2026-01-02" },
+          ],
+          tableRows: [baseRow, { ...baseRow, id: "P-03", scope: "project", title: "project policy", date: "2026-01-02" }],
+          previousRows: [closedRow],
+        }),
+      },
+      {
+        name: "t-proposal",
+        expect: 0,
+        text: growthText({
+          lastRetroNew: 1,
+          lastRetroClosed: 1,
+          teamOpenLast: 1,
+          teamOpenPrev: 2,
+          teamOpenPrev2: 2,
+          rows: [baseRow, closedRow].map((row) => (row.id === "P-01" ? { ...row, id: "T-01" } : row)),
+          tableRows: [baseRow].map((row) => ({ ...row, id: "T-01" })),
+          previousRows: [closedRow],
+        }),
+      },
+      {
+        name: "legacy-ledger",
+        expect: 0,
+        text: growthText({ legacy: true, rows: [baseRow] }),
+      },
+    ];
+
+    for (const scenario of scenarios) {
+      const scenarioDir = path.join(dir, scenario.name);
+      write(path.join(scenarioDir, ".ai-team", "team", "GROWTH.md"), scenario.text);
+      const result = run(growthCheck, ["--project", scenarioDir, "--debt"], scenarioDir);
+      check(`growth ${scenario.name}`, result.status === scenario.expect, `expected exit ${scenario.expect}, got ${result.status}; ${(result.stdout || result.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  const archiveDir = tmp("archive");
+  try {
+    const archiveText = [
+      "---",
+      "schema: 3",
+      "project: fixture",
+      "last_retro: 2026-01-02",
+      "last_gate: G4",
+      "tasks_at_last_retro: 2",
+      "next_due_at: 12",
+      "last_trigger: fixture",
+      "open_proposals: 2",
+      "last_disposition: 2026-01-02",
+      "scope_model: three-tier",
+      "net_zero: enforced",
+      "last_retro_new: 1",
+      "last_retro_closed: 1",
+      "team_open_at_last_retro: 1",
+      "team_open_at_prev_retro: 1",
+      "team_open_at_prev2_retro: 1",
+      "---",
+      "",
+      "# GROWTH — archive fixture",
+      "",
+      "## 提案处置索引",
+      "",
+      "| ID | RETRO | 提案 | 状态 | 落地版本/任务 | 证据 | 更新日期 | scope | 复查日期 |",
+      "|---|---|---|---|---|---|---|---|---|",
+      "| P-01 | RETRO-0001 | old | done | 1.0 | e | 2026-01-01 | team | - |",
+      "| P-04 | RETRO-0001 | closed this round | superseded | 并入 P-02 | e | 2026-01-02 | team | - |",
+      "| P-02 | RETRO-0002 | open team | proposed | - | - | 2026-01-02 | team | 2026-02-01 |",
+      "| P-03 | RETRO-0002 | open project | proposed | - | - | 2026-01-02 | project | 2026-02-01 |",
+      "",
+      "## RETRO-0001 — 2026-01-01 — old",
+      "",
+      "### 4. 改进提案",
+      "",
+      "| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |",
+      "|---|---|---|---|---|---|---|---|",
+      "| P-01 | team | old | G-01 | x | y | 2026-02-01 | 用户 |",
+      "| P-04 | team | closed this round | G-01 | x | y | 2026-02-01 | 用户 |",
+      "",
+      "## RETRO-0002 — 2026-01-02 — latest",
+      "",
+      "### 4. 改进提案",
+      "",
+      "| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |",
+      "|---|---|---|---|---|---|---|---|",
+      "| P-02 | team | open team | G-01 | x | y | 2026-02-01 | 用户 |",
+      "| P-03 | project | open project | G-01 | x | y | 2026-02-01 | 用户 |",
+      "",
+    ].join("\n");
+    write(path.join(archiveDir, ".ai-team", "team", "GROWTH.md"), archiveText);
+    const archiveRun = run(growthCheck, ["--project", archiveDir, "--archive", "--yes"], archiveDir);
+    check("archive moves old retro", archiveRun.status === 0, `${archiveRun.status}; ${(archiveRun.stdout || archiveRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+    const archiveDebt = run(growthCheck, ["--project", archiveDir, "--debt"], archiveDir);
+    check("archive keeps ledger valid", archiveDebt.status === 0, `${archiveDebt.status}; ${(archiveDebt.stdout || archiveDebt.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    const archivedText = fs.readFileSync(path.join(archiveDir, ".ai-team", "team", "GROWTH.md"), "utf8");
+    check("archive keeps total open count", /^open_proposals:\s*2\s*$/m.test(archivedText), "open_proposals should be 2 (team + project)");
+  } finally {
+    fs.rmSync(archiveDir, { recursive: true, force: true });
+  }
+
+  const scanDir = tmp("scan");
+  try {
+    for (let i = 0; i < 5; i += 1) {
+      write(path.join(scanDir, ".ai-team", "work", `note-${i}.md`), `hello ${i}\n`);
+    }
+    const escalated = run(secretCheck, ["--project", scanDir, "--max-files", "3"], scanDir);
+    check("secret auto-escalates", escalated.status === 0 && /scanned:\s+5 file\(s\)/.test(escalated.stdout || ""), `${escalated.status}; ${(escalated.stdout || escalated.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const { scanSecrets } = await import(pathToFileURL(secretCheck).href);
+    const capped = scanSecrets(scanDir, { maxFiles: 3, maxFilesCeiling: 3 });
+    check("secret respects ceiling", capped.truncated === true && capped.limit === 3, `truncated=${capped.truncated} limit=${capped.limit}`);
+    const clamped = scanSecrets(scanDir, { maxFiles: 30000 });
+    check("secret clamps explicit limit", clamped.limit === 20000 && clamped.ceiling === 20000, `limit=${clamped.limit} ceiling=${clamped.ceiling}`);
+
+    const artifact = run(artifactCheck, ["--project", scanDir, "--strict", "--max-files", "3"], scanDir);
+    check("artifact auto-escalates", artifact.status === 0 && /secrets:\s+5 file\(s\)/.test(artifact.stdout || ""), `${artifact.status}; ${(artifact.stdout || artifact.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const { checkArtifacts } = await import(pathToFileURL(artifactCheck).href);
+    const artifactCapped = checkArtifacts(scanDir, { maxEvidenceFiles: 3, maxEvidenceCeiling: 3 });
+    check("artifact respects ceiling", artifactCapped.errors.some((item) => item.code === "secret-scan-truncated"), JSON.stringify(artifactCapped.errors.map((item) => item.code)));
+  } finally {
+    fs.rmSync(scanDir, { recursive: true, force: true });
+  }
+
+  const encodingDir = tmp("encoding");
+  try {
+    const utf16Text = "Authorization: Bearer abcdefgh12345678\n";
+    fs.mkdirSync(path.join(encodingDir, ".ai-team", "work"), { recursive: true });
+    fs.writeFileSync(
+      path.join(encodingDir, ".ai-team", "work", "utf16.md"),
+      Buffer.concat([Buffer.from([0xFF, 0xFE]), Buffer.from(utf16Text, "utf16le")]),
+    );
+    fs.writeFileSync(path.join(encodingDir, ".ai-team", "work", "binary.md"), Buffer.from([0x00, 0x01, 0x02, 0x00]));
+
+    const { scanSecrets } = await import(pathToFileURL(secretCheck).href);
+    const utf16Result = scanSecrets(encodingDir);
+    check("secret scans utf16", utf16Result.findings.some((item) => item.kind === "authorization"), JSON.stringify(utf16Result.findings.map((item) => item.kind)));
+
+    const binaryResult = scanSecrets(encodingDir);
+    check("secret reports binary skip", binaryResult.skipped >= 1, `skipped=${binaryResult.skipped}`);
+
+    const { checkArtifacts } = await import(pathToFileURL(artifactCheck).href);
+    const encodingArtifact = checkArtifacts(encodingDir, { maxEvidenceFiles: 2000 });
+    check("artifact blocks skipped scan", encodingArtifact.errors.some((item) => item.code === "credential-scan-skipped"), JSON.stringify(encodingArtifact.errors.map((item) => item.code)));
+  } finally {
+    fs.rmSync(encodingDir, { recursive: true, force: true });
+  }
+
+  const fixDir = tmp("fix");
+  try {
+    for (let i = 0; i < 5; i += 1) {
+      write(path.join(fixDir, ".ai-team", "work", `secret-${i}.md`), "Authorization: Bearer abcdefgh12345678\n");
+    }
+    const { fixSecrets } = await import(pathToFileURL(secretCheck).href);
+    const fixed = fixSecrets(fixDir, { maxFiles: 3 });
+    check("fix reports all fixed files", fixed.fixed.length === 5, `fixed=${fixed.fixed.length}`);
+  } finally {
+    fs.rmSync(fixDir, { recursive: true, force: true });
+  }
+
+  for (const item of checks) {
+    console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.name}${item.ok ? "" : ` — ${item.detail}`}`);
+  }
+  console.log(`checks: ${checks.length}, failed: ${failures.length}`);
+  process.exit(failures.length === 0 ? 0 : 1);
+}
+
+main().catch((error) => {
+  console.error(error.stack || error.message);
+  process.exit(1);
+});

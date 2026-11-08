@@ -368,7 +368,7 @@ Co-authored-by: ai-team/qa-engineer <ai-team@local>
 
 **处置回传（1.3.0）**：每条提案必须登记到 `GROWTH.md` 的“提案处置索引”。新增为 `proposed`；处置后同一轮回填 `done/rejected/superseded` + 落地版本/任务 + 证据 + 日期。复盘、交接、门禁前运行 `growth-check`；全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/GROWTH-<year>.md`，主文件保留索引与导航。
 
-**三层入口与净零（1.9.0）**：
+**三层入口与净零（1.9.0，1.9.1 真值校验）**：
 
 - `TEAM-CORE`（跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据）才进团队核心；
 - `PROJECT-PROFILE`（迁移号、worktree、CI/BOM、状态格式、VEX 例外）落到项目 `.ai-team/tasks` 或 `profiles/`，索引用 `scope: project` 追踪，不占团队 open；
@@ -392,7 +392,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `远程`/`Git`/`Baseline` 与 `STATUS.md` 的 `Retro`/`Growth`/`Checkpoint`/`远程`/`HEAD`。`远程` 行由脚本用 `git ls-remote` 读取远端 SHA 计算 ahead（远端不可达时回退本地并显式标记 `local`），并剥离 userinfo；`Retro` 取 `GROWTH.md` frontmatter，`Growth` 取 `growth-check --json`，不要手写。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。证据扫描默认上限 2000，可用 `--max-evidence-files` 调整。`--mark --sync-docs` 先完成 HANDOFF/STATUS 校验与内容计算，失败时零写入；成功后才落 `CHECKPOINT.json`。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `远程`/`Git`/`Baseline` 与 `STATUS.md` 的 `Retro`/`Growth`/`Checkpoint`/`远程`/`HEAD`。`远程` 行由脚本用 `git ls-remote` 读取远端 SHA 计算 ahead（远端不可达时回退本地并显式标记 `local`），并剥离 userinfo；`Retro` 取 `GROWTH.md` frontmatter，`Growth` 取 `growth-check --json`，不要手写。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。证据扫描默认 2000 起步，截断时自动升限到 20000；可用 `--max-evidence-files` 调整起点。`--mark --sync-docs` 先完成 HANDOFF/STATUS 校验与内容计算，失败时零写入；成功后才落 `CHECKPOINT.json`。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -400,8 +400,8 @@ DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并�
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project .
-# 500+ 证据文件项目：默认上限 2000，可用 --max-evidence-files 调整
-node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project . --max-evidence-files 2000
+# 500+ 证据文件项目：默认 2000 起步，截断时自动升限到 20000
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --project . --max-evidence-files 4000
 ```
 
 检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git/Baseline commit、`TASKS.md` 的 `done（...）` 旧状态，以及根目录临时产物和证据编码。`Baseline` 只写最近代码 checkpoint；其后的纯文档/`.ai-team` 提交不报 warning。stage/track 不一致或存在 artifact error 时先修正，不得交接或把门禁标为通过。
@@ -436,7 +436,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-34 权限矩阵与预检**：`permissions.json` 只保留破坏性 shell forbidden；`permission-lint --role` 在 `/ai` 和 `/ai-resume` 前运行；`permission-doctor` 定位拒绝。
 - **T-35 可选结构化执行器**：`team-shell.mjs --role <role> --action <action>` 可用于 git 读取、构建/测试、扫描和团队脚本，提供参数校验与结构化日志；gateway 只在通过它调用时生效，不是权限边界；简单命令直接 shell。
 - **T-36 Shell-first strict（1.6.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
-- **T-37 证据脱敏（P-27/P-44）**：`secret-check` 扫描 qa/work/release/security/logs，默认上限 2000；截断时 `PARTIAL` + exit 3，findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token；`artifact-check` 在 `secrets.truncated` 时以 `secret-scan-truncated` 失败。
+- **T-37 证据脱敏（P-27/P-44，1.9.1 自适应扫描）**：`secret-check` 扫描 qa/work/release/security/logs，默认 2000 起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3；findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token；`artifact-check` 在 `secrets.truncated` 时以 `secret-scan-truncated` 失败。
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
 
 ### 7.7 跨项目持续优化（1.7.0）

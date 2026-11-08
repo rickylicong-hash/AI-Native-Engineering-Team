@@ -25,7 +25,9 @@ const ROOTS = [".ai-team/qa", ".ai-team/work", ".ai-team/release", ".ai-team/sec
 const TEXT_EXT = /\.(md|txt|log|json|headers|ya?ml|xml|csv|http)$/i;
 const SKIP_DIRS = new Set([".git", "node_modules", "target", "dist", "build", ".idea", ".vscode", ".mvn"]);
 // P-44：500 上限会让 500+ 证据文件的项目把“未扫完”当成 PASS；默认提高到 2000。
+// 1.9.1：2000 会随项目成熟再次溢出；截断时自动升限（2x）到此硬上限，到上限仍截断才 PARTIAL。
 const MAX_FILES_DEFAULT = 2000;
+export const MAX_SCAN_CEILING = 20000;
 
 function normalize(file) {
   return file.replace(/\\/g, "/");
@@ -146,15 +148,37 @@ function walkFiles(dir, limit) {
 }
 
 /**
- * 扫描项目证据中的明文凭据。
- * @param {string} project
- * @param {{maxFiles?: number}} [options]
+ * 解码证据文本：UTF-8（含 BOM）、UTF-16 LE/BE（含 BOM）；无 BOM 的二进制返回 null。
+ * 1.9.1：PowerShell 5.1 常产出 UTF-16 日志；不能因 NUL 直接跳过而漏掉凭据。
+ * @param {Buffer} buffer
+ * @returns {string|null}
  */
-export function scanSecrets(project, options = {}) {
-  const root = path.resolve(project);
-  const maxFiles = Number.parseInt(options.maxFiles ?? MAX_FILES_DEFAULT, 10) || MAX_FILES_DEFAULT;
+function decodeTextBuffer(buffer) {
+  if (buffer.length >= 2 && buffer[0] === 0xFF && buffer[1] === 0xFE) {
+    return buffer.subarray(2).toString("utf16le");
+  }
+  if (buffer.length >= 2 && buffer[0] === 0xFE && buffer[1] === 0xFF) {
+    const body = buffer.subarray(2);
+    const swapped = Buffer.alloc(body.length - (body.length % 2));
+    for (let i = 0; i + 1 < body.length; i += 2) {
+      swapped[i] = body[i + 1];
+      swapped[i + 1] = body[i];
+    }
+    return swapped.toString("utf16le");
+  }
+  if (buffer.subarray(0, 4096).includes(0)) return null;
+  return buffer.toString("utf8").replace(/^\uFEFF/, "");
+}
+
+/**
+ * 扫描项目证据中的明文凭据（单次上限）。
+ * @param {string} root
+ * @param {number} maxFiles
+ */
+function scanSecretsOnce(root, maxFiles) {
   const findings = [];
   let scanned = 0;
+  let skipped = 0;
   let truncated = false;
 
   for (const relativeRoot of ROOTS) {
@@ -173,9 +197,13 @@ export function scanSecrets(project, options = {}) {
       let text;
       try {
         const buffer = fs.readFileSync(file);
-        if (buffer.subarray(0, 4096).includes(0)) continue;
-        text = buffer.toString("utf8").replace(/^\uFEFF/, "");
+        text = decodeTextBuffer(buffer);
+        if (text === null) {
+          skipped += 1;
+          continue;
+        }
       } catch {
+        skipped += 1;
         continue;
       }
       findings.push(...scanText(text, path.relative(root, file)));
@@ -183,24 +211,54 @@ export function scanSecrets(project, options = {}) {
     if (truncated) break;
   }
 
-  return { findings, scanned, truncated };
+  return { findings, scanned, skipped, truncated };
 }
 
 /**
- * 原地脱敏项目证据中的明文凭据。
+ * 扫描项目证据中的明文凭据。
+ * 1.9.1：默认 2000 只是起点；截断时按 2x 自动升限到 20000。
+ * 显式 maxFiles 作为起点/下限，不用一次截断就误报 PARTIAL。
  * @param {string} project
- * @param {{maxFiles?: number}} [options]
+ * @param {{maxFiles?: number, maxFilesCeiling?: number}} [options]
  */
-export function fixSecrets(project, options = {}) {
+export function scanSecrets(project, options = {}) {
   const root = path.resolve(project);
-  const maxFiles = Number.parseInt(options.maxFiles ?? MAX_FILES_DEFAULT, 10) || MAX_FILES_DEFAULT;
+  const requestedLimit = Number.parseInt(options.maxFiles ?? MAX_FILES_DEFAULT, 10) || MAX_FILES_DEFAULT;
+  const initialLimit = Math.min(requestedLimit, MAX_SCAN_CEILING);
+  const ceiling = Math.min(
+    MAX_SCAN_CEILING,
+    Math.max(initialLimit, Number.parseInt(options.maxFilesCeiling ?? MAX_SCAN_CEILING, 10) || MAX_SCAN_CEILING),
+  );
+  let limit = initialLimit;
+  let result;
+  while (true) {
+    result = scanSecretsOnce(root, limit);
+    if (!result.truncated || limit >= ceiling) break;
+    limit = Math.min(ceiling, limit * 2);
+  }
+  return { ...result, limit, initialLimit, ceiling };
+}
+
+/**
+ * 原地脱敏项目证据中的明文凭据（单次上限）。
+ * @param {string} root
+ * @param {number} maxFiles
+ */
+function fixSecretsOnce(root, maxFiles) {
   const fixed = [];
   let scanned = 0;
+  let skipped = 0;
+  let truncated = false;
 
   for (const relativeRoot of ROOTS) {
     const absoluteRoot = path.join(root, relativeRoot);
     if (!fs.existsSync(absoluteRoot) || !fs.statSync(absoluteRoot).isDirectory()) continue;
-    for (const file of walkFiles(absoluteRoot, maxFiles - scanned + 1)) {
+    const files = walkFiles(absoluteRoot, maxFiles - scanned + 1);
+    if (files.length > maxFiles - scanned) {
+      truncated = true;
+      files.length = maxFiles - scanned;
+    }
+    for (const file of files) {
       if (scanned >= maxFiles) break;
       if (!TEXT_EXT.test(file)) continue;
       if (/secret-scan|gitleaks|trufflehog/i.test(path.basename(file))) continue;
@@ -209,19 +267,55 @@ export function fixSecrets(project, options = {}) {
       try {
         buffer = fs.readFileSync(file);
       } catch {
+        skipped += 1;
         continue;
       }
-      if (buffer.subarray(0, 4096).includes(0)) continue;
-      const text = buffer.toString("utf8").replace(/^\uFEFF/, "");
+      const text = decodeTextBuffer(buffer);
+      if (text === null) {
+        skipped += 1;
+        continue;
+      }
       const result = redactText(text);
       if (result.changes > 0) {
         fs.writeFileSync(file, result.text, "utf8");
         fixed.push({ path: normalize(path.relative(root, file)), changes: result.changes });
       }
     }
+    if (truncated) break;
   }
 
-  return { fixed, scanned };
+  return { fixed, scanned, skipped, truncated };
+}
+
+/**
+ * 原地脱敏项目证据中的明文凭据。
+ * 1.9.1：与 scanSecrets 相同，截断时自动升限；--fix 不会只处理前 2000 个文件。
+ * @param {string} project
+ * @param {{maxFiles?: number, maxFilesCeiling?: number}} [options]
+ */
+export function fixSecrets(project, options = {}) {
+  const root = path.resolve(project);
+  const requestedLimit = Number.parseInt(options.maxFiles ?? MAX_FILES_DEFAULT, 10) || MAX_FILES_DEFAULT;
+  const initialLimit = Math.min(requestedLimit, MAX_SCAN_CEILING);
+  const ceiling = Math.min(
+    MAX_SCAN_CEILING,
+    Math.max(initialLimit, Number.parseInt(options.maxFilesCeiling ?? MAX_SCAN_CEILING, 10) || MAX_SCAN_CEILING),
+  );
+  let limit = initialLimit;
+  const allFixed = new Map();
+  let scanned = 0;
+  let skipped = 0;
+  let truncated = false;
+  while (true) {
+    const result = fixSecretsOnce(root, limit);
+    for (const item of result.fixed) allFixed.set(item.path, item);
+    scanned = result.scanned;
+    skipped = result.skipped;
+    truncated = result.truncated;
+    if (!truncated || limit >= ceiling) break;
+    limit = Math.min(ceiling, limit * 2);
+  }
+  return { fixed: [...allFixed.values()], scanned, skipped, truncated, limit, initialLimit, ceiling };
 }
 
 function runCli() {
@@ -265,9 +359,10 @@ function runCli() {
   }
 
   const result = scanSecrets(project, { maxFiles });
-  // 截断意味着还有文件没扫，不能算 PASS；有明确 findings 时仍按 FAIL 返回 1。
-  const ok = result.findings.length === 0 && !result.truncated;
-  const status = result.findings.length > 0 ? "FAIL" : result.truncated ? "PARTIAL" : "PASS";
+  // 截断意味着还有文件没扫；skipped 表示二进制/不可读文本，同样不能算 PASS。
+  const incomplete = result.truncated || result.skipped > 0;
+  const ok = result.findings.length === 0 && !incomplete;
+  const status = result.findings.length > 0 ? "FAIL" : incomplete ? "PARTIAL" : "PASS";
   if (json) {
     console.log(JSON.stringify({ ok, result: status, fixed, ...result }, null, 2));
   } else if (!quiet) {
@@ -283,12 +378,14 @@ function runCli() {
       console.log(`  FIND  [${finding.kind}] ${finding.file}:${finding.line} len=${finding.len} sha256=${finding.sha256}`);
     }
     if (result.findings.length > 10) console.log(`  ... and ${result.findings.length - 10} more finding(s)`);
-    console.log(`scanned:  ${result.scanned} file(s)${result.truncated ? " (truncated)" : ""}`);
-    console.log(`result:   ${status === "PARTIAL" ? "PARTIAL (truncated)" : status}`);
+    console.log(`scanned:  ${result.scanned} file(s) (limit ${result.limit}${result.truncated ? ` / ceiling ${result.ceiling}` : ""})`);
+    console.log(`skipped:  ${result.skipped} binary/unreadable file(s)`);
+    console.log(`result:   ${status === "PARTIAL" ? `PARTIAL (${result.truncated ? "truncated at ceiling" : "binary/unreadable skipped"})` : status}`);
     if (status === "FAIL") console.log("action:   run secret-check --fix, or redact the value manually before commit");
-    else if (status === "PARTIAL") console.log("action:   rerun with a higher --max-files; a truncated scan is not a pass");
+    else if (status === "PARTIAL" && result.truncated) console.log(`action:   archive old evidence; the hard ceiling is ${result.ceiling} and --max-files cannot exceed it; a truncated scan is not a pass`);
+    else if (status === "PARTIAL") console.log("action:   decode or remove binary/unreadable evidence; a skipped scan is not a pass");
   }
-  process.exit(result.findings.length > 0 ? 1 : result.truncated ? 3 : 0);
+  process.exit(result.findings.length > 0 ? 1 : incomplete ? 3 : 0);
 }
 
 const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";
