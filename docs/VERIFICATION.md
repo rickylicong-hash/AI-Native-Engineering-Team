@@ -1065,6 +1065,7 @@ sourceHash === installedHash: a23ece05...
 - **离线 E2E**：`test-gates` 的 e2e fixture 用临时项目串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络；CI 通过 test-gates 自动执行（T-42）。
 - **测试**：`test-gates` 新增 8 个 ownership 检查（allowed/forbidden/not-allowed/不可解析/strict 禁止段/strict 空 diff/`**` 根匹配/`..` 归一化）+ 6 个离线 E2E 检查。
 - **审查**：`REV-IMPROVE-2026-11-09-R10-R2` 修改后通过（P0/P1=0；P2 已修）；`SEC-IMPROVE-2026-11-09-R10-R2` 修改后通过（P0/P1=0；diff provenance P2 已修）。
+- **CI**：首次 1.11.0 run `42551721391` on `a266dd7` → success（https://github.com/rickylicong-hash/AI-Native-Engineering-Team/actions/runs/42551721391）。
 - **review-check 白名单**：加入 `node`/`npx`/`tsc`/`vitest`/`jest`/`playwright` 等，Node-only 证据不再被误判“无命令”。
 
 验证：
