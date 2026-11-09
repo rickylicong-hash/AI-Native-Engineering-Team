@@ -4,11 +4,12 @@
 - Stage: G5 Verify
 - Overall: 80%
 - Last gate: G5 — 审计整改进行中（2026-11-09）
-- Retro: not due (done 5, next 10)
-- Growth: open 0 / done 11 / last 2026-11-09
+- Retro: 2026-11-09（done 20 → next 30）
+- Growth: open 0 / done 11（以 `growth-check` 为准）
 - Quality: team-source-mode / first-pass — / review-ready — / data-quality 14 unattributed P1
-- Checkpoint: `c2d9cea`（done 20）
-- HEAD: `c2d9cea`
+- Checkpoint: `032145c`（done 20）
+- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead 2（`origin/main=7726e13`，local）
+- HEAD: `032145c`
 
 ## In progress
 
