@@ -9,9 +9,9 @@
 - 阻塞/风险：`RISK-2026-11-09-R7-06` 第三方 SCA 未安装（已接受）；`RISK-2026-11-09-R10-03` 真实 provider `/ai` smoke 未持续执行。
 - Retro：not due（done 20，next 30）
 - Checkpoint：`032145c`（done 20）
-- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead 10（`origin/main=7726e13`，local）
-- Git：`749dad8`
-- Baseline：`749dad8`
+- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead 12（`origin/main=7726e13`，local）
+- Git：`e2d9abc`
+- Baseline：`e2d9abc`
 - 下一条指令：完成 LP-P1 的 capacity-report 与专家 profile，或按 `/ai-improve` 四项检查继续优化。
 - 必读文件：`.ai-team/state/TASKS.md`、`.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md`、`docs/LARGE-PROJECTS.md`、`CHANGELOG.md` 1.13.0。
 
