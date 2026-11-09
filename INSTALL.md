@@ -148,7 +148,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed
 期望：
 
 ```text
-checks: 198, passed: 198, failed: 0
+checks: 212, passed: 212, failed: 0
 OK: package is structurally valid.
 ```
 
@@ -165,7 +165,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 ```text
 opencode lists ai-team/chief                             PASS
 ...
-checks: 226, passed: 226, failed: 0
+checks: 222, passed: 222, failed: 0
 ```
 
 ### OpenCode 识别验证

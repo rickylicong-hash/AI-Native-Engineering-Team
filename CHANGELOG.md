@@ -27,6 +27,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 ### Verified
 
 - `node scripts/verify.mjs` → 226/226, 0 warnings.
+- `node scripts/verify.mjs --installed` → 212/212; `--installed --opencode` → 222/222.
 - `node scripts/test-gates.mjs` → 80/80.
 - `node scripts/audit-team-consistency.mjs` → 206 checks, 0 failed.
 - `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.

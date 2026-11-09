@@ -1141,6 +1141,8 @@ permission-doctor:               non-force PASS / force FAIL (destructive)
 
 ```text
 source verify:                   226/226
+installed:                       212/212
+installed + OpenCode:            222/222
 test-gates:                      80/80
 audit-team-consistency:          206 checks, 0 failed
 audit-git-permissions:           10 agents, 0 failed
