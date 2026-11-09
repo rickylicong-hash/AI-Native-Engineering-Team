@@ -1041,7 +1041,7 @@ sourceHash === installedHash: 34f78b3c...
 
 - **质量报告**：`quality-report.mjs` 从 `TASKS.md`、`reviews/**`、`security/**`、`qa/**` 计算一次通过率、review-ready、审查轮次、P1 findings/escapes；输出 Markdown/JSON，带 data-quality 警告。代理指标，不替代 reviewer/Chief 判断，不作为硬门禁。
 - **口径**：分母只含已进入 review 的实现任务；首轮“通过”+P0/P1=0+无 R1/R2+无 `blocked` 才算首次通过；fix 任务和 review/docs/security 任务排除。
-- **CI**：`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission-lint、artifact-check、secret-check、review-check（有报告时）与 quality-report；失败阻断合并。**首次真实 Actions 运行尚未执行**，需 push 后回填 run ID/结论；当前只验证了本地同命令。
+- **CI**：`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission-lint、artifact-check、secret-check、review-check（有报告时）与 quality-report；失败阻断合并。首次真实 Actions 运行：`run 42547685044` on `4b846db` → **success**（https://github.com/rickylicong-hash/AI-Native-Engineering-Team/actions/runs/42547685044）。
 - **测试**：`test-gates` 新增 10 个质量报告 fixture（JSON、一次通过率、review-ready、轮次、P1 escape、Markdown 转义、越界 `--out`、实现任务无 review strict 失败、max-files 截断、空项目 strict 失败）。
 - **审查**：`REV-IMPROVE-2026-11-09-R9-R1` 通过（P0/P1/P2=0）；`SEC-IMPROVE-2026-11-09-R9-R1` 通过（P0/P1=0；action pin P2 已登记 `RISK-2026-11-09-R9-04`）。
 
@@ -1095,7 +1095,7 @@ node scripts/version.mjs --update
 - Shell 权限：通过（1.9.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准；1.9.3 review-entry/首轮横向面；1.9.4 验证预算/基线复用；1.10.0 质量报告/CI）。
 - 质量度量：通过（`quality-report.mjs` 输出一次通过率、review-ready、审查轮次、P1 findings/escapes；fixture 覆盖首轮/修复/空项目；代理指标，不替代语义判断）。
-- CI：已配置（`.github/workflows/verify.yml` 覆盖 verify、test-gates、permission、artifact、secret、review-check 与 quality-report；本地同命令已跑绿）；首次真实 GitHub Actions 运行待 push 后回填 run 证据。
+- CI：已配置并首次真实运行成功（`.github/workflows/verify.yml`；run `42547685044` on `4b846db` → success；覆盖 verify、test-gates、permission、artifact、secret、review-check 与 quality-report）。
 - 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；默认分析、授权后实施）。
 - 授权门：通过（分析不调用子智能体、不改团队源；`--apply` 才实施）。
 - 提交归属：通过（build 提交团队源；Chief 不提交项目状态；DevOps 管项目 `.ai-team` checkpoint；push 需批准）。
