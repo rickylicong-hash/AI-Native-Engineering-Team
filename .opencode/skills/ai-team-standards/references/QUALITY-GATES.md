@@ -107,7 +107,7 @@
 - [ ] 新增逻辑有测试；
 - [ ] 数据迁移可回滚/兼容；
 - [ ] 无硬编码密钥/调试代码；
-- [ ] 无越权修改；
+- [ ] 无越权修改；brief 有显式路径时运行 `ownership-check --brief ... --diff ...`（或记录不可解析原因）；
 - [ ] 证据写入 `work/TASK-*-EVIDENCE.md`；
 - [ ] 根目录无 `*.log`、`target-*`、`*.tmp`、`*.class`；日志在 `logs/<date>/` 或 `.ai-team/work/<TASK>-logs/`；
 - [ ] 证据日志 UTF-8；`logs/**` 的 UTF-16 会让 `artifact-check` error；失败日志用 `.failed.log` 且有原因/后续通过证据；
@@ -174,7 +174,7 @@
 - [ ] 安全基础；
 - [ ] 测试有效（断言/确定性/异常覆盖）；
 - [ ] 可维护性；
-- [ ] 无越权；
+- [ ] 无越权；brief 有显式路径时 `ownership-check` PASS，或报告记录不可解析原因；
 - [ ] P0/P1 关闭；
 - [ ] 报告写入 `reviews/**`。
 

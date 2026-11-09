@@ -441,6 +441,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
 - **T-39 验证预算与全量基线复用（1.9.4）**：迭代只跑 V0/V1；全量基线只对冻结候选提交跑 1 条并登记 `baseline_id`（commit + 干净工作区 + 日志 + 计数）；同一候选提交不重复全量，同一任务默认 ≤2 条，第 3 条需 Chief 批准 + `RISK-*`/`DEC-*`。Reviewer/QA 可复用基线，但必须校验 commit+工作区指纹、读取计数，并独立执行受影响模块/关键路径；基线后有任何变更即失效。禁止用“重跑通过”关闭 flaky/P1/安全项。
 - **T-40 质量报告与 CI（1.10.0）**：`quality-report.mjs` 从 `TASKS.md`/`reviews`/`security`/`qa` 计算一次通过率、review-ready、审查轮次、P1 findings/escapes；指标是趋势，不是硬门禁。`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission、artifact、secret、review-check 与质量报告；CI 失败必须修复，不能以“本地通过”替代。
+- **T-41 所有权机器校验（1.11.0）**：brief 的 `所有权` 行用反引号写 glob（如 `src/**`, `docs/**`）；reviewer 运行 `ownership-check.mjs --brief ... --diff ...` 对比变更，越权/禁止路径 exit 1。没有可解析路径/空 diff 时 `--strict` 失败；普通模式 SKIP 并记录原因。已提交候选用 `--base <parent>`；diff 必须由 reviewer 从 `git status --porcelain --ignored` 或 `git diff --name-only <base>` 生成并记录来源，不能只信自报文件。
+- **T-42 离线端到端冒烟（1.11.0）**：`test-gates` 的 e2e fixture 用临时项目串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络；CI 通过 test-gates 自动执行。
 
 ### 7.7 跨项目持续优化（1.7.0）
 

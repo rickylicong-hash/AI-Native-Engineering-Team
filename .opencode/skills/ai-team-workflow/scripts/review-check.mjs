@@ -43,8 +43,8 @@ if (!fs.existsSync(file)) {
 }
 const text = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
 const hasSection = /^##\s+独立验证\s*$/m.test(text) || /^##\s+证据\s*$/m.test(text);
-const hasCommand = /\b(mvn|git|java|semgrep|trivy|gitleaks|osv-scanner|dependency-check|pip-audit|npm audit|cargo audit|govulncheck|bandit|checkov|tfsec|pytest|gradle|dotnet test)\b/i.test(text);
-const hasExit = /退出码|exit\s*[:=]?\s*\d+|EXIT\s*[:=]?\s*\d+/i.test(text);
+const hasCommand = /\b(mvn|git|java|node|npx|tsc|vitest|jest|playwright|cypress|mocha|ava|semgrep|trivy|gitleaks|osv-scanner|dependency-check|pip-audit|npm audit|cargo audit|govulncheck|bandit|checkov|tfsec|pytest|gradle|dotnet test)\b/i.test(text);
+const hasExit = /(?:退出码|exit)\s*[:：=]?\s*\d+/i.test(text);
 const hasNotRun = /未执行|无法执行|未独立执行|no shell/i.test(text);
 const hasRisk = /RISK-\d+/i.test(text);
 

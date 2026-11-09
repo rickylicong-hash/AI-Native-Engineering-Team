@@ -3,6 +3,33 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.11.0] - 2026-11-09
+
+### Added
+
+- **Ownership check (`ownership-check.mjs`)**: parses backticked globs from the brief `所有权` line and compares them with a diff file or the working tree (`git diff` + untracked). Forbidden or unallowed paths exit 1; unparseable paths fail under `--strict` and SKIP otherwise. Wired into `code-reviewer`, `templates/REVIEW.md`, `QUALITY-GATES` G4/G5 and `docs/WORKFLOW.md` T-41.
+- **Offline E2E smoke**: `test-gates` now includes an e2e fixture that chains `brief-lint` → `review-check` → `quality-report --strict` → `ownership-check` → `artifact-check` in a temporary project, with no provider/network dependency (T-42; CI runs it via test-gates).
+- **`review-check` command coverage**: adds `node`/`npx`/`tsc`/`vitest`/`jest`/`playwright`/`cypress`/`mocha`/`ava` to the command whitelist, closing the Node-evidence false negative (`RISK-2026-11-08-R8-02`).
+
+### Changed
+
+- `scripts/test-gates.mjs` adds 8 ownership checks + 6 offline E2E checks → 60/60.
+- `docs/TEAM.md` §0.1, `docs/WORKFLOW.md` T-41/T-42, `QUALITY-GATES`, `templates/REVIEW.md`, `README.md`, `docs/VERIFICATION.md` §5.44 document the ownership/E2E path.
+- Version `1.11.0`; source verify count is now 208 (new script syntax check), installed 198, installed+OpenCode 208.
+
+### Verified
+
+- `node scripts/verify.mjs` → 208/208.
+- `node scripts/verify.mjs --root ~/.config/opencode --installed` → 198/198.
+- `node scripts/verify.mjs --root ~/.config/opencode --installed --opencode` → 208/208.
+- `scripts/test-gates.mjs` → 60/60.
+- `audit-team-consistency.mjs` → 195 checks, 0 failed.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- `artifact-check.mjs --strict --max-files 2000` → 0 error / 0 warning.
+- `sourceHash === installedHash` (`d59500ee...`), version `1.11.0`.
+- Review: `REV-IMPROVE-2026-11-09-R10-R2` modified pass (P0/P1=0; P2 fixed); `SEC-IMPROVE-2026-11-09-R10-R2` modified pass (P0/P1=0; diff provenance P2 fixed).
+
 ## [1.10.0] - 2026-11-09
 
 ### Added

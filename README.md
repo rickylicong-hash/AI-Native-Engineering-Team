@@ -233,18 +233,18 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.10.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.11.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 207, passed: 207, failed: 0
+# 期望：checks: 208, passed: 208, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 207, passed: 207, failed: 0
+# 期望：checks: 208, passed: 208, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。
@@ -469,6 +469,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **破坏性命令 deny**：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
 - **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有工具权限强制。
 - **质量报告与 CI（1.10.0）**：`quality-report.mjs` 从 `TASKS.md`/`reviews`/`security`/`qa` 计算一次通过率、review-ready、审查轮次、P1 findings/escapes；`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission、artifact、secret、review-check 与质量报告。指标是趋势，不是硬门禁。
+- **所有权与离线 E2E（1.11.0）**：`ownership-check.mjs` 按 brief 的反引号 glob 校验 diff，越权/禁止路径 exit 1；`test-gates` 的 e2e fixture 串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络。
 - **Brief 自动化（P-24，1.9.4 验证预算）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 强制；devops 构建/冒烟时由 brief 规则要求）、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`；engineer 还必须填 `Review-entry 自检`、`门禁面 ≤2`、`必然受影响测试/脚本`，查询/幂等/筛选任务填 `请求参数断言`。
 - **证据脱敏（P-27/P-44，1.9.1 自适应）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token，默认 2000 文件起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3。findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
 - **Checkpoint 收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF/STATUS，减少一次纯文档 subagent。

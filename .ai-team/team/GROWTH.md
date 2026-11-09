@@ -4,15 +4,15 @@ project: AI Native Engineering Team
 track: T3
 last_retro: 2026-11-09
 last_gate: G5
-tasks_at_last_retro: 2
+tasks_at_last_retro: 3
 next_due_at: 10
-last_trigger: release-1.10.0
+last_trigger: release-1.11.0
 open_proposals: 0
 last_disposition: 2026-11-09
 scope_model: three-tier
 net_zero: enforced
 last_retro_new: 2
-last_retro_closed: 2
+last_retro_closed: 4
 team_open_at_last_retro: 0
 team_open_at_prev_retro: 0
 team_open_at_prev2_retro: 0
@@ -44,6 +44,8 @@ team_open_at_prev2_retro: 0
 | T-05 | RETRO-0005 | 验证预算与全量基线复用 | done | 1.9.4 / commit `ec6738c` | `CHANGELOG.md` 1.9.4；`TASK-IMPROVE-2026-11-08-R8-EVIDENCE.md` | 2026-11-08 | team | 2026-11-23 |
 | T-06 | RETRO-0006 | 质量报告 `quality-report.mjs` | done | 1.10.0 / TASK-IMPROVE-2026-11-09-R9 | `TASK-IMPROVE-2026-11-09-R9-EVIDENCE.md`；`test-gates` 46/46 | 2026-11-09 | team | 2026-11-23 |
 | T-07 | RETRO-0006 | CI 门禁 `.github/workflows/verify.yml` | done | 1.10.0 / TASK-IMPROVE-2026-11-09-R9 | `.github/workflows/verify.yml`；`CHANGELOG.md` 1.10.0 | 2026-11-09 | team | 2026-11-23 |
+| T-08 | RETRO-0007 | 所有权机器校验 `ownership-check.mjs` | done | 1.11.0 / TASK-IMPROVE-2026-11-09-R10 | `TASK-IMPROVE-2026-11-09-R10-EVIDENCE.md`；`test-gates` 60/60 | 2026-11-09 | team | 2026-11-23 |
+| T-09 | RETRO-0007 | 离线端到端冒烟 | done | 1.11.0 / TASK-IMPROVE-2026-11-09-R10 | `test-gates` e2e 6 checks；`CHANGELOG.md` 1.11.0 | 2026-11-09 | team | 2026-11-23 |
 
 ## 已归档复盘
 
@@ -260,6 +262,44 @@ team_open_at_prev2_retro: 0
 - 本周期结论：保持
 - 下一周期重点：T-08（角色边界机器校验）与 T-09（离线 E2E）
 - 下次复盘：第 12 个 `done` 任务或 1.10.1 发布前
+
+## RETRO-0007 — 2026-11-09 — G5 — release-1.11.0
+
+### 1. 范围与指标
+
+- 覆盖：所有权机器校验、离线 E2E、review-check node 白名单
+- 新增完成：2
+- 返工任务：2 / 2（code/security 首轮均不通过，R1/R2 修复后通过）
+- 审查轮次：REV-...-R10 → R10-R1 → R10-R2；SEC-...-R10 → R10-R1 → R10-R2
+- 首轮未关闭 P0/P1：code P1=3、security P1=2；R2 关闭
+- 最终未关闭 P0/P1：0
+- 证据：`TASK-IMPROVE-2026-11-09-R10-EVIDENCE.md`、`REV-...-R10-R2.md`、`SEC-...-R10-R2.md`
+
+### 2. 做得好（保留）
+
+- 把“无越权”从人工判断变成可执行检查，并让本次变更自己先通过 ownership-check。
+- 离线 E2E 串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不依赖 provider。
+- 首轮审查发现空 diff、禁止段 fail-open、零证据 review 等真实 P1，R1/R2 关闭。
+
+### 3. 问题（每条至少 2 次证据）
+
+| ID | 现象 | 证据 1 | 证据 2 | 影响 |
+|---|---|---|---|---|
+| G-10 | 所有权检查可被空 diff/自报 diff 空转 | R10 首轮 P1-1 | 安全 R10 首轮 P1-2 | 机器证据可能失真 |
+| G-11 | 离线 E2E 之前不存在 | 2026-11-09 审计 P3-01 | 无 e2e fixture | 门禁链未持续验证 |
+
+### 4. 改进提案
+
+| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |
+|---|---|---|---|---|---|---|---|
+| T-08 | team | 所有权机器校验 `ownership-check.mjs` | G-10 | 反引号 glob + diff + strict/realpath | `test-gates` 60/60；本次 brief PASS | 2026-11-23 | 用户 |
+| T-09 | team | 离线端到端冒烟 | G-11 | test-gates e2e fixture 串起五个门禁 | 6 个 e2e checks PASS；无 provider | 2026-11-23 | 用户 |
+
+### 5. 结论
+
+- 本周期结论：保持
+- 下一周期重点：处理 R7 P3 债务与 `RISK-R10-01..04`；观察 1.11.0 实际使用
+- 下次复盘：第 13 个 `done` 任务或 1.11.1 发布前
 
 ## 观察项（不计入团队 open）
 

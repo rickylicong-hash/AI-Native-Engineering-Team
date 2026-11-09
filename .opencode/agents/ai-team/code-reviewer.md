@@ -282,6 +282,7 @@ permissions:
 ## 6. 规则
 
 - **只读代码**：不编辑、不写代码、不运行会修改状态的命令；只允许 `git status/diff/log/show/blame/ls-files`。
+- **所有权机器校验（1.11.0）**：brief 的 `所有权` 行有反引号 glob 时，运行 `ownership-check --brief ... --diff ...`；FAIL 直接 P1。没有可解析路径时写 `SKIP + 原因`，不能把“无机器证据”写成“无越权”。
 - 不启动 subagent；不直接问用户。
 - 不读取 `.env`/密钥；不访问项目外目录。
 - 审查意见按严重级别排序；每条有文件/行号与可执行建议。

@@ -77,8 +77,8 @@
 
 ## 越权检查
 
-- 是否修改非 owned 路径：是/否
-- 证据：
+- 是否修改非 owned 路径：是/否；证据：
+- `ownership-check --brief ... --diff ...`：PASS/FAIL/SKIP（不可解析原因）；已提交候选用 `--base <parent>`，diff 由 reviewer 从 `git status --porcelain --ignored`/`git diff --name-only <base>` 生成并记录来源。
 
 ## 独立验证
 

@@ -207,7 +207,7 @@ permissions:
 | **G2** | Design | UX + Architect | UI/UX 规格（如涉及界面）、架构/ADR、数据模型、API/事件契约、失败模式、威胁模型草案、测试策略；跨角色评审通过 |
 | **G3** | Plan | Chief | 任务 DAG：ID、owner、依赖、验收、证据要求、风险；需求 → 任务 → 测试可追踪；无孤儿需求 |
 | **G4** | Build | Engineer | 代码 + 单元测试；lint/typecheck/build 通过；契约一致；无越权改动；每个任务有证据；`artifact-check` 无 error（根目录产物/证据编码） |
-| **G5** | Verify | Code Reviewer + QA | 代码审查通过；reviewer 记录实际执行/未能执行；全量基线唯一且绑定候选提交（复用需校验指纹并独立跑受影响模块）；测试报告覆盖 FR/NFR；无未关闭 P0/P1；flaky/skipped 有 `RISK-*`/`DEF-*`；E2E/性能/可访问性按 Track 执行；P2 已建 TASK/RISK 或书面接受；S1/S2 DEF 由 QA 关单 |
+| **G5** | Verify | Code Reviewer + QA | 代码审查通过；reviewer 记录实际执行/未能执行；全量基线唯一且绑定候选提交（复用需校验指纹并独立跑受影响模块）；`ownership-check` 有机器证据或记录 SKIP 原因；测试报告覆盖 FR/NFR；无未关闭 P0/P1；flaky/skipped 有 `RISK-*`/`DEF-*`；E2E/性能/可访问性按 Track 执行；P2 已建 TASK/RISK 或书面接受；S1/S2 DEF 由 QA 关单 |
 | **G6** | Secure | Security Auditor | 无未关闭 Critical/High；密钥/依赖/SAST/ IaC/容器扫描完成并记录实际命令；威胁模型更新；安全证据可读；无 shell 只能记 RISK，不得据此放行；发布安全清单通过 |
 | **G7** | Release | DevOps | CI 全绿；部署/升级/回滚可执行；staging 冒烟通过；监控/告警/runbook 就绪；`artifact-check` 无 error；生产发布有用户明确批准 |
 | **G8** | Operate & Retro | Chief | 发布后健康检查；监控窗口无异常；复盘、GROWTH 提案、HANDOFF 更新；每条提案已回填处置状态；`growth-check` PASS；已处置旧 RETRO 可归档 |

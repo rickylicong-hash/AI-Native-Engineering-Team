@@ -31,6 +31,8 @@ const growthCheck = path.join(workflowScripts, "growth-check.mjs");
 const secretCheck = path.join(workflowScripts, "secret-check.mjs");
 const artifactCheck = path.join(workflowScripts, "artifact-check.mjs");
 const qualityReport = path.join(workflowScripts, "quality-report.mjs");
+const ownershipCheck = path.join(workflowScripts, "ownership-check.mjs");
+const reviewCheck = path.join(workflowScripts, "review-check.mjs");
 
 const failures = [];
 const checks = [];
@@ -505,6 +507,114 @@ async function main() {
     }
   } finally {
     fs.rmSync(qualityDir, { recursive: true, force: true });
+  }
+
+  const ownershipDir = tmp("ownership");
+  try {
+    write(path.join(ownershipDir, "brief.md"), "# TASK-3001\n\n所有权：只允许修改 `src/**`, `tests/**`；禁止 `docs/**`, `infra/**`\n");
+    write(path.join(ownershipDir, "allowed.txt"), "src/app.js\ntests/app.test.js\n");
+    write(path.join(ownershipDir, "forbidden.txt"), "src/app.js\ndocs/readme.md\n");
+    write(path.join(ownershipDir, "not-allowed.txt"), "src/app.js\nother/file.txt\n");
+    write(path.join(ownershipDir, "root.md"), "README.md\n");
+    write(path.join(ownershipDir, "no-paths.md"), "# TASK-3002\n\n所有权：只允许修改 fixture\n");
+    write(path.join(ownershipDir, "bad-forbidden.md"), "# TASK-3003\n\n所有权：只允许修改 `src/**`；禁止修改配置文件\n");
+    write(path.join(ownershipDir, "glob-md.md"), "# TASK-3004\n\n所有权：只允许修改 `**/*.md`；禁止 `infra/**`\n");
+    write(path.join(ownershipDir, "traversal.md"), "# TASK-3005\n\n所有权：只允许修改 `docs/**`；禁止 `src/**`\n");
+    write(path.join(ownershipDir, "traversal.txt"), "docs/../src/secret.js\n");
+    write(path.join(ownershipDir, "empty.txt"), "");
+
+    const allowedOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "brief.md"), "--diff", path.join(ownershipDir, "allowed.txt")], ownershipDir);
+    check("ownership allowed", allowedOwnership.status === 0, `${allowedOwnership.status}; ${(allowedOwnership.stdout || allowedOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const forbiddenOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "brief.md"), "--diff", path.join(ownershipDir, "forbidden.txt")], ownershipDir);
+    check("ownership forbidden", forbiddenOwnership.status === 1 && /docs\/readme\.md/.test(forbiddenOwnership.stdout || ""), `${forbiddenOwnership.status}; ${(forbiddenOwnership.stdout || forbiddenOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const notAllowedOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "brief.md"), "--diff", path.join(ownershipDir, "not-allowed.txt")], ownershipDir);
+    check("ownership not-allowed", notAllowedOwnership.status === 1 && /other\/file\.txt/.test(notAllowedOwnership.stdout || "") && /not-allowed/.test(notAllowedOwnership.stdout || ""), `${notAllowedOwnership.status}; ${(notAllowedOwnership.stdout || notAllowedOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const unparseableOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "no-paths.md"), "--diff", path.join(ownershipDir, "allowed.txt"), "--strict"], ownershipDir);
+    check("ownership strict unparseable", unparseableOwnership.status === 1, `${unparseableOwnership.status}; ${(unparseableOwnership.stdout || unparseableOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const badForbiddenOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "bad-forbidden.md"), "--diff", path.join(ownershipDir, "allowed.txt"), "--strict"], ownershipDir);
+    check("ownership strict unparseable forbidden", badForbiddenOwnership.status === 1, `${badForbiddenOwnership.status}; ${(badForbiddenOwnership.stdout || badForbiddenOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const globOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "glob-md.md"), "--diff", path.join(ownershipDir, "root.md")], ownershipDir);
+    check("ownership ** root match", globOwnership.status === 0, `${globOwnership.status}; ${(globOwnership.stdout || globOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const traversalOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "traversal.md"), "--diff", path.join(ownershipDir, "traversal.txt")], ownershipDir);
+    check("ownership normalizes ..", traversalOwnership.status === 1 && /src\/secret\.js/.test(traversalOwnership.stdout || ""), `${traversalOwnership.status}; ${(traversalOwnership.stdout || traversalOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const emptyDiffOwnership = run(ownershipCheck, ["--brief", path.join(ownershipDir, "brief.md"), "--diff", path.join(ownershipDir, "empty.txt"), "--strict"], ownershipDir);
+    check("ownership strict empty diff", emptyDiffOwnership.status === 1, `${emptyDiffOwnership.status}; ${(emptyDiffOwnership.stdout || emptyDiffOwnership.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+  } finally {
+    fs.rmSync(ownershipDir, { recursive: true, force: true });
+  }
+
+  const e2eDir = tmp("e2e");
+  try {
+    write(path.join(e2eDir, ".ai-team", "state", "TASKS.md"), [
+      "# Tasks",
+      "",
+      "| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |",
+      "|---|---|---|---|---|---|---|",
+      "| TASK-3001 | 实现离线校验 | ai-team/engineer | - | done | AC | - |",
+      "",
+    ].join("\n"));
+    const e2eBrief = engineerBrief({ goal: "实现离线 E2E 冒烟" })
+      .replace("所有权：只允许修改 fixture", "所有权：只允许修改 `src/**`；禁止 `docs/**`");
+    write(path.join(e2eDir, ".ai-team", "tasks", "TASK-3001-BRIEF.md"), e2eBrief);
+    write(path.join(e2eDir, ".ai-team", "reviews", "REV-3001.md"), [
+      "# REV-3001 — TASK-3001",
+      "",
+      "- 结论：通过",
+      "- P0=0；P1=0；P2=0",
+      "",
+      "## 越权检查",
+      "",
+      "- 是否修改非 owned 路径：否",
+      "",
+      "## 独立验证",
+      "",
+      "- `node test.js` exit 0",
+      "",
+    ].join("\n"));
+    write(path.join(e2eDir, "diff.txt"), "src/app.js\n");
+
+    const e2eBriefRun = run(briefLint, ["--brief", path.join(e2eDir, ".ai-team", "tasks", "TASK-3001-BRIEF.md"), "--agent", "ai-team/engineer"], e2eDir);
+    check("e2e brief-lint", e2eBriefRun.status === 0, `${e2eBriefRun.status}; ${(e2eBriefRun.stdout || e2eBriefRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const e2eReviewRun = run(reviewCheck, ["--report", path.join(e2eDir, ".ai-team", "reviews", "REV-3001.md"), "--kind", "review", "--strict"], e2eDir);
+    check("e2e review-check", e2eReviewRun.status === 0, `${e2eReviewRun.status}; ${(e2eReviewRun.stdout || e2eReviewRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    write(path.join(e2eDir, ".ai-team", "reviews", "REV-3002.md"), [
+      "# REV-3002 — TASK-3002",
+      "",
+      "- 结论：通过",
+      "",
+      "## 独立验证",
+      "",
+      "- node 未安装，退出码未知，未执行任何命令",
+      "",
+    ].join("\n"));
+    const zeroEvidenceReview = run(reviewCheck, ["--report", path.join(e2eDir, ".ai-team", "reviews", "REV-3002.md"), "--kind", "review", "--strict"], e2eDir);
+    check("e2e review-check zero evidence", zeroEvidenceReview.status === 1, `${zeroEvidenceReview.status}; ${(zeroEvidenceReview.stdout || zeroEvidenceReview.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const e2eQualityRun = run(qualityReport, ["--project", e2eDir, "--strict", "--json"], e2eDir);
+    let e2eQuality = null;
+    try {
+      e2eQuality = JSON.parse(e2eQualityRun.stdout || "");
+    } catch {
+      e2eQuality = null;
+    }
+    check("e2e quality strict", e2eQualityRun.status === 0 && e2eQuality?.summary?.first_pass_rate === 1, `${e2eQualityRun.status}; ${JSON.stringify(e2eQuality?.summary || {})}`);
+
+    const e2eOwnershipRun = run(ownershipCheck, ["--brief", path.join(e2eDir, ".ai-team", "tasks", "TASK-3001-BRIEF.md"), "--diff", path.join(e2eDir, "diff.txt")], e2eDir);
+    check("e2e ownership", e2eOwnershipRun.status === 0 && /changed:\s+1/.test(e2eOwnershipRun.stdout || "") && /result:\s+PASS/.test(e2eOwnershipRun.stdout || ""), `${e2eOwnershipRun.status}; ${(e2eOwnershipRun.stdout || e2eOwnershipRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const e2eArtifactRun = run(artifactCheck, ["--project", e2eDir, "--strict", "--max-files", "2000"], e2eDir);
+    check("e2e artifact-check", e2eArtifactRun.status === 0, `${e2eArtifactRun.status}; ${(e2eArtifactRun.stdout || e2eArtifactRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+  } finally {
+    fs.rmSync(e2eDir, { recursive: true, force: true });
   }
 
   const scanDir = tmp("scan");

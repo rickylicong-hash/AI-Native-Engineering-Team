@@ -18,6 +18,10 @@
 | RISK-2026-11-09-R9-03 | P3 | `p1_escapes` 为代理指标，security/QA P1 可能重复计数 | build | 2026-11-23 | 人工核对 2 个项目报告；必要时按 P1 ID 去重 |
 | RISK-2026-11-09-R9-04 | P2 | CI 使用 `actions/checkout@v4`/`setup-node@v4` 可移动 tag，未 pin 到 40 位 SHA | devops-engineer | 2026-11-23 | pin action SHA + 固定 Node patch，或书面接受 |
 | RISK-2026-11-09-R9-05 | P3 | 分支保护/首次贡献者审批属仓库外设置，未验证 | build | 2026-11-23 | 在 GitHub 仓库启用并记录截图/规则 |
+| RISK-2026-11-09-R10-01 | P2 | `ownership-check` 要求 brief 用反引号 glob；未强制时只能 SKIP | build | 2026-11-23 | 观察 2 个项目；必要时在 brief-lint 加可解析性检查 |
+| RISK-2026-11-09-R10-02 | P3 | `ownership-check` 的 glob/路径启发式仍有边界（`..` 已归一化、ignored 路径、尺寸上限、Windows/Linux 差异、realpath/symlink） | build | 2026-11-23 | 收集误判；补 ignored/realpath/尺寸 fixture；忽略路径需 reviewer 自证 diff 来源 |
+| RISK-2026-11-09-R10-03 | P3 | 离线 E2E 不覆盖真实 LLM 编排/网络/provider | build | 2026-11-23 | 有凭据时补一次真实 `/ai` smoke，或书面接受 |
+| RISK-2026-11-09-R10-04 | P3 | `review-check` 只认“退出码/exit + 数字”，表格型证据会误伤；hardlink/绝对路径 glob 未覆盖 | build | 2026-11-23 | 观察误伤；必要时支持表格列或 `--exit-code-column` |
 
 ## 已关闭
 

@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.10.0**。§1–§3 为 1.10.0 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.11.0**。§1–§3 为 1.11.0 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -15,7 +15,7 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 207, passed: 207, failed: 0, warnings: 0
+checks: 208, passed: 208, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -99,7 +99,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 结果：
 
 ```text
-checks: 207, passed: 207, failed: 0, warnings: 0
+checks: 208, passed: 208, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -1058,6 +1058,28 @@ gate fixtures:               46/46 PASS
 sourceHash === installedHash: a23ece05...
 ```
 
+### 5.44 所有权机器校验与离线 E2E（1.11.0）
+
+- **所有权**：`ownership-check.mjs` 解析 brief `所有权：` 行的反引号 glob（如 `src/**`, `docs/**`），对比 diff/工作区变更；禁止路径或未允许路径 exit 1；不可解析时 `--strict` exit 1、普通模式 SKIP。
+- **接入**：`code-reviewer` 规则、`templates/REVIEW.md` 越权检查、`QUALITY-GATES` G4/G5、`docs/WORKFLOW.md` T-41。
+- **离线 E2E**：`test-gates` 的 e2e fixture 用临时项目串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络；CI 通过 test-gates 自动执行（T-42）。
+- **测试**：`test-gates` 新增 8 个 ownership 检查（allowed/forbidden/not-allowed/不可解析/strict 禁止段/strict 空 diff/`**` 根匹配/`..` 归一化）+ 6 个离线 E2E 检查。
+- **审查**：`REV-IMPROVE-2026-11-09-R10-R2` 修改后通过（P0/P1=0；P2 已修）；`SEC-IMPROVE-2026-11-09-R10-R2` 修改后通过（P0/P1=0；diff provenance P2 已修）。
+- **review-check 白名单**：加入 `node`/`npx`/`tsc`/`vitest`/`jest`/`playwright` 等，Node-only 证据不再被误判“无命令”。
+
+验证：
+
+```text
+source verify:               208/208
+installed verify:            198/198
+installed + OpenCode:        208/208
+audit-team-consistency:      195 checks, 0 failed
+audit-git-permissions:       10 agents, 0 failed
+permission-lint:             570 checks, PASS
+gate fixtures:               60/60 PASS
+sourceHash === installedHash: d59500ee...
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -1087,14 +1109,16 @@ node scripts/version.mjs --update
 ## 8. 结论
 
 - 结构、安装、OpenCode 识别：通过。
-- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.10.0 已验证 `sourceHash === installedHash`。
+- 版本管理：通过（旧安装识别 → 更新到 1.1.0 → 写 marker → 漂移检测 → `--update` 修复 → `--check` exit 0）；1.11.0 已验证 `sourceHash === installedHash`。
 - 复盘节奏：通过（riccon-ai 首次到期时补录 `RETRO-0001`；`retro-check` 可重复检查；具体项目状态以该项目 `.ai-team` 为准）。
 - 一致性审计：通过（195 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令、版本握手、profile/净零检查、团队目标校准与 review-entry 字段检查）。
-- 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）；1.9.2 团队目标/一次通过率分层目标与 `/ai-improve` 目标校准；1.9.3 review-entry 合同与首轮横向面；1.9.4 验证预算与全量基线复用；1.10.0 质量报告与 CI。
-- 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应；1.9.2 增加团队目标与 `/ai-improve` 目标校准；1.9.3 增加 review-entry 合同与首轮横向面；1.9.4 增加验证预算与基线复用规则；1.10.0 增加质量报告与 CI 门禁。
+- 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）；1.9.2 团队目标/一次通过率分层目标与 `/ai-improve` 目标校准；1.9.3 review-entry 合同与首轮横向面；1.9.4 验证预算与全量基线复用；1.10.0 质量报告与 CI；1.11.0 所有权校验与离线 E2E。
+- 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应；1.9.2 增加团队目标与 `/ai-improve` 目标校准；1.9.3 增加 review-entry 合同与首轮横向面；1.9.4 增加验证预算与基线复用规则；1.10.0 增加质量报告与 CI 门禁；1.11.0 增加所有权机器校验与离线 E2E。
 - Shell 权限：通过（1.9.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
-- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准；1.9.3 review-entry/首轮横向面；1.9.4 验证预算/基线复用；1.10.0 质量报告/CI）。
+- 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准；1.9.3 review-entry/首轮横向面；1.9.4 验证预算/基线复用；1.10.0 质量报告/CI；1.11.0 所有权校验/离线 E2E）。
 - 质量度量：通过（`quality-report.mjs` 输出一次通过率、review-ready、审查轮次、P1 findings/escapes；fixture 覆盖首轮/修复/空项目；代理指标，不替代语义判断）。
+- 角色边界：通过（`ownership-check.mjs` 按 brief 反引号 glob 对比 diff；越权/禁止路径 exit 1；`review-check` 支持 node/npx/tsc/vitest/jest/playwright 证据）。
+- 离线 E2E：通过（`test-gates` e2e fixture 串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络）。
 - CI：已配置并首次真实运行成功（`.github/workflows/verify.yml`；run `42547685044` on `4b846db` → success；覆盖 verify、test-gates、permission、artifact、secret、review-check 与 quality-report）。
 - 持续优化：通过（`build` 下 `/ai-improve` + `improve-scan.mjs` + `docs/IMPROVEMENT.md`；默认分析、授权后实施）。
 - 授权门：通过（分析不调用子智能体、不改团队源；`--apply` 才实施）。
