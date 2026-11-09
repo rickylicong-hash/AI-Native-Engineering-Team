@@ -207,7 +207,7 @@ permissions:
 | **G2** | Design | UX + Architect | UI/UX 规格（如涉及界面）、架构/ADR、数据模型、API/事件契约、失败模式、威胁模型草案、测试策略；跨角色评审通过 |
 | **G3** | Plan | Chief | 任务 DAG：ID、owner、依赖、验收、证据要求、风险；需求 → 任务 → 测试可追踪；无孤儿需求 |
 | **G4** | Build | Engineer | 代码 + 单元测试；lint/typecheck/build 通过；契约一致；无越权改动；每个任务有证据；`artifact-check` 无 error（根目录产物/证据编码） |
-| **G5** | Verify | Code Reviewer + QA | 代码审查通过；reviewer 记录实际执行/未能执行；测试报告覆盖 FR/NFR；无未关闭 P0/P1；flaky/skipped 有 `RISK-*`/`DEF-*`；E2E/性能/可访问性按 Track 执行；P2 已建 TASK/RISK 或书面接受；S1/S2 DEF 由 QA 关单 |
+| **G5** | Verify | Code Reviewer + QA | 代码审查通过；reviewer 记录实际执行/未能执行；全量基线唯一且绑定候选提交（复用需校验指纹并独立跑受影响模块）；测试报告覆盖 FR/NFR；无未关闭 P0/P1；flaky/skipped 有 `RISK-*`/`DEF-*`；E2E/性能/可访问性按 Track 执行；P2 已建 TASK/RISK 或书面接受；S1/S2 DEF 由 QA 关单 |
 | **G6** | Secure | Security Auditor | 无未关闭 Critical/High；密钥/依赖/SAST/ IaC/容器扫描完成并记录实际命令；威胁模型更新；安全证据可读；无 shell 只能记 RISK，不得据此放行；发布安全清单通过 |
 | **G7** | Release | DevOps | CI 全绿；部署/升级/回滚可执行；staging 冒烟通过；监控/告警/runbook 就绪；`artifact-check` 无 error；生产发布有用户明确批准 |
 | **G8** | Operate & Retro | Chief | 发布后健康检查；监控窗口无异常；复盘、GROWTH 提案、HANDOFF 更新；每条提案已回填处置状态；`growth-check` PASS；已处置旧 RETRO 可归档 |
@@ -266,6 +266,7 @@ Track / 阶段：T? / G?
 验收标准：<3-6 条可检查条件>
 必须执行：<命令/测试/扫描；脚本参数以对应 `--help` 实跑为准；若环境不允许，明确记录 BLOCKED + 原始错误>
 脚本参数：以 `<script> --help` 实跑为准；不手抄参数
+验证预算：<V0/V1 迭代用定向测试；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；Reviewer/QA 复用需校验 commit+工作区指纹并独立跑受影响模块；同一任务第 3 条全量需 Chief 批准>
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；禁止 Tee-Object 默认编码；失败日志 .failed.log>
 测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>
@@ -285,7 +286,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" --ta
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent <agent-id>
 ```
 
-缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
+缺 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 必填；devops 运行构建/冒烟时必填）、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时，不得派发 subagent。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
 
 ## 6. 并行、依赖与冲突
 
@@ -311,6 +312,8 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 20. **证据脱敏（P-27）**：任何 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 写入 `qa/**`、`work/**`、`release/**`、`security/**` 前必须掩码；提交前跑 `secret-check.mjs`，发现明文先 `--fix`。历史已提交的明文需用户决定轮换/接受/改写，不得用“未推送”作为默认前提。
 21. **升级后新会话（P-29）**：`version.mjs --update` 成功后必须新开 OpenCode 会话或重启；旧会话可能仍用旧权限缓存。普通命令被 `Permission denied` 时先查版本，不要扩 allow。
 22. **checkpoint 自动同步（P-26）**：优先用 `checkpoint-check --mark --sync-docs`，自动更新 `HANDOFF` 的 Git/Baseline 与 `STATUS` 的 Checkpoint；随后跑 `state-check`，不要把纯文档同步再派给 DevOps。
+23. **验证预算（1.9.4）**：执行类 brief（engineer/reviewer/QA；devops 运行构建/冒烟时）必须写 `验证预算`。迭代只跑 V0/V1；全量基线只对冻结候选提交跑 1 条并登记 `baseline_id`（commit + 干净工作区 + 日志 + 计数）；同一任务默认 ≤2 条，第 3 条必须你书面批准并写 `RISK-*`/`DEC-*`。Reviewer/QA 可复用基线，但必须校验指纹并独立跑受影响模块；不得在 brief 里要求“全量至少跑 2 次”这类重复验证。
+24. **审查并行（1.9.4）**：engineer 跑最终全量基线时，可同时派 reviewer 做只读静态审查（diff/契约/测试质量）；独立测试必须等构建互斥释放，且只对冻结候选下结论。静态审查已发现 P1 时，先修复，不必先跑全量。
 
 ## 7. 记忆与状态协议（防遗忘）
 

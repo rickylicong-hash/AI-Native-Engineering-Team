@@ -199,6 +199,18 @@ if (agent === "engineer") {
 if (agent === "code-reviewer" || agent === "security-auditor" || agent === "qa-engineer") {
   valueChecks.push({ key: "boundary_four", labels: ["边界四问：", "边界四问:"], minBoundaryDimensions: 2 });
 }
+if (agent === "engineer" || reviewerAgent || agent === "qa-engineer") {
+  valueChecks.push({
+    key: "verification_budget",
+    labels: ["验证预算：", "验证预算:"],
+    validate: (value) => !/(TODO|TBD|待补|待定|待确认|占位|\.{3}|…)/i.test(value.trim())
+      && /(定向|V1)/.test(value)
+      && /(全量|V2)/.test(value)
+      && /(commit|提交|指纹|baseline_id|基线)/i.test(value)
+      && /(复用|1\s*条|1\s*次|一条|一次)/.test(value),
+    reason: "verification budget must mention targeted + full baseline + commit fingerprint + reuse/one run (not a placeholder)",
+  });
+}
 
 const valueMissing = new Set();
 const valueReasons = new Map();
@@ -220,7 +232,7 @@ for (const item of valueChecks) {
   }
   if (filled && item.validate && !item.validate(value)) {
     filled = false;
-    reason = "value does not satisfy the required review-entry format";
+    reason = item.reason || "value does not satisfy the required review-entry format";
   }
   present[item.key] = filled;
   required.push(item.key);

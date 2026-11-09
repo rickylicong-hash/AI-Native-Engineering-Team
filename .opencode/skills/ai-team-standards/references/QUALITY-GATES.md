@@ -103,7 +103,7 @@
 - [ ] 装配点/仓储/外部依赖/配置键已接，不是“写完未接线”；
 - [ ] lint/typecheck/build 通过；
 - [ ] 单元测试通过；
-- [ ] 测试报告有唯一全量基线（命令/总数/skipped/commit）；
+- [ ] 测试报告有唯一全量基线（`baseline_id`/命令/总数/skipped/commit/干净工作区）；同一候选提交 1 条，同一任务 ≤2 条；
 - [ ] 新增逻辑有测试；
 - [ ] 数据迁移可回滚/兼容；
 - [ ] 无硬编码密钥/调试代码；
@@ -164,6 +164,7 @@
 - [ ] `API-CONTRACTS` 与错误码/事件枚举恒等，无未登记差异；
 - [ ] 修复/回归任务有 P1 closure 表（原 P1、修复点、复现、回归）；
 - [ ] reviewer brief 允许独立执行测试/扫描；无 shell 有 `RISK-*` + Chief 批准；不接受默认“无 shell”；
+- [ ] 全量基线复用已校验 `baseline_id`/commit/工作区指纹；reviewer 独立执行了受影响模块/关键路径；基线后无变更；
 - [ ] reviewer/security 报告记录实际执行/未能执行的命令；
 - [ ] reviewer/security 报告通过 `review-check --strict`（或明确 RISK 且不关闭 P1/安全项）；
 - [ ] 同一任务第 3 轮仍不通过时有 Chief 裁决（拆分/降级/接受风险）；
@@ -180,7 +181,7 @@
 ### QA
 
 - [ ] 覆盖矩阵完整；
-- [ ] 全量基线唯一（命令/总数/skipped/commit），排除项有批准；
+- [ ] 全量基线唯一且绑定候选提交（`baseline_id`/commit/干净工作区）；复用需校验指纹并独立执行风险用例；
 - [ ] skipped/flaky 有原因、owner、`RISK-*`/`DEF-*`；重跑通过不能单独关闭 P1/安全项；
 - [ ] E2E/集成测试位于构建可识别的 test source root（如 `server/src/test/java/**/e2e/`），可从干净 checkout 用标准命令执行；
 - [ ] 没有用手工 `javac`、`Copy-Item` 到 `target/test-classes`、临时 classpath 作为最终 E2E 证据；

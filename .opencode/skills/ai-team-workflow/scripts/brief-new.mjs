@@ -103,6 +103,7 @@ ${reviewEntryChecklist}${boundaryChecklist}${runtimeChecklist}${doneGate}验收�
 - [ ] <3-6 条可检查条件>
 必须执行：<命令/测试/扫描；参数以对应脚本 --help 实跑为准；环境不允许时写 BLOCKED + 原始错误>
 脚本参数：以 \`<script> --help\` 实跑为准；不手抄参数
+验证预算：<V0/V1 迭代用定向测试；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；Reviewer/QA 复用需校验 commit+工作区指纹并独立跑受影响模块；同一任务第 3 条全量需 Chief 批准>
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；失败日志 .failed.log>
 证据门禁：回报前必须运行 \`artifact-check.mjs --strict --max-files 2000\` 且 0 error/0 warning；日志只允许 \`logs/<date>/\` 或 \`.ai-team/work/<TASK>-logs/\`；根 \`logs/*.log\` 与 UTF-16 直接判失败。

@@ -3,6 +3,30 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.9.4] - 2026-11-08
+
+### Added
+
+- **Verification budget & full-baseline reuse (T-39)**: task briefs now require `验证预算`. Iteration runs V0 static + V1 targeted tests; a V2 full suite runs only once per frozen candidate commit and records `baseline_id = <TASK>-<commit>-<run>` with commit, clean `git status --porcelain`, command, exit code, pass/fail/skip counts and log path. Same candidate commit → 1 baseline; same task → ≤2 by default; a 3rd needs written Chief approval plus `RISK-*`/`DEC-*`.
+- **Independent verification without duplicate full runs**: reviewer/QA may reuse a baseline only after checking commit + workspace fingerprint and reading counts, and must independently execute affected-module targeted tests (V1) plus at least one critical-path/integration check. Reports record reused `baseline_id`, reason for not rerunning, and independent commands/exit codes. No independent execution → no pass.
+- **Parallel static review**: reviewer may start read-only static review (diff/contracts/test quality) while the engineer runs the final full baseline; independent test execution still waits for the build mutex and only concludes on the frozen candidate. A P1 found statically returns to fix before any full run.
+
+### Changed
+
+- `ai-team-workflow` SKILL §3.10 defines V0–V3, the baseline contract, reuse/rerun triggers and prohibited patterns; §3.5/§6 brief rules add `验证预算`.
+- `engineer` §5 adds the verification ladder and baseline registration; `code-reviewer` §3.1/§5/§6 and `qa-engineer` baseline rules define independent execution and reuse; `chief` adds dispatch rules 23/24 and the G5 exit criterion.
+- `brief-new.mjs` template and `brief-lint.mjs` value check enforce `验证预算` (targeted + full + commit/fingerprint + reuse/one run) for engineer/reviewer/QA.
+- `templates/REVIEW.md`, `templates/TEST-REPORT.md`, `QUALITY-GATES.md` G4/G5/QA, `docs/WORKFLOW.md` (T-21/T-30/T-39) and `README.md` document the baseline contract.
+
+### Verified
+
+- `node scripts/verify.mjs` → 206/206.
+- `audit-team-consistency.mjs` → 195 checks, 0 failed.
+- `scripts/test-gates.mjs` → 36/36.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- `sourceHash === installedHash` (`34f78b3c...`), version `1.9.4`.
+
 ## [1.9.3] - 2026-11-08
 
 ### Added

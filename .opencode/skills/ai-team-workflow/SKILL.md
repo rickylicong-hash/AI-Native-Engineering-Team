@@ -328,7 +328,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" `
   --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/qa-engineer
 ```
 
-缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、`证据门禁`（`artifact-check --strict --max-files 2000` + 允许的日志路径）、`运行时取证`（runtime 任务）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `Done gate`、`构建隔离` 时，不得派发 subagent。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
+缺 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 必填；devops 运行构建/冒烟时必填）、`独立验证`、`证据位置`（含 UTF-8）、`证据门禁`（`artifact-check --strict --max-files 2000` + 允许的日志路径）、`运行时取证`（runtime 任务）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `Done gate`、`构建隔离` 时，不得派发 subagent。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
 
 P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`（组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免）。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。
 
@@ -447,6 +447,51 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 - token/成本只观察，不建立预算机制，除非用户另行批准。
 
 完整策略与行业映射见 `docs/IMPROVEMENT.md`。
+
+### 3.10 验证预算与全量基线复用（1.9.4）
+
+目标：消除“同一候选提交反复跑全量测试”的无效等待，同时保持独立验证、证据完整和门禁不可跳过。这里约束的是**全量基线的数量与证据指纹**，不是模型 token/耗时预算。
+
+**验证阶梯（V0–V3）**
+
+| 级别 | 内容 | 何时用 | 最低证据 |
+|---|---|---|---|
+| V0 静态 | lint / typecheck / 编译 / 静态扫描 | 每次编辑后 | 完整命令 + 退出码 |
+| V1 定向 | 变更模块 + 变更点 / P1 场景测试（如 `mvn -pl <module> -am -Dtest=...`） | 实现迭代、审查首轮、回归复查 | 命令 + 退出码 + 用例清单 |
+| V2 全量基线 | 完整测试套件（如 `mvn -B clean test`） | 给出 review 结论前、G5/G7 门禁、发布候选 | 绑定候选提交指纹的唯一日志 |
+| V3 稳定性 | 只对失败/flaky/并发/P0/P1 安全项重复运行 | 触发条件满足时 | 首次失败日志 + 重试策略 + 结果（≥3 次或固定种子） |
+
+**全量基线合同（每个候选提交最多 1 条）**
+
+- 基线必须绑定**候选提交指纹**：`git rev-parse HEAD`、`git status --porcelain`（运行基线时必须为空）、`git diff HEAD | git hash-object --stdin`（覆盖 staged + unstaged）；未跟踪文件必须先 `git add -N` 或提交后再算指纹。日志同时记录 commit、命令、退出码、`Tests run/Failures/Errors/Skipped`、日期、日志路径。
+- 任务证据登记 `baseline_id = <TASK>-<commit>-<run>`；没有 `baseline_id` 的全量日志不算基线。
+- 同一候选提交只允许 1 条全量基线；同一任务默认 ≤2 条（实现完成 1 条 + 修复后最终候选 1 条）；第 3 条必须 Chief 书面批准并写 `RISK-*`/`DEC-*`，说明前两条为何不能复用。
+- 基线后发生任何代码/测试/配置/契约/依赖变更（含 `git status` 非空）→ 基线失效，必须重跑；不得“复用过时基线”。工作区不干净时跑的日志只能标记 `provisional`，不能关闭 G5/G7。
+
+**复用与独立验证（Reviewer / QA）**
+
+- 可以复用同一候选提交的全量基线，但必须同时满足：
+  1. 校验 `baseline_id` 的 commit 与工作区指纹和当前候选一致；
+  2. 读取并核对日志的退出码、总数、skipped 与失败项，日志必须 UTF-8 可读；
+  3. 独立执行受影响模块的定向测试（V1）和至少 1 条关键路径/集成验证；
+  4. 在报告写“复用基线 ID + 未复跑原因 + 独立执行的命令/退出码”。
+- 复用不等于“只看工程师日志”。没有独立执行任何测试/扫描的 Reviewer/QA 不得给通过。
+- 必须重跑全量的情况：基线缺失/不可读/指纹不符；基线后有变更；P0/P1 修复的最终候选；T3/T4 的 G5/G7 或发布候选没有同一候选提交的有效基线；flaky/skipped 未解释；Reviewer/QA 新增或修改测试；覆盖矩阵显示基线未覆盖变更面。
+
+**审查时序（不牺牲质量）**
+
+- Reviewer 可以先做只读静态审查（diff / 契约 / 测试质量），与工程师跑全量基线并行；独立测试执行必须等构建互斥释放，且只对已冻结的候选提交下结论。
+- “进入 review 前跑全量”指在给出 review 结论前完成，不要求静态审查等待基线；静态审查与基线可并行，但两者都必须指向同一冻结候选提交。
+- 静态审查发现 P1 时先退回修复，不必等待或触发全量；修复后的最终候选再生产成本基线。
+- 回归审查只跑原 P1 + 受影响范围（V1），复用最终候选基线做全量结论。
+
+**禁止**
+
+- 同一未变更提交重复跑全量；
+- 用“重跑通过”关闭 flaky / P1 / 安全项；
+- 复用基线但不校验指纹、不读计数；
+- Reviewer/QA 以“工程师已跑”为由完全不执行独立验证；
+- 为省时间跳过 G5/G7 要求的全量。
 
 ## 4. 目录与产物
 
@@ -658,6 +703,7 @@ Track / 阶段：
 验收标准：
 必须执行：
 脚本参数：以 `<script> --help` 实跑为准；不手抄参数
+验证预算：<V0/V1 迭代用定向测试；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；Reviewer/QA 复用需校验 commit+工作区指纹并独立跑受影响模块；同一任务第 3 条全量需 Chief 批准>
 独立验证：<reviewer/QA 必须实际执行的测试/扫描命令；无 shell 时写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；统一 UTF-8；失败日志 .failed.log>
 测试路径：<owner=qa-engineer 时必填；必须在 QA owned paths + 构建 test source root，如 server/src/test/java/**/e2e/>

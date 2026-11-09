@@ -236,6 +236,7 @@ Track / 阶段：T3 / G4
   2. ...
 必须执行：<命令/测试/扫描；参数以对应 --help 实跑为准>
 脚本参数：以 `<script> --help` 实跑为准；不手抄参数
+验证预算：<V0/V1 迭代用定向测试；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；Reviewer/QA 复用需校验 commit+工作区指纹并独立跑受影响模块；同一任务第 3 条全量需 Chief 批准>
 独立验证：<reviewer/QA 必须实际执行的命令；无 shell 写 RISK-* + 补偿证据>
 证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；禁止 Tee-Object 默认编码>
 测试路径：<owner=qa-engineer 时必填；QA-owned + 构建 test source root>
@@ -253,7 +254,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" --ta
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/engineer
 ```
 
-缺 `脚本参数`、`契约影响`、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。
+缺 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 必填；devops 运行构建/冒烟时必填）、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。
 
 P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。`brief-lint` 校验字段值，不校验字段名。
 
@@ -422,14 +423,14 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **P-18/P-26 checkpoint 收口**：`checkpoint-check --mark --sync-docs` 自动同步 `HANDOFF Git/Baseline` 与 `STATUS Checkpoint` 到该 commit；提交纯文档变更后运行 `state-check`；`TASK-GIT-*` 证据包含 `state-check` PASS。
 - **P-19 QA 测试路径**：Java/Maven/Gradle 的 E2E 放在 `**/src/test/java/**/e2e/**`（资源放 `**/src/test/resources/**/e2e/**`）；brief 的 `测试路径` 必须 QA-owned 且在构建 test source root；E2E 必须用标准构建命令从干净 checkout 执行，禁止手工 `javac`/复制 class 作为最终证据。
 - **T-20 构建互斥**：同一工作区同一时刻只允许一个 subagent 执行会写 `target/`/`build/`/`coverage/` 的命令；并行任务默认只读或独立 worktree；brief 写 `构建隔离`。
-- **T-21 独立验证强制**：reviewer/security 的 brief 必须给可执行测试/扫描命令；禁止默认写“无 shell”；无 shell 需 `RISK-*` + Chief 批准，且不得据此关闭 P1/安全项。
+- **T-21 独立验证强制**：reviewer/security 的 brief 必须给可执行测试/扫描命令；禁止默认写“无 shell”；无 shell 需 `RISK-*` + Chief 批准，且不得据此关闭 P1/安全项。独立验证 = 独立执行受影响模块/关键路径 + 独立核对全量基线，不等于重复全量。
 - **T-22 DEF 生命周期**：owner 只能置 `fixed`；只有 QA 能在独立回归后置 `verified/closed`；S1/S2 必须有关闭证据；使用 `templates/DEFECTS.md`。
 - **T-23 状态自检**：`state-check` 检查重复 TASK-ID；每批 `state/**` 编辑后运行；交接前 0 error、0 重复。
 - **T-24 P2 债**：审查“修改后通过”的每个有实际风险 P2 必须有 `TASK-*`/`RISK-*` 或书面接受；只在报告里记录不算处置。
 - **T-25 权限/审计加固**：Engineer 不得编辑 QA-owned Java E2E；DevOps 只写 `TASK-GIT-*EVIDENCE.md`；一致性审计覆盖上述边界。
 - **T-26 成长处置**：`GROWTH.md` 的“提案处置索引”是唯一状态源；每条提案处置后同一轮回填状态/scope/落地/证据/日期；`growth-check --debt` 检查 team/project open、年龄、重复簇与净零；单项目策略走 `PROJECT-PROFILE`，已处置旧 RETRO 可归档到 `team/archive/`。
 - **T-27 审查/证据收口**：第 3 轮仍不通过必须由 Chief 裁决；R 轮同批更新受影响证据；安全语义改动必须有 fail-open 反例；大切片用 `checkpoint-check --max-files` 提前 checkpoint。
-- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`独立验证`/`证据位置`（UTF-8）/`证据门禁`（`artifact-check --strict` + 允许的日志路径）/QA `测试路径`/Reviewer-Security `P2 处置`/`Done gate`/`运行时取证`/`构建隔离` 时不得派发。engineer 还缺 `Review-entry 自检`/`门禁面`/`必然受影响测试/脚本`/`请求参数断言`（查询/幂等/筛选任务）时也不得派发。P-32/P-34 起，事务类 engineer brief 还缺 `事务边界与部分提交`/`旧行为反证`，reviewer/QA 缺 `边界四问` 时也不得派发；字段值不能是占位符或“不适用/N/A/无”（非运行时任务除外，但必须写明“不适用（无容器/外部依赖）”）。
+- **T-30 brief 生成/预检**：派发 subagent 前优先用 `brief-new.mjs` 生成骨架，再运行 `brief-lint.mjs --agent`；缺 `脚本参数`/`契约影响`/`验证预算`（engineer/reviewer/QA；devops 构建/冒烟时）/`独立验证`/`证据位置`（UTF-8）/`证据门禁`（`artifact-check --strict` + 允许的日志路径）/QA `测试路径`/Reviewer-Security `P2 处置`/`Done gate`/`运行时取证`/`构建隔离` 时不得派发。engineer 还缺 `Review-entry 自检`/`门禁面`/`必然受影响测试/脚本`/`请求参数断言`（查询/幂等/筛选任务）时也不得派发。P-32/P-34 起，事务类 engineer brief 还缺 `事务边界与部分提交`/`旧行为反证`，reviewer/QA 缺 `边界四问` 时也不得派发；字段值不能是占位符或“不适用/N/A/无”（非运行时任务除外，但必须写明“不适用（无容器/外部依赖）”）。
 - **T-31 shell 单命令（1.4.2 起由 T-36 取代）**：历史规则禁止 `;`/`&&`/`||`/`2>&1`/管道拼接；1.5.0 不再保留这些限制。
 - **T-32 审查报告门禁**：Reviewer/Security 报告必须通过 `review-check.mjs --strict`；无实际命令/退出码只能记 `RISK-*`，不得关闭 P1/安全项。
 - **T-33 会话审计水位**：全量会话审计后运行 `audit-state.mjs --mark`；下次只看水位之后的 session/message。
@@ -438,6 +439,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 - **T-36 Shell-first strict（1.6.0）**：所有角色 shell 默认 allow；只有破坏性命令 deny；commit/push/publish/密钥/`git add -A` 不再由权限拦截；ownership 由 brief + diff + checkpoint + 会话审计约束。
 - **T-37 证据脱敏（P-27/P-44，1.9.1 自适应扫描）**：`secret-check` 扫描 qa/work/release/security/logs，默认 2000 起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3；findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark`、`review-check` 阻断明文 Cookie/Authorization/口令/token；`artifact-check` 在 `secrets.truncated` 时以 `secret-scan-truncated` 失败。
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
+- **T-39 验证预算与全量基线复用（1.9.4）**：迭代只跑 V0/V1；全量基线只对冻结候选提交跑 1 条并登记 `baseline_id`（commit + 干净工作区 + 日志 + 计数）；同一候选提交不重复全量，同一任务默认 ≤2 条，第 3 条需 Chief 批准 + `RISK-*`/`DEC-*`。Reviewer/QA 可复用基线，但必须校验 commit+工作区指纹、读取计数，并独立执行受影响模块/关键路径；基线后有任何变更即失效。禁止用“重跑通过”关闭 flaky/P1/安全项。
 
 ### 7.7 跨项目持续优化（1.7.0）
 

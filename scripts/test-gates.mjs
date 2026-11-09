@@ -112,7 +112,7 @@ function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev,
   return frontmatter;
 }
 
-function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）" } = {}) {
+function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配" } = {}) {
   return `角色：ai-team/engineer
 技能：ai-team-workflow
 任务 ID：TASK-BRIEF-FIXTURE
@@ -131,6 +131,7 @@ Review-entry 自检：${reviewEntry}
 - [ ] fixture
 必须执行：node scripts/test-gates.mjs
 脚本参数：以 \`<script> --help\` 实跑为准
+验证预算：${verificationBudget}
 独立验证：node scripts/test-gates.mjs
 证据位置：.ai-team/work/TASK-BRIEF-FIXTURE-logs/；UTF-8
 证据门禁：回报前必须运行 \`artifact-check.mjs --strict --max-files 2000\` 且 0 error/0 warning；日志只允许 \`logs/<date>/\` 或 \`.ai-team/work/<TASK>-logs/\`
@@ -417,6 +418,10 @@ async function main() {
       { name: "brief-missing-review-entry", expect: 1, text: engineerBrief({ reviewEntry: "已填" }) },
       { name: "brief-missing-test-whitelist", expect: 1, text: engineerBrief({ testWhitelist: "TBD" }) },
       { name: "brief-query-without-assertion", expect: 1, text: engineerBrief({ goal: "实现服务端查询与筛选", requestAssertion: "不适用（非查询/幂等/筛选）" }) },
+      { name: "brief-missing-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "再跑两遍全量" }) },
+      { name: "brief-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "TODO 定向 全量 提交 复用" }) },
+      { name: "brief-chinese-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "待补充：定向 全量 提交 复用" }) },
+      { name: "brief-mid-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "定向 全量 提交 复用，待确认" }) },
     ];
     for (const scenario of briefScenarios) {
       const briefFile = path.join(briefDir, `${scenario.name}.md`);
