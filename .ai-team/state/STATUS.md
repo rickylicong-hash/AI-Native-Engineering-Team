@@ -7,8 +7,8 @@
 - Retro: not due (done 5, next 10)
 - Growth: open 0 / done 11 / last 2026-11-09
 - Quality: team-source-mode / first-pass — / review-ready — / data-quality 14 unattributed P1
-- Checkpoint: `7726e13`（done 5）
-- HEAD: `7726e13`
+- Checkpoint: `c2d9cea`（done 20）
+- HEAD: `c2d9cea`
 
 ## In progress
 
