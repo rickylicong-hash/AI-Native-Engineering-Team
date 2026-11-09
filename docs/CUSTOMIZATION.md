@@ -33,7 +33,7 @@ model: provider/model-id#variant
 
 1. 新建 `.opencode/agents/ai-team/<role>.md`；
 2. frontmatter：`description`、`mode: subagent`、`color`、`permissions`；
-3. 复制现有角色的 44 条权限规则（42 shell + 2 `.env` read allow）；写范围写进角色 prompt 和 brief 约束，不再用 `edit` 权限控制；
+3. 复制现有角色的 45 条权限规则（43 shell + 2 `.env` read allow）；写范围写进角色 prompt 和 brief 约束，不再用 `edit` 权限控制；
 4. 在 `team-manifest.json` 的 `agents` 加条目；
 5. 在 `chief.md` 的名册/调度矩阵加一行；
 6. 在 `docs/TEAM.md` 角色卡加一节；

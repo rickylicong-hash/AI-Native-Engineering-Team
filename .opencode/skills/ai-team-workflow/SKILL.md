@@ -313,7 +313,7 @@ Profile 文件：
 
 - 所有角色 shell 默认允许所有普通命令，包括管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`git push`、发布/部署和 `git add -A`；
 - 读单个文件优先用 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求；
-- 只有破坏性命令 deny：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
+- 只有破坏性命令 deny：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash、强制删除 worktree（`--force`/`-f`）、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；非 force 的 `git worktree remove` 允许，但只清理自己任务 brief 中的 worktree，不得删除他人工作区；
 - `.env`/密钥、commit/push、publish/deploy 不再由 shell 权限拦截；仍按 brief 和流程约束；
 - 写日志/证据必须 UTF-8：PowerShell 5.1 下 `Tee-Object`、`*>` 可能生成 UTF-16；统一用 `Out-File -Encoding utf8`（或 `$PSDefaultParameterValues['Out-File:Encoding']='utf8'`）；
 - 证据中的 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 必须脱敏；提交前跑 `secret-check.mjs`；

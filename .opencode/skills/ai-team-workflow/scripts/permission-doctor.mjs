@@ -42,8 +42,11 @@ const effect = effectiveEffect(rules, action, command);
 
 function suggest(command) {
   const cmd = command.trim();
-  if (/^(git\s+)?(reset\s+--hard|clean|checkout\s+--|checkout\s+-f|restore|switch\s+-f|switch\s+--discard-changes|reset\s+--merge|branch\s+-[dD]|tag\s+(-d|--delete)|stash\s+(clear|drop)|update-ref\s+-d|reflog\s+expire|gc\s+--prune|filter-branch|filter-repo|worktree\s+remove)\b/i.test(cmd)) {
+  if (/^(git\s+)?(reset\s+--hard|clean|checkout\s+--|checkout\s+-f|restore|switch\s+-f|switch\s+--discard-changes|reset\s+--merge|branch\s+-[dD]|tag\s+(-d|--delete)|stash\s+(clear|drop)|update-ref\s+-d|reflog\s+expire|gc\s+--prune|filter-branch|filter-repo)\b/i.test(cmd)) {
     return "destructive git command is denied by design; do not widen permissions";
+  }
+  if (/^git\s+worktree\s+remove\b/i.test(cmd) && /(^|\s)(--force|-f)/i.test(cmd)) {
+    return "destructive worktree removal is denied by design; run it without --force or ask the user";
   }
   if (/^git\s+push\b/i.test(cmd) && /(--force|-f\b|\+[^ ]+|--mirror|--delete)/i.test(cmd)) {
     return "destructive remote update is denied by design; use a normal push or ask the user";

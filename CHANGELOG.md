@@ -3,6 +3,23 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.12.0] - 2026-11-09
+
+### Changed
+
+- **Worktree cleanup permission**: `git worktree remove` without `--force` is now allowed for every AI-team role. `--force` / `-f` variants remain denied so uncommitted changes and untracked files inside a worktree cannot be discarded. Agents may only remove worktrees named in their own task brief's `构建隔离`; deleting another agent's worktree remains a process red line.
+- Every agent now has 45 permission rules: 43 shell (1 `* -> allow` + 42 destructive `deny`) + 2 `.env` `read` allow. The matrix keeps two force-only worktree deny patterns (`-*f*` catches `--force`, `-f`, and short-option clusters such as `-qf`), and `git worktree remove` is in `shellMustAllow` so a future broad deny fails lint.
+- `permission-doctor` now treats non-force worktree removal as allowed and force worktree removal as destructive.
+
+### Verified
+
+- `node scripts/verify.mjs` → 208/208.
+- `node scripts/test-gates.mjs` → 68/68.
+- `node scripts/audit-team-consistency.mjs` → 195 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 590 checks, PASS; `--role engineer` → 59 checks, PASS.
+- `permission-doctor.mjs` → non-force PASS; force FAIL with destructive guidance.
+
 ## [1.11.1] - 2026-11-09
 
 ### Fixed

@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.11.1**。§1–§3 为 1.11.1 实测；§4 为历史 smoke test；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.12.0**。§1 为 1.12.0 源验证；§2–§4 为 1.11.1 安装/历史基线；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -1105,6 +1105,27 @@ gate fixtures:               68/68 PASS
 sourceHash === installedHash: d27d9675...
 ```
 
+### 5.46 Worktree 清理权限（1.12.0）
+
+- **权限**：非 force 的 `git worktree remove` 允许；`--force`/`-f`（参数在路径前后）仍 deny，避免丢弃 worktree 内未提交改动和未跟踪文件。
+- **矩阵**：`shellDestructiveDeny` 由 41 条增至 42 条（worktree 从 1 条宽 deny 拆成 2 条 force deny：`-*f*` 与 `* -*f*`，覆盖 `--force`、`-f`、`-qf` 等短选项组合）；`shellMustAllow` 增加 `git worktree remove`，防止后续误加宽 deny。
+- **角色**：10 个 agent 统一为 45 条权限规则：43 shell（1 allow + 42 destructive deny）+ 2 `.env` read allow。
+- **流程**：只允许清理自己任务 brief `构建隔离` 指定的 worktree；不得删除他人工作区；`--force` 仍需用户批准或 break-glass。
+- **诊断**：`permission-doctor` 对非 force 返回 PASS，对 force 返回 destructive 建议。
+- **安装副本**：本次只改团队源；运行 `scripts/publish.ps1` 或 `version.mjs --update` 发布后，对新会话生效。
+
+验证：
+
+```text
+source verify:                   208/208
+test-gates:                      68/68
+audit-team-consistency:          195 checks, 0 failed
+audit-git-permissions:           10 agents, 0 failed
+permission-lint:                 590 checks, PASS
+permission-lint --role engineer: 59 checks, PASS
+permission-doctor:               non-force PASS / force FAIL (destructive)
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -1140,6 +1161,7 @@ node scripts/version.mjs --update
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）；1.9.2 团队目标/一次通过率分层目标与 `/ai-improve` 目标校准；1.9.3 review-entry 合同与首轮横向面；1.9.4 验证预算与全量基线复用；1.10.0 质量报告与 CI；1.11.0 所有权校验与离线 E2E；1.11.1 R7 P3 债务与 action SHA pin。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应；1.9.2 增加团队目标与 `/ai-improve` 目标校准；1.9.3 增加 review-entry 合同与首轮横向面；1.9.4 增加验证预算与基线复用规则；1.10.0 增加质量报告与 CI 门禁；1.11.0 增加所有权机器校验与离线 E2E；1.11.1 修复 R7 P3 债务并 pin CI action。
 - Shell 权限：通过（1.9.0 最小配置：每角色 44 条 = 42 shell + 2 `.env` read allow；只有 41 条破坏性 deny；无 ask）。
+- Worktree 清理：通过（1.12.0 起非 force 的 `git worktree remove` 允许，`--force`/`-f` 仍 deny；`permission-lint` 590 项、verify 208/208、test-gates 68/68）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准；1.9.3 review-entry/首轮横向面；1.9.4 验证预算/基线复用；1.10.0 质量报告/CI；1.11.0 所有权校验/离线 E2E；1.11.1 R7 债务/action pin）。
 - 质量度量：通过（`quality-report.mjs` 输出一次通过率、review-ready、审查轮次、P1 findings/escapes；fixture 覆盖首轮/修复/空项目；代理指标，不替代语义判断）。
 - 角色边界：通过（`ownership-check.mjs` 按 brief 反引号 glob 对比 diff；越权/禁止路径 exit 1；`review-check` 支持 node/npx/tsc/vitest/jest/playwright 证据）。

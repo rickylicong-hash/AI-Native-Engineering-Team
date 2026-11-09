@@ -4,7 +4,7 @@
  *
  * 读取 `skills/ai-team-workflow/permissions.json`，检查每个角色：
  *   - shell 默认 allow；
- *   - 41 条破坏性命令 deny；
+ *   - 破坏性命令 deny（条目由 permissions.json 决定）；
  *   - 非破坏性命令 allow；
  *   - 只有破坏性 shell 限制，没有 read/edit/task 等额外规则。
  *

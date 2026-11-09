@@ -375,8 +375,9 @@ node scripts/version.mjs --target "$env:USERPROFILE\.config\opencode" --check
 
 ## 9. 安全说明
 
-- 每个角色只有 44 条权限规则：42 条 shell（1 条 `* -> allow` + 41 条破坏性 `deny`）+ 2 条 `.env` read allow；
+- 每个角色只有 45 条权限规则：43 条 shell（1 条 `* -> allow` + 42 条破坏性 `deny`）+ 2 条 `.env` read allow；
 - 普通 shell（含 `git commit`/`push`、发布/部署）默认 `allow`，不配置 `ask`；只有破坏性命令 `deny`；
+- 非 `--force` 的 `git worktree remove` 允许（只清理自己任务的 worktree）；`--force`/`-f` 仍 `deny`；
 - `read`/`edit`/`task`/`subagent`/`external_directory` 没有 agent 级限制；角色边界靠 prompt、brief、review 和 checkpoint 流程约束；
 - `.env`/`.env.*` 的 `read` 由 agent 规则显式 `allow`（覆盖 base ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定，不要依赖权限层隔离密钥；
 - 审查者只读代码、Chief 不提交等是**流程约定**，不是权限保证；需要硬隔离时用 OS ACL 或容器只读挂载；

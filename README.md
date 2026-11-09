@@ -233,7 +233,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.11.1 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.12.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -463,10 +463,11 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 
 ## 7. 安全与权限
 
-- **最小配置**：每个角色只有 44 条权限规则：42 条 shell（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow。
+- **最小配置**：每个角色只有 45 条权限规则：43 条 shell（1 allow + 42 破坏性 deny）+ 2 条 `.env` read allow。
 - **唯一权限边界**：只有 shell 破坏性命令 deny；`read`/`edit`/`task`/`subagent`/`external_directory` 不再有 agent 级限制。
 - **Shell-first strict**：所有角色 shell 默认 `allow`；允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`。
-- **破坏性命令 deny**：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
+- **破坏性命令 deny**：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash、强制删除 worktree（`--force`/`-f`）、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete。
+- **Worktree 清理（1.12.0）**：非 `--force` 的 `git worktree remove` 允许；只清理自己任务 brief 中 `构建隔离` 指定的 worktree，不删除他人工作区；`--force`/`-f` 仍 deny。
 - **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有工具权限强制。
 - **质量报告与 CI（1.10.0）**：`quality-report.mjs` 从 `TASKS.md`/`reviews`/`security`/`qa` 计算一次通过率、review-ready、审查轮次、P1 findings/escapes；`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission、artifact、secret、review-check 与质量报告。指标是趋势，不是硬门禁。
 - **所有权与离线 E2E（1.11.0）**：`ownership-check.mjs` 按 brief 的反引号 glob 校验 diff，越权/禁止路径 exit 1；`test-gates` 的 e2e fixture 串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络。

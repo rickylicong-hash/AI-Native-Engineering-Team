@@ -1,6 +1,6 @@
 # Git 权限策略（GIT POLICY）
 
-> **1.6.0 Shell-first strict**：每个角色只有 42 条 shell 规则（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；shell 层的 commit/push/tag/publish 都不再被拦截，`.env`/`.env.*` 的 `read` 另有显式 allow。
+> **1.12.0 Shell-first strict**：每个角色只有 43 条 shell 规则（1 allow + 42 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；shell 层的 commit/push/tag/publish 都不再被拦截，`.env`/`.env.*` 的 `read` 另有显式 allow。
 >
 > 注意：shell 权限是**破坏性操作护栏**，不是沙箱；它不防越权或密钥读取。
 
@@ -9,7 +9,7 @@
 | 类别 | 实际权限 |
 |---|---|
 | 普通 Git | `status`、`diff`、`log`、`add`、`commit`、`push`、`tag`、`branch`、`remote`、`init`、`apply`、`am` 全部 `allow` |
-| 破坏性 Git | `reset --hard`、`clean`、`restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash/worktree → `deny` |
+| 破坏性 Git | `reset --hard`、`clean`、`restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash、强制删除 worktree（`--force`/`-f`）→ `deny` |
 | 普通 shell | 管道、`;`、`&&`、`||`、`2>&1`、多行命令、构建/测试/发布/部署 → `allow` |
 | 密钥 | shell 读取 `allow`；`.env`/`.env.*` 的 `read` 另有显式 `allow`（覆盖 base ask）；`.ssh`/`.aws` 等仍由平台/OS 权限决定 |
 | 发布/部署 | 所有角色 `allow`；流程上仍建议只由 DevOps 执行并由用户批准 |
@@ -42,7 +42,8 @@
 | `git filter-branch*` / `git filter-repo*` | deny | 重写历史 |
 | `git push --force*` / `git push * --force*` / `git push -f*` / `git push * -f*` / `git push * +*` | deny | 覆盖远端历史 |
 | `git push --mirror*` / `git push --delete*` / `git push * --delete*` | deny | 删除远端 refs |
-| `git worktree remove*` | deny | 删除 worktree |
+| `git worktree remove -*f*` / `git worktree remove * -*f*` | deny | 强制删除 worktree，丢弃未提交改动（含 `--force`、`-f`、`-qf` 等组合） |
+| `git worktree remove`（非 force） | allow | 只清理干净 worktree；仅限自己任务 brief 的构建隔离目录 |
 | `rm -rf*` / `rm -r*` / `del /s*` / `rd /s*` / `Remove-Item * -Recurse*` | deny | 删除文件 |
 | `docker system/volume/image prune*` / `terraform destroy*` / `kubectl delete*` | deny | 破坏性基础设施操作 |
 
@@ -125,11 +126,12 @@ DevOps 提交成功后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json`
 
 - commit / push / tag；
 - 创建/删除分支；
+- 删除他人 worktree；
 - 修改 remote；
 - reset/clean/checkout 丢弃工作区；
 - 修改全局 git config。
 
-这些操作中只有 reset/clean/checkout 丢弃工作区属于破坏性命令，会被权限 deny；其余由流程和 review 约束。需要写操作时，由 Chief 调度对应实现角色。
+这些操作中 reset/clean/checkout 丢弃工作区和强制删除 worktree 属于破坏性命令，会被权限 deny；非 force 的 `git worktree remove` 可以清理自己的构建隔离目录，但不得删除他人工作区；其余由流程和 review 约束。需要写操作时，由 Chief 调度对应实现角色。
 
 ## 6. Break-glass
 
@@ -180,5 +182,6 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mj
 
 - shell 不是沙箱；1.6.0 下 `git add/commit/push/tag` 也是 allow，`Set-Content`/`Out-File`/here-string 可写文件；**agent 级 `edit` 限制已移除**，只能靠 prompt、review、checkpoint、会话审计；需要更强隔离时用 OS ACL 或容器只读挂载；
 - `git config core.hooksPath` 可配置钩子；需要更高安全时单独 deny；
+- 非 force 的 `git worktree remove` 已允许，但权限层无法判断 worktree 归属或是否正在被并行任务使用；靠 brief `构建隔离`、ownership、review 和会话审计约束；
 - `git push` 的远端保护/分支规则仍需平台侧配置；
 - 权限只覆盖团队 agent，不覆盖用户或第三方插件。

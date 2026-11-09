@@ -88,7 +88,10 @@ permissions:
     resource: "git push * --delete*"
     effect: deny
   - action: shell
-    resource: "git worktree remove*"
+    resource: "git worktree remove -*f*"
+    effect: deny
+  - action: shell
+    resource: "git worktree remove * -*f*"
     effect: deny
   - action: shell
     resource: "rm -rf*"
@@ -142,7 +145,7 @@ permissions:
 ## 0. Shell 使用纪律（Shell-first strict）
 
 - shell 默认允许所有普通命令，包括管道、复合命令、`git commit`/`git push`、发布/部署和 `git add -A`。
-- 只有破坏性命令被 deny：reset/clean/restore/force push/history rewrite/删除分支或 worktree/`rm -rf`/`Remove-Item -Recurse`/prune/destroy/delete。
+- 只有破坏性命令被 deny：reset/clean/restore/force push/history rewrite/删除分支/tag/stash、强制删除 worktree（`--force`/`-f`）/`rm -rf`/`Remove-Item -Recurse`/prune/destroy/delete；非 force 的 `git worktree remove` 允许，但只清理自己任务 brief 中的 worktree，不得删除他人工作区。
 - 读文件优先 `read`，列目录用 `glob`，搜内容用 `grep`；这是效率建议，不是权限要求。
 - 不通过 shell 写入非本角色 owned 的路径；ownership 由 brief、diff、review、checkpoint 和会话审计约束。
 - `.env`/密钥读取不再由 shell 权限拦截；仍禁止把密钥写入聊天、日志或提交。

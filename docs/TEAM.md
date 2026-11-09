@@ -198,12 +198,12 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 
 ### 5.2 Shell
 
-- **Shell-first strict（1.6.0）**：每个角色仍是 44 条权限规则：42 条 shell（1 allow + 41 破坏性 deny）+ 2 条 `.env` read allow（覆盖 base ask）；
+- **Shell-first strict（1.6.0）**：每个角色仍是 45 条权限规则：43 条 shell（1 allow + 42 破坏性 deny）+ 2 条 `.env` read allow（覆盖 base ask）；
 - 允许管道、`;`、`&&`、`||`、`2>&1`、多行命令、`git commit`/`push`、发布/部署和 `git add -A`；
-- 只有破坏性命令 `deny`：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/worktree、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；
+- 只有破坏性命令 `deny`：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash、强制删除 worktree（`--force`/`-f`）、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；非 force 的 `git worktree remove` 允许，但只清理自己任务 brief 中的 worktree；
 - `.env`/密钥读取、commit/push、publish/deploy **不再由权限拦截**；由 brief、ownership、review、checkpoint 和会话审计约束；
 - 只读角色不再有 shell 强制边界；Chief/PM/UX/Architect/Reviewer/Security 不提交是**流程约定**，不是权限保证；
-- 权限矩阵：`permissions.json` 维护 `shellDestructiveDeny` / `shellMustAllow` 与各角色可选 `gateway`；`permission-lint` 校验 agent 只含 42 shell + 2 read allow；
+- 权限矩阵：`permissions.json` 维护 `shellDestructiveDeny` / `shellMustAllow` 与各角色可选 `gateway`；`permission-lint` 校验 agent 只含 43 shell + 2 read allow；
 - 可选结构化执行器：`team-shell.mjs --role <role> --action <action>` 只在需要参数校验/结构化日志/跨平台映射时使用；简单命令直接 shell，gateway 不是权限边界；
 - **checkpoint 自动收口（P-26/P-35，1.9.1 自适应扫描）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF 的 远程/Git/Baseline 与 STATUS 的 Checkpoint；远程行读取 origin/upstream/ahead/SHA 并剥离 userinfo；`--max-evidence-files` 默认 2000 起步，截断时自动升限到 20000；
 - **证据脱敏（P-27/P-44，1.9.1 自适应扫描）**：`secret-check` 扫描 qa/work/release/security/logs，默认 2000 起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3；findings 不输出原始值；`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断；`artifact-check` 对 `secrets.truncated` 报 `secret-scan-truncated`。
