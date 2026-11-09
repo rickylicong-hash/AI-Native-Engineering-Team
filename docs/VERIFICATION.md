@@ -1166,6 +1166,8 @@ growth-check --debt:             11 proposals, team open 0, PASS
 
 ```text
 source verify:                   230/230
+installed:                       216/216
+installed + OpenCode:            226/226
 test-gates:                      83/83
 audit-team-consistency:          213 checks, 0 failed
 permission-lint:                 590 checks, PASS

@@ -22,6 +22,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 ### Verified
 
 - `node scripts/verify.mjs` → 230/230, 0 warnings.
+- `node scripts/verify.mjs --installed` → 216/216; `--installed --opencode` → 226/226.
 - `node scripts/test-gates.mjs` → 83/83.
 - `node scripts/audit-team-consistency.mjs` → 213 checks, 0 failed.
 - `node scripts/ownership-lint.mjs` → PASS.
