@@ -27,6 +27,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 - `permission-lint.mjs` → 570 checks, PASS.
 - `artifact-check.mjs --strict --max-files 2000` → 0 error / 0 warning.
 - `sourceHash === installedHash` (`a23ece05...`), version `1.10.0`.
+- Review: `REV-IMPROVE-2026-11-09-R9-R1` passed (P0/P1/P2=0); `SEC-IMPROVE-2026-11-09-R9-R1` passed (P0/P1=0; action-pin P2 registered as `RISK-2026-11-09-R9-04`).
 
 ## [1.9.4] - 2026-11-08
 

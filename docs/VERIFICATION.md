@@ -1043,6 +1043,7 @@ sourceHash === installedHash: 34f78b3c...
 - **口径**：分母只含已进入 review 的实现任务；首轮“通过”+P0/P1=0+无 R1/R2+无 `blocked` 才算首次通过；fix 任务和 review/docs/security 任务排除。
 - **CI**：`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission-lint、artifact-check、secret-check、review-check（有报告时）与 quality-report；失败阻断合并。**首次真实 Actions 运行尚未执行**，需 push 后回填 run ID/结论；当前只验证了本地同命令。
 - **测试**：`test-gates` 新增 10 个质量报告 fixture（JSON、一次通过率、review-ready、轮次、P1 escape、Markdown 转义、越界 `--out`、实现任务无 review strict 失败、max-files 截断、空项目 strict 失败）。
+- **审查**：`REV-IMPROVE-2026-11-09-R9-R1` 通过（P0/P1/P2=0）；`SEC-IMPROVE-2026-11-09-R9-R1` 通过（P0/P1=0；action pin P2 已登记 `RISK-2026-11-09-R9-04`）。
 
 验证：
 
