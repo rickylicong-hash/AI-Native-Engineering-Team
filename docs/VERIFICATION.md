@@ -1090,6 +1090,7 @@ sourceHash === installedHash: d59500ee...
 - **R7-05**：`multi-table-retro` fixture 覆盖 `### 4` + 真实 `### 5`。
 - **R7-06**：第三方 SCA 仍未安装，登记 `RISK-2026-11-09-R7-06`（P3，2026-11-23），当前由 `secret-check` + `artifact-check` 覆盖。
 - **Action pin**：`actions/checkout@11d5960...`、`actions/setup-node@49933ea...`（v4.4.0，40 位 SHA）；Node `24.15.0`。
+- **CI**：1.11.1 run `42555298848` on `31f270b` → success（https://github.com/rickylicong-hash/AI-Native-Engineering-Team/actions/runs/42555298848）。
 
 验证：
 
