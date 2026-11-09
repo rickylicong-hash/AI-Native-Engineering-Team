@@ -4,15 +4,15 @@ project: AI Native Engineering Team
 track: T3
 last_retro: 2026-11-09
 last_gate: G5
-tasks_at_last_retro: 3
+tasks_at_last_retro: 5
 next_due_at: 10
-last_trigger: release-1.11.0
+last_trigger: release-1.11.1
 open_proposals: 0
 last_disposition: 2026-11-09
 scope_model: three-tier
 net_zero: enforced
 last_retro_new: 2
-last_retro_closed: 4
+last_retro_closed: 6
 team_open_at_last_retro: 0
 team_open_at_prev_retro: 0
 team_open_at_prev2_retro: 0
@@ -46,6 +46,8 @@ team_open_at_prev2_retro: 0
 | T-07 | RETRO-0006 | CI 门禁 `.github/workflows/verify.yml` | done | 1.10.0 / TASK-IMPROVE-2026-11-09-R9 | `.github/workflows/verify.yml`；`CHANGELOG.md` 1.10.0 | 2026-11-09 | team | 2026-11-23 |
 | T-08 | RETRO-0007 | 所有权机器校验 `ownership-check.mjs` | done | 1.11.0 / TASK-IMPROVE-2026-11-09-R10 | `TASK-IMPROVE-2026-11-09-R10-EVIDENCE.md`；`test-gates` 60/60 | 2026-11-09 | team | 2026-11-23 |
 | T-09 | RETRO-0007 | 离线端到端冒烟 | done | 1.11.0 / TASK-IMPROVE-2026-11-09-R10 | `test-gates` e2e 6 checks；`CHANGELOG.md` 1.11.0 | 2026-11-09 | team | 2026-11-23 |
+| T-10 | RETRO-0008 | R7 P3 债务修复（archive/GBK/列数/大小/多表） | done | 1.11.1 / TASK-IMPROVE-2026-11-09-R11 | `TASK-IMPROVE-2026-11-09-R11-EVIDENCE.md`；`test-gates` 68/68 | 2026-11-09 | team | 2026-11-23 |
+| T-11 | RETRO-0008 | CI action SHA pin + Node 24.15.0 | done | 1.11.1 / TASK-IMPROVE-2026-11-09-R11 | `.github/workflows/verify.yml`；`RISK-R9-04` 关闭 | 2026-11-09 | team | 2026-11-23 |
 
 ## 已归档复盘
 
@@ -300,6 +302,44 @@ team_open_at_prev2_retro: 0
 - 本周期结论：保持
 - 下一周期重点：处理 R7 P3 债务与 `RISK-R10-01..04`；观察 1.11.0 实际使用
 - 下次复盘：第 13 个 `done` 任务或 1.11.1 发布前
+
+## RETRO-0008 — 2026-11-09 — G5 — release-1.11.1
+
+### 1. 范围与指标
+
+- 覆盖：R7-01..R7-06、CI action SHA pin
+- 新增完成：2
+- 返工任务：2 / 2（code/security 首轮均不通过，R1/R2 修复后通过）
+- 审查轮次：REV-...-R11 → R11-R1 → R11-R2；SEC-...-R11 → R11-R1 → R11-R2
+- 首轮未关闭 P0/P1：code P1=1、security P1=1（artifact-check 未传播 oversized/timedOut）
+- 最终未关闭 P0/P1：0
+- 证据：`TASK-IMPROVE-2026-11-09-R11-EVIDENCE.md`、`REV-...-R11-R2.md`、`SEC-...-R11-R2.md`
+
+### 2. 做得好（保留）
+
+- 把“大文件/超时跳过”从 fail-open 改成阻断，并让 state/checkpoint 继承。
+- R7 债务有 fixture 闭环，不再只靠人工记忆。
+- CI action 固定到 40 位 SHA，减少可移动 tag 供应链风险。
+
+### 3. 问题（每条至少 2 次证据）
+
+| ID | 现象 | 证据 1 | 证据 2 | 影响 |
+|---|---|---|---|---|
+| G-12 | 扫描上限引入新的 fail-open | R11 code P1-01 | R11 security P1-01 | 大证据凭据漏扫 |
+| G-13 | R7 P3 债务长期挂起 | R7 task | 2026-11-09 审计 | 证据/扫描可信度下降 |
+
+### 4. 改进提案
+
+| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |
+|---|---|---|---|---|---|---|---|
+| T-10 | team | R7 P3 债务修复 | G-13 | archive/GBK/列数/size/timeout/多表 | `test-gates` 68/68 | 2026-11-23 | 用户 |
+| T-11 | team | CI action SHA pin | G-12 | checkout/setup-node v4.4.0 SHA + Node 24.15.0 | CI run；RISK-R9-04 关闭 | 2026-11-23 | 用户 |
+
+### 5. 结论
+
+- 本周期结论：保持
+- 下一周期重点：`RISK-R7-06` 第三方 SCA、`RISK-R11-01..03` 观察；处理剩余 P3
+- 下次复盘：第 15 个 `done` 任务或 1.11.2 发布前
 
 ## 观察项（不计入团队 open）
 

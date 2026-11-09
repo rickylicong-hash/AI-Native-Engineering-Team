@@ -95,7 +95,9 @@ function tableAfter(text, headingPattern) {
   return rows;
 }
 
-function parseTable(rows, headerTest) {
+const tableErrors = [];
+
+function parseTable(rows, headerTest, label = "table") {
   if (rows.length < 2) return [];
   const header = cells(rows[0]);
   if (!headerTest(header)) return [];
@@ -104,6 +106,10 @@ function parseTable(rows, headerTest) {
     if (/^\|[\s:|-]+\|$/.test(line.trim())) continue;
     const values = cells(line);
     if (values.length === 0) continue;
+    if (values.length !== header.length) {
+      tableErrors.push(`${label}: expected ${header.length} columns, got ${values.length}（未转义的 | 会伪造表格行）`);
+      continue;
+    }
     const row = {};
     for (let i = 0; i < header.length; i += 1) row[header[i]] = values[i] ?? "";
     result.push(row);
@@ -122,7 +128,7 @@ function proposalTables(section) {
       table.push(lines[j]);
       j += 1;
     }
-    rows.push(...parseTable(table, (header) => header.includes("ID") && header.includes("提案")));
+    rows.push(...parseTable(table, (header) => header.includes("ID") && header.includes("提案"), "retro-table"));
   }
   return rows;
 }
@@ -166,6 +172,7 @@ const strictLedger = /^scope_model:\s*three-tier\s*$/m.test(text) || /^net_zero:
 const indexRows = parseTable(
   tableAfter(text, /^##\s+提案处置索引\s*$/m),
   (header) => header.includes("ID") && header.includes("状态"),
+  "proposal-index",
 );
 const index = new Map();
 for (const row of indexRows) {
@@ -245,6 +252,7 @@ for (const [id, proposal] of proposals) {
     else warnings.push(message);
   }
 }
+if (tableErrors.length > 0) errors.push(...tableErrors);
 for (const id of index.keys()) {
   const row = index.get(id);
   if (!proposals.has(id) && !(row && archivedNav.has(row.retro))) {
@@ -511,6 +519,16 @@ function today() {
 }
 
 if (archive) {
+  if (errors.length > 0) {
+    if (json) console.log(JSON.stringify({ ok: false, errors, archive: { eligible: [], moved: [] } }, null, 2));
+    else {
+      console.log("AI Team growth archive");
+      console.log(`project:   ${project}`);
+      for (const message of errors) console.log(`ERROR  ${message}`);
+      console.log("result:   FAIL (fix ledger errors before archiving)");
+    }
+    process.exit(1);
+  }
   const eligible = archivePlan();
   if (eligible.length === 0) {
     if (json) console.log(JSON.stringify({ ok: true, archive: { eligible: [], moved: [] } }, null, 2));
@@ -559,7 +577,11 @@ if (archive) {
   }
   // 保留完整处置索引（compact ledger）；只把 RETRO 详情移入 archive。
   const navHeading = "## 已归档复盘";
-  const navLines = eligible.map((item) => `- ${item.match[1]} — \`team/archive/GROWTH-${year}.md\``);
+  const archivedNumbers = new Set([...next.matchAll(/^##\s+(RETRO-\d+)\s+[—-]\s+archived\b/gm)].map((m) => m[1]));
+  for (const item of eligible) archivedNumbers.add(item.match[1]);
+  const navLines = [...archivedNumbers]
+    .sort((a, b) => Number.parseInt(a.replace("RETRO-", ""), 10) - Number.parseInt(b.replace("RETRO-", ""), 10))
+    .map((retro) => `- ${retro} — \`team/archive/GROWTH-${year}.md\``);
   if (next.includes(navHeading)) {
     const navStart = next.indexOf(navHeading);
     const nextHeading = next.indexOf("## ", navStart + 1);

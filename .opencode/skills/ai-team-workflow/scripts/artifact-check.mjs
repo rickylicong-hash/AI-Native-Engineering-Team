@@ -310,6 +310,22 @@ export function checkArtifacts(project, options = {}) {
       suggestion: "把证据转为 UTF-8（PowerShell 用 -Encoding utf8），或移除二进制文件；跳过不等于 clean",
     });
   }
+  if ((secrets.oversized || 0) > 0) {
+    errors.push({
+      code: "credential-scan-oversized",
+      path: ".",
+      message: `${secrets.oversized} 个文件超过 ${secrets.maxFileBytes || "上限"} 字节，凭据扫描未覆盖`,
+      suggestion: "拆分/归档大证据，或显式提高 --max-file-bytes 并记录风险；跳过不等于 clean",
+    });
+  }
+  if (secrets.timedOut) {
+    errors.push({
+      code: "credential-scan-timeout",
+      path: ".",
+      message: "凭据扫描超时，未覆盖全部证据",
+      suggestion: "拆分证据或提高 --max-duration-ms；超时扫描不能作为放行依据",
+    });
+  }
   return {
     errors,
     warnings,
@@ -321,9 +337,12 @@ export function checkArtifacts(project, options = {}) {
       findings: secrets.findings.length,
       scanned: secrets.scanned,
       skipped: secrets.skipped,
+      oversized: secrets.oversized || 0,
+      timedOut: Boolean(secrets.timedOut),
       truncated: secrets.truncated,
       limit: secrets.limit,
       ceiling: secrets.ceiling,
+      maxFileBytes: secrets.maxFileBytes,
     },
   };
 }

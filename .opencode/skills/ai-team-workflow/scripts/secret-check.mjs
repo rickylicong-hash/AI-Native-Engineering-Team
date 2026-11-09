@@ -22,12 +22,14 @@ import process from "node:process";
 import crypto from "node:crypto";
 
 const ROOTS = [".ai-team/qa", ".ai-team/work", ".ai-team/release", ".ai-team/security", "logs"];
-const TEXT_EXT = /\.(md|txt|log|json|headers|ya?ml|xml|csv|http)$/i;
+const TEXT_EXT = /\.(md|txt|log|json|jsonl|har|html?|headers|ya?ml|xml|csv|http|js|ts|jsx|tsx|py|java|go|rs|sh|ps1|sql)$/i;
 const SKIP_DIRS = new Set([".git", "node_modules", "target", "dist", "build", ".idea", ".vscode", ".mvn"]);
 // P-44：500 上限会让 500+ 证据文件的项目把“未扫完”当成 PASS；默认提高到 2000。
 // 1.9.1：2000 会随项目成熟再次溢出；截断时自动升限（2x）到此硬上限，到上限仍截断才 PARTIAL。
 const MAX_FILES_DEFAULT = 2000;
 export const MAX_SCAN_CEILING = 20000;
+const MAX_FILE_BYTES_DEFAULT = 5 * 1024 * 1024;
+const MAX_DURATION_MS_DEFAULT = 60000;
 
 function normalize(file) {
   return file.replace(/\\/g, "/");
@@ -170,16 +172,33 @@ function decodeTextBuffer(buffer) {
   return buffer.toString("utf8").replace(/^\uFEFF/, "");
 }
 
+function isValidUtf8(buffer) {
+  if (buffer.length >= 2 && ((buffer[0] === 0xFF && buffer[1] === 0xFE) || (buffer[0] === 0xFE && buffer[1] === 0xFF))) {
+    return true;
+  }
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * 扫描项目证据中的明文凭据（单次上限）。
  * @param {string} root
  * @param {number} maxFiles
+ * @param {{maxFileBytes?: number, maxDurationMs?: number}} [options]
  */
-function scanSecretsOnce(root, maxFiles) {
+function scanSecretsOnce(root, maxFiles, options = {}) {
   const findings = [];
   let scanned = 0;
   let skipped = 0;
+  let oversized = 0;
+  let timedOut = false;
   let truncated = false;
+  const maxFileBytes = options.maxFileBytes ?? MAX_FILE_BYTES_DEFAULT;
+  const deadline = Date.now() + (options.maxDurationMs ?? MAX_DURATION_MS_DEFAULT);
 
   for (const relativeRoot of ROOTS) {
     const absoluteRoot = path.join(root, relativeRoot);
@@ -191,11 +210,19 @@ function scanSecretsOnce(root, maxFiles) {
     }
     for (const file of files) {
       if (scanned >= maxFiles) break;
+      if (Date.now() > deadline) {
+        timedOut = true;
+        break;
+      }
       if (!TEXT_EXT.test(file)) continue;
       if (/secret-scan|gitleaks|trufflehog/i.test(path.basename(file))) continue;
       scanned += 1;
       let text;
       try {
+        if (fs.statSync(file).size > maxFileBytes) {
+          oversized += 1;
+          continue;
+        }
         const buffer = fs.readFileSync(file);
         text = decodeTextBuffer(buffer);
         if (text === null) {
@@ -208,10 +235,10 @@ function scanSecretsOnce(root, maxFiles) {
       }
       findings.push(...scanText(text, path.relative(root, file)));
     }
-    if (truncated) break;
+    if (truncated || timedOut) break;
   }
 
-  return { findings, scanned, skipped, truncated };
+  return { findings, scanned, skipped, oversized, timedOut, truncated };
 }
 
 /**
@@ -231,12 +258,21 @@ export function scanSecrets(project, options = {}) {
   );
   let limit = initialLimit;
   let result;
+  const deadline = Date.now() + (options.maxDurationMs ?? MAX_DURATION_MS_DEFAULT);
   while (true) {
-    result = scanSecretsOnce(root, limit);
-    if (!result.truncated || limit >= ceiling) break;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      result = { findings: [], scanned: 0, skipped: 0, oversized: 0, timedOut: true, truncated: false };
+      break;
+    }
+    result = scanSecretsOnce(root, limit, {
+      ...options,
+      maxDurationMs: remaining,
+    });
+    if (!result.truncated || result.timedOut || limit >= ceiling) break;
     limit = Math.min(ceiling, limit * 2);
   }
-  return { ...result, limit, initialLimit, ceiling };
+  return { ...result, limit, initialLimit, ceiling, maxFileBytes: options.maxFileBytes ?? MAX_FILE_BYTES_DEFAULT };
 }
 
 /**
@@ -244,11 +280,16 @@ export function scanSecrets(project, options = {}) {
  * @param {string} root
  * @param {number} maxFiles
  */
-function fixSecretsOnce(root, maxFiles) {
+function fixSecretsOnce(root, maxFiles, options = {}) {
   const fixed = [];
   let scanned = 0;
   let skipped = 0;
+  let oversized = 0;
+  let timedOut = false;
   let truncated = false;
+  const unsupported = [];
+  const maxFileBytes = options.maxFileBytes ?? MAX_FILE_BYTES_DEFAULT;
+  const deadline = Date.now() + (options.maxDurationMs ?? MAX_DURATION_MS_DEFAULT);
 
   for (const relativeRoot of ROOTS) {
     const absoluteRoot = path.join(root, relativeRoot);
@@ -260,14 +301,26 @@ function fixSecretsOnce(root, maxFiles) {
     }
     for (const file of files) {
       if (scanned >= maxFiles) break;
+      if (Date.now() > deadline) {
+        timedOut = true;
+        break;
+      }
       if (!TEXT_EXT.test(file)) continue;
       if (/secret-scan|gitleaks|trufflehog/i.test(path.basename(file))) continue;
       scanned += 1;
       let buffer;
       try {
+        if (fs.statSync(file).size > maxFileBytes) {
+          oversized += 1;
+          continue;
+        }
         buffer = fs.readFileSync(file);
       } catch {
         skipped += 1;
+        continue;
+      }
+      if (!isValidUtf8(buffer)) {
+        unsupported.push(normalize(path.relative(root, file)));
         continue;
       }
       const text = decodeTextBuffer(buffer);
@@ -281,10 +334,10 @@ function fixSecretsOnce(root, maxFiles) {
         fixed.push({ path: normalize(path.relative(root, file)), changes: result.changes });
       }
     }
-    if (truncated) break;
+    if (truncated || timedOut) break;
   }
 
-  return { fixed, scanned, skipped, truncated };
+  return { fixed, scanned, skipped, oversized, timedOut, truncated, unsupported };
 }
 
 /**
@@ -306,16 +359,43 @@ export function fixSecrets(project, options = {}) {
   let scanned = 0;
   let skipped = 0;
   let truncated = false;
+  let oversized = 0;
+  let timedOut = false;
+  const unsupported = new Set();
+  const deadline = Date.now() + (options.maxDurationMs ?? MAX_DURATION_MS_DEFAULT);
   while (true) {
-    const result = fixSecretsOnce(root, limit);
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      timedOut = true;
+      break;
+    }
+    const result = fixSecretsOnce(root, limit, {
+      ...options,
+      maxDurationMs: remaining,
+    });
     for (const item of result.fixed) allFixed.set(item.path, item);
+    for (const item of result.unsupported || []) unsupported.add(item);
     scanned = result.scanned;
     skipped = result.skipped;
+    oversized = result.oversized || 0;
+    timedOut = Boolean(result.timedOut);
     truncated = result.truncated;
-    if (!truncated || limit >= ceiling) break;
+    if (!truncated || timedOut || limit >= ceiling) break;
     limit = Math.min(ceiling, limit * 2);
   }
-  return { fixed: [...allFixed.values()], scanned, skipped, truncated, limit, initialLimit, ceiling };
+  return {
+    fixed: [...allFixed.values()],
+    scanned,
+    skipped,
+    oversized,
+    timedOut,
+    truncated,
+    unsupported: [...unsupported],
+    limit,
+    initialLimit,
+    ceiling,
+    maxFileBytes: options.maxFileBytes ?? MAX_FILE_BYTES_DEFAULT,
+  };
 }
 
 function runCli() {
@@ -330,7 +410,11 @@ function runCli() {
   const fix = hasFlag("--fix");
   const quiet = hasFlag("--quiet");
   const maxFilesArg = args.includes("--max-files") ? getArg("--max-files", null) : null;
+  const maxFileBytesArg = args.includes("--max-file-bytes") ? getArg("--max-file-bytes", null) : null;
+  const maxDurationArg = args.includes("--max-duration-ms") ? getArg("--max-duration-ms", null) : null;
   let maxFiles = MAX_FILES_DEFAULT;
+  let maxFileBytes = MAX_FILE_BYTES_DEFAULT;
+  let maxDurationMs = MAX_DURATION_MS_DEFAULT;
 
   if (!fs.existsSync(project) || !fs.statSync(project).isDirectory()) {
     console.error(`ERROR  project not found: ${project}`);
@@ -345,12 +429,28 @@ function runCli() {
     }
     maxFiles = Number(maxFilesArg);
   }
+  if (args.includes("--max-file-bytes")) {
+    if (maxFileBytesArg === null || !/^[1-9]\d*$/.test(maxFileBytesArg) || !Number.isSafeInteger(Number(maxFileBytesArg))) {
+      console.error(`ERROR  --max-file-bytes must be a positive integer, got: ${maxFileBytesArg === null ? "(missing value)" : maxFileBytesArg}`);
+      process.exit(2);
+    }
+    maxFileBytes = Number(maxFileBytesArg);
+  }
+  if (args.includes("--max-duration-ms")) {
+    if (maxDurationArg === null || !/^[1-9]\d*$/.test(maxDurationArg) || !Number.isSafeInteger(Number(maxDurationArg))) {
+      console.error(`ERROR  --max-duration-ms must be a positive integer, got: ${maxDurationArg === null ? "(missing value)" : maxDurationArg}`);
+      process.exit(2);
+    }
+    maxDurationMs = Number(maxDurationArg);
+  }
 
   let fixed = [];
+  let fixUnsupported = [];
   if (fix) {
     try {
-      const result = fixSecrets(project, { maxFiles });
+      const result = fixSecrets(project, { maxFiles, maxFileBytes, maxDurationMs });
       fixed = result.fixed;
+      fixUnsupported = result.unsupported || [];
     } catch (error) {
       if (json) console.log(JSON.stringify({ ok: false, error: error.message }, null, 2));
       else console.log(`ERROR  ${error.message}`);
@@ -358,13 +458,13 @@ function runCli() {
     }
   }
 
-  const result = scanSecrets(project, { maxFiles });
-  // 截断意味着还有文件没扫；skipped 表示二进制/不可读文本，同样不能算 PASS。
-  const incomplete = result.truncated || result.skipped > 0;
+  const result = scanSecrets(project, { maxFiles, maxFileBytes, maxDurationMs });
+  // 截断意味着还有文件没扫；skipped/oversized/unsupported/timeout 同样不能算 PASS。
+  const incomplete = result.truncated || result.skipped > 0 || (result.oversized || 0) > 0 || Boolean(result.timedOut) || fixUnsupported.length > 0;
   const ok = result.findings.length === 0 && !incomplete;
   const status = result.findings.length > 0 ? "FAIL" : incomplete ? "PARTIAL" : "PASS";
   if (json) {
-    console.log(JSON.stringify({ ok, result: status, fixed, ...result }, null, 2));
+    console.log(JSON.stringify({ ok, result: status, fixed, fixUnsupported, ...result }, null, 2));
   } else if (!quiet) {
     console.log("AI Team secret check");
     console.log(`project:  ${project}`);
@@ -380,8 +480,15 @@ function runCli() {
     if (result.findings.length > 10) console.log(`  ... and ${result.findings.length - 10} more finding(s)`);
     console.log(`scanned:  ${result.scanned} file(s) (limit ${result.limit}${result.truncated ? ` / ceiling ${result.ceiling}` : ""})`);
     console.log(`skipped:  ${result.skipped} binary/unreadable file(s)`);
-    console.log(`result:   ${status === "PARTIAL" ? `PARTIAL (${result.truncated ? "truncated at ceiling" : "binary/unreadable skipped"})` : status}`);
-    if (status === "FAIL") console.log("action:   run secret-check --fix, or redact the value manually before commit");
+    if ((result.oversized || 0) > 0) console.log(`oversized: ${result.oversized} file(s) > ${result.maxFileBytes || maxFileBytes} bytes`);
+    if (fixUnsupported.length > 0) console.log(`encoding-unsupported: ${fixUnsupported.length} file(s) (not rewritten)`);
+    if (result.timedOut) console.log(`timed-out: scan exceeded ${maxDurationMs} ms`);
+    console.log(`result:   ${status === "PARTIAL" ? `PARTIAL (${result.truncated ? "truncated at ceiling" : result.timedOut ? "timed out" : (result.oversized || 0) > 0 ? "oversized file skipped" : fixUnsupported.length > 0 ? "encoding-unsupported" : "binary/unreadable skipped"})` : status}`);
+    if (status === "FAIL") {
+      console.log(fixUnsupported.length > 0
+        ? "action:   non-UTF-8 evidence cannot be auto-fixed; convert it to UTF-8 and rerun, or redact manually"
+        : "action:   run secret-check --fix, or redact the value manually before commit");
+    }
     else if (status === "PARTIAL" && result.truncated) console.log(`action:   archive old evidence; the hard ceiling is ${result.ceiling} and --max-files cannot exceed it; a truncated scan is not a pass`);
     else if (status === "PARTIAL") console.log("action:   decode or remove binary/unreadable evidence; a skipped scan is not a pass");
   }

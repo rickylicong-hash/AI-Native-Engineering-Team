@@ -3,6 +3,35 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.11.1] - 2026-11-09
+
+### Fixed
+
+- **R7-01 archive navigation**: `growth-check --archive` now merges already-archived RETRO headings into the `## 已归档复盘` navigation, not only the current run; fixture asserts old + new entries.
+- **R7-02 non-UTF-8 evidence**: `secret-check --fix` detects invalid UTF-8 (e.g. GBK) and refuses to rewrite, reporting `encoding-unsupported`; UTF-16 BOM remains supported; fixture asserts the original bytes are unchanged.
+- **R7-03 GROWTH table injection**: `growth-check` now rejects rows whose column count differs from the header, blocking unescaped `|` injection; `pipe-injection` fixture.
+- **R7-04 scan limits**: `secret-check` adds `--max-file-bytes` (default 5 MiB) and `--max-duration-ms` (default 60s), reports `oversized`/`timed-out`, and treats them as PARTIAL/exit 3; `artifact-check` maps them to `credential-scan-oversized`/`credential-scan-timeout` blocking errors; fixtures.
+- **R7-05 multi-table RETRO**: `multi-table-retro` fixture covers a legacy `### 4` table plus a real `### 5` table and asserts raw-new counting.
+- **R7-06 accepted risk**: third-party SCA (gitleaks/semgrep/trivy/osv-scanner) remains unavailable locally; local `secret-check` + `artifact-check` cover the current gate. Registered as an open P3 with 2026-11-23 review.
+
+### Changed
+
+- CI actions pinned to 40-char SHAs: `actions/checkout@11d5960...` (v4.4.0), `actions/setup-node@49933ea...` (v4.4.0); Node pinned to `24.15.0`.
+- `scripts/test-gates.mjs` → 68/68.
+- Version `1.11.1`; source verify 208, installed 198, installed+OpenCode 208.
+
+### Verified
+
+- `node scripts/verify.mjs` → 208/208.
+- `node scripts/verify.mjs --installed` → 198/198.
+- `node scripts/verify.mjs --installed --opencode` → 208/208.
+- `scripts/test-gates.mjs` → 68/68.
+- `audit-team-consistency.mjs` → 195 checks, 0 failed.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- `artifact-check.mjs --strict --max-files 2000` → 0 error / 0 warning.
+- `sourceHash === installedHash` (`d27d9675...`), version `1.11.1`.
+
 ## [1.11.0] - 2026-11-09
 
 ### Added

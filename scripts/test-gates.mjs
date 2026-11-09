@@ -58,7 +58,7 @@ function run(script, runArgs, cwd) {
   });
 }
 
-function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev, teamOpenPrev2, rows, tableRows = rows, previousRows = [], archivedRetros = [], legacy = false, exception = "", omitTeamOpen = false, omitClosed = false }) {
+function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev, teamOpenPrev2, rows, tableRows = rows, extraTableRows = [], previousRows = [], archivedRetros = [], legacy = false, exception = "", omitTeamOpen = false, omitClosed = false }) {
   const open = rows.filter((row) => !["done", "rejected", "superseded"].includes(row.status)).length;
   const frontmatter = [
     "---",
@@ -99,6 +99,14 @@ function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev,
     "|---|---|---|---|---|---|---|---|",
     ...tableRows.map((row) => `| ${row.id} | ${row.scope || "team"} | ${row.title} | G-01 | x | y | 2026-02-01 | 用户 |`),
     "",
+    ...(extraTableRows.length ? [
+      "### 5. 追加提案",
+      "",
+      "| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |",
+      "|---|---|---|---|---|---|---|---|",
+      ...extraTableRows.map((row) => `| ${row.id} | ${row.scope || "team"} | ${row.title} | G-01 | x | y | 2026-02-01 | 用户 |`),
+      "",
+    ] : []),
     "## RETRO-0000 — 2025-12-31 — previous",
     "",
     "### 4. 改进提案",
@@ -159,6 +167,28 @@ async function main() {
         name: "compliant",
         expect: 0,
         text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
+      },
+      {
+        name: "pipe-injection",
+        expect: 1,
+        text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 1, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [{ ...baseRow, title: "bad | injection" }] }),
+      },
+      {
+        name: "multi-table-retro",
+        expect: 0,
+        text: growthText({
+          lastRetroNew: 2,
+          lastRetroClosed: 2,
+          teamOpenLast: 0,
+          teamOpenPrev: 0,
+          teamOpenPrev2: 0,
+          rows: [
+            { id: "P-10", scope: "team", status: "done", title: "alpha done", landing: "1.0", evidence: "e", date: "2026-01-02" },
+            { id: "P-11", scope: "team", status: "done", title: "beta done", landing: "1.0", evidence: "e", date: "2026-01-02" },
+          ],
+          tableRows: [{ id: "P-10", scope: "team", status: "done", title: "alpha done", landing: "1.0", evidence: "e", date: "2026-01-02" }],
+          extraTableRows: [{ id: "P-11", scope: "team", status: "done", title: "beta done", landing: "1.0", evidence: "e", date: "2026-01-02" }],
+        }),
       },
       {
         name: "stale-new",
@@ -383,6 +413,10 @@ async function main() {
       "| P-02 | RETRO-0002 | open team | proposed | - | - | 2026-01-02 | team | 2026-02-01 |",
       "| P-03 | RETRO-0002 | open project | proposed | - | - | 2026-01-02 | project | 2026-02-01 |",
       "",
+      "## RETRO-0000 — archived",
+      "",
+      "- 归档：`team/archive/GROWTH-2025.md`",
+      "",
       "## RETRO-0001 — 2026-01-01 — old",
       "",
       "### 4. 改进提案",
@@ -409,6 +443,26 @@ async function main() {
     check("archive keeps ledger valid", archiveDebt.status === 0, `${archiveDebt.status}; ${(archiveDebt.stdout || archiveDebt.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
     const archivedText = fs.readFileSync(path.join(archiveDir, ".ai-team", "team", "GROWTH.md"), "utf8");
     check("archive keeps total open count", /^open_proposals:\s*2\s*$/m.test(archivedText), "open_proposals should be 2 (team + project)");
+    check("archive nav keeps old archived retro", /- RETRO-0000 —/.test(archivedText) && /- RETRO-0001 —/.test(archivedText), "nav should list old and newly archived RETROs");
+
+    const invalidArchiveDir = tmp("archive-invalid");
+    try {
+      const invalidText = growthText({
+        lastRetroNew: 1,
+        lastRetroClosed: 99,
+        teamOpenLast: 1,
+        teamOpenPrev: 1,
+        teamOpenPrev2: 1,
+        rows: [
+          { id: "P-01", scope: "team", status: "done", title: "old", landing: "1.0", evidence: "e", date: "2026-01-02" },
+        ],
+      });
+      write(path.join(invalidArchiveDir, ".ai-team", "team", "GROWTH.md"), invalidText);
+      const invalidArchiveRun = run(growthCheck, ["--project", invalidArchiveDir, "--archive", "--yes"], invalidArchiveDir);
+      check("archive refuses invalid ledger", invalidArchiveRun.status === 1, `${invalidArchiveRun.status}; ${(invalidArchiveRun.stdout || invalidArchiveRun.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    } finally {
+      fs.rmSync(invalidArchiveDir, { recursive: true, force: true });
+    }
   } finally {
     fs.rmSync(archiveDir, { recursive: true, force: true });
   }
@@ -663,6 +717,59 @@ async function main() {
     check("artifact blocks skipped scan", encodingArtifact.errors.some((item) => item.code === "credential-scan-skipped"), JSON.stringify(encodingArtifact.errors.map((item) => item.code)));
   } finally {
     fs.rmSync(encodingDir, { recursive: true, force: true });
+  }
+
+  const sizeDir = tmp("size");
+  try {
+    const largeFile = path.join(sizeDir, ".ai-team", "work", "large.md");
+    write(largeFile, `${"x".repeat(20)}\nAuthorization: Bearer abcdefgh12345678\n`);
+    const sizeRun = run(secretCheck, ["--project", sizeDir, "--max-file-bytes", "5", "--json"], sizeDir);
+    let sizeData = null;
+    try {
+      sizeData = JSON.parse(sizeRun.stdout || "");
+    } catch {
+      sizeData = null;
+    }
+    check("secret enforces max-file-bytes", (sizeData?.oversized || 0) >= 1 && sizeData?.result !== "PASS", `${sizeRun.status}; ${JSON.stringify({ oversized: sizeData?.oversized, result: sizeData?.result })}`);
+
+    const { scanSecrets: scanForTimeout } = await import(pathToFileURL(secretCheck).href);
+    const timeoutResult = scanForTimeout(sizeDir, { maxDurationMs: -1 });
+    check("secret enforces max-duration-ms", timeoutResult.timedOut === true, `timedOut=${timeoutResult.timedOut}`);
+
+    const bigDir = tmp("artifact-oversize");
+    try {
+      const bigFile = path.join(bigDir, ".ai-team", "work", "big.md");
+      fs.mkdirSync(path.dirname(bigFile), { recursive: true });
+      fs.writeFileSync(bigFile, `${"x".repeat(6 * 1024 * 1024)}\nAuthorization: Bearer abcdefgh12345678\n`);
+      const bigArtifact = run(artifactCheck, ["--project", bigDir, "--strict", "--max-files", "2000"], bigDir);
+      check("artifact blocks oversized evidence", bigArtifact.status === 1 && /credential-scan-oversized/.test(bigArtifact.stdout || ""), `${bigArtifact.status}; ${(bigArtifact.stdout || bigArtifact.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    } finally {
+      fs.rmSync(bigDir, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(sizeDir, { recursive: true, force: true });
+  }
+
+  const gbkDir = tmp("gbk");
+  try {
+    const gbkFile = path.join(gbkDir, ".ai-team", "work", "gbk.md");
+    fs.mkdirSync(path.dirname(gbkFile), { recursive: true });
+    const gbkBuffer = Buffer.concat([
+      Buffer.from([0xD6, 0xD0, 0xCE, 0xC4, 0x0A]),
+      Buffer.from("Authorization: Bearer abcdefgh12345678\n", "ascii"),
+    ]);
+    fs.writeFileSync(gbkFile, gbkBuffer);
+    const gbkRun = run(secretCheck, ["--project", gbkDir, "--fix", "--json"], gbkDir);
+    let gbkData = null;
+    try {
+      gbkData = JSON.parse(gbkRun.stdout || "");
+    } catch {
+      gbkData = null;
+    }
+    const after = fs.readFileSync(gbkFile);
+    check("secret fix refuses non-utf8", (gbkData?.fixUnsupported || []).length > 0 && gbkBuffer.equals(after), `${gbkRun.status}; unsupported=${(gbkData?.fixUnsupported || []).length}; unchanged=${gbkBuffer.equals(after)}`);
+  } finally {
+    fs.rmSync(gbkDir, { recursive: true, force: true });
   }
 
   const fixDir = tmp("fix");
