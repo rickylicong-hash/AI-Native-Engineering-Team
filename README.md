@@ -233,18 +233,18 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.13.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.14.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
 node scripts/verify.mjs
-# 期望：checks: 226, passed: 226, failed: 0
+# 期望：checks: 229, passed: 229, failed: 0
 #       OK: package is structurally valid.
 # 退出码 0 = 通过；1 = 有 FAIL，按输出中的 FAIL 行修复。
 
 # 2) 全局安装验证
 node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
-# 期望：checks: 222, passed: 222, failed: 0
+# 期望：checks: 225, passed: 225, failed: 0
 #       opencode lists ai-team/chief ... 全部 PASS
 # `~` 由脚本展开；PowerShell 也可写 $env:USERPROFILE\.config\opencode
 # `--opencode` 会调用 `opencode agent list`（稍慢），确认 OpenCode 真正识别 agent。
@@ -511,6 +511,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 
 - **已具备**：T4 Critical 轨道、workstream 拆分、G0–G8 门禁、任务 DAG、文件所有权、跨会话 HANDOFF、独立审查/测试/安全、发布/回滚模板。
 - **1.13.0 P0 工具**：`PROGRAM.md`/`WORKSTREAM.md` 模板 + `program-check`；`INTEGRATION.md` + `integration-check`；`impact-scan`；`QUEUE.json` + `next-task`；`gate-check` 统一预检。
+- **1.14.0 成长曲线**：`improve-metrics.mjs` 记录 `IMPROVEMENT-HISTORY.json`；`/ai-improve` 对比上一轮、检查上一轮任务达成、负成长强制加优化任务。
 - **仍缺**：真正持久编排（队列/调度/重试/合并队列服务）、语义代码索引、组合/项目群管理、成本治理、正式合规审计、生态连接器。
 - **结论**：5–15 人等效、3–12 个月、多模块项目可直接用；15–50 人先用 P0 模板/脚本；150+ 人/强合规不能开箱即用。
 - 详细评估与升级路线：[docs/LARGE-PROJECTS.md](docs/LARGE-PROJECTS.md)。

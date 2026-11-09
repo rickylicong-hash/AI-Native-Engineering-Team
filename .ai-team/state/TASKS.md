@@ -30,6 +30,7 @@
 | TASK-AUDIT-2026-11-09-LP-P0-2 | 集成列车模板 + integration-check | build | A1 | done | 集成记录校验 candidate/baseline/命令/退出码 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-LP-P0-3 | 影响面分析 impact-scan（changed files→modules→tests） | build | - | done | 对 fixture 输出 affected tests；不依赖外部服务 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-LP-P0-4 | 持久队列模板 + next-task 选择器 | build | LP-P0-1 | done | QUEUE.json 依赖校验；选择 ready 任务；fixture | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
+| TASK-AUDIT-2026-11-09-C1 | `/ai-improve` 历史指标、成长曲线与上一轮达成检查 | build | - | done | `improve-metrics` 记录 history；负成长强制优化任务；上一轮 missed 结转；fixture PASS | `.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md` |
 | TASK-AUDIT-2026-11-09-LP-P1-1 | 成本/容量看板 capacity-report | build | LP-P0-4 | todo | 每任务 token/耗时/全量测试次数可输出 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-LP-P1-2 | 专家 profile（frontend/backend/data-ml/sre） | build | - | todo | profile 存在且无项目路径；不新增 agent | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-LP-P1-3 | CI 质量门禁（覆盖率/契约/性能/flaky） | build | B6 | todo | 至少 1 个质量门禁有基线/阈值/回滚 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |

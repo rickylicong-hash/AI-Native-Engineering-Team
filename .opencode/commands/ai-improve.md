@@ -54,6 +54,21 @@ $ARGUMENTS
 
 每项输出：结论 / 证据（文件/命令/退出码/计数）/ 影响 / 建议。四项结论必须进入项目侧 `TEAM-IMPROVEMENT-*.md` 和最终汇报；只有一次证据的现象写 `RISKS.md`，不写成 GROWTH 提案。
 
+## 0.3 历史指标、成长曲线与上一轮达成（强制）
+
+每次 `/ai-improve` 必须先做历史对比和上一轮验收，不能只看当前快照：
+
+1. **采集并记录本轮指标**：运行
+   ```powershell
+   node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-metrics.mjs" `
+     --project . --write --json
+   ```
+   历史文件为 `.ai-team/team/IMPROVEMENT-HISTORY.json`；采集 quality-report、growth-check、TASKS、reviews/security、improve-scan（可用 `--no-sessions` 跳过会话扫描）。
+2. **输出成长曲线**：在报告中列出最近 6–8 轮的关键指标（first-pass、review-ready、team open、project open、review rounds、P1 escapes、tasks done），并与上一轮逐项比较：`improved / declined / flat`、delta、`growthScore`、`verdict`。
+3. **负成长处理**：若 `negativeGrowth=true`，必须做根因分析（流程/角色/工具/文档），并在本轮任务中至少增加 1 个直接改善恶化指标的任务（owner、验收、证据）；不能只解释不行动，也不能把 `NO-OP` 当作结论。
+4. **检查上一轮 improve 达成情况**：读取最新 `TEAM-IMPROVEMENT-*.md` 的“本轮任务”，逐项对照 `TASKS.md` 状态和 `GROWTH.md` 处置索引；输出 `done/partial/missed`、证据、未达成原因。`missed/partial` 必须结转为本轮任务或写入 `RISK-*`，不能静默丢失。
+5. **报告模板**：使用 `ai-team-workflow/templates/IMPROVEMENT-REPORT.md`，必须包含“历史指标与成长曲线”“上一轮达成情况”“负成长原因与优化策略”“本轮任务”四节。
+
 ## 1. 建立证据基线（只读）
 
 在项目目录优先运行一次统一预检（artifact/secret 只扫一次，state/checkpoint 复用结果）：
@@ -75,14 +90,20 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mj
 然后运行证据扫描：
 
 ```powershell
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-metrics.mjs" `
+  --project . --write --json
 node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
   --project "<project-path>" `
   --out "<project-path>/.ai-team/team/IMPROVEMENT-SCAN-YYYY-MM-DD.md"
 ```
 
+`improve-metrics` 会写 `.ai-team/team/IMPROVEMENT-HISTORY.json`，本轮报告必须引用它的成长曲线；如果只需要观察、不想写历史，用 `--json` 不加 `--write`。
+
 同时读取：
 
 - `.ai-team/team/GROWTH.md`：frontmatter、提案处置索引、RETRO、未处置项、落地版本是否真实存在；
+- `.ai-team/team/IMPROVEMENT-HISTORY.json`：历史指标与成长曲线；
+- 最新 `TEAM-IMPROVEMENT-*.md`：上一轮任务、验收、未达成项；
 - `.ai-team/team/AUDIT.json`：上次全量审计水位、覆盖会话数、报告路径；
 - `.ai-team/team/TEAM-USAGE-AUDIT-*.md`：最近一次会话审计结论；
 - `STATUS.md`、`TASKS.md`、`RISKS.md`、`HANDOFF.md`、`CHECKPOINT.json`；
@@ -101,6 +122,8 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 6. **行业对照**：只引用相关实践——PDCA/Kaizen、DORA、SRE 无责复盘、Diátaxis、最小权限/供应链安全。
 7. **成本与延迟**：报告趋势和异常，不建立预算机制，不因单次高消耗直接改流程。
 8. **四项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力；按 0.2 逐项输出，不能省略。
+9. **历史成长曲线**：按 0.3 比较最近 6–8 轮指标；负成长必须有根因和本轮优化任务。
+10. **上一轮 improve 达成**：按 0.3 检查最新 `TEAM-IMPROVEMENT-*.md` 的任务状态；未达成项必须结转。
 
 每个结论必须有文件路径、命令、退出码或计数；只有一次证据的现象写入 `RISKS.md`，不写成 GROWTH 提案。
 
@@ -126,6 +149,8 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 - 提案必须有：目标、证据、验收标准、风险、回滚、文档影响、版本级别、scope、复查日期。
 - 分析阶段**不修改** `GROWTH.md`、AI Native 源、版本或安装。
 - 报告必须写清“授权后将要改哪些文件、调用哪些角色、版本级别、风险”。
+- `negativeGrowth=true` 时不得选择 `NO-OP`；本轮至少 1 个任务直接改善恶化指标，并写清 owner/验收/证据。
+- 上一轮 `partial/missed` 不得静默消失：必须结转到本轮任务，或写 `RISK-*` + 复查日期并说明原因。
 
 ## 4. 授权门（强制）
 
@@ -184,6 +209,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
    - 不使用 `git add -A` / `git add .`；push 前需用户批准；
    - 更新安装后提示新开会话（`RESTART REQUIRED`）。
 10. 实施完成后归档/清理 AI Native 本地 `.ai-team/` 证据，保留发布所需摘要。
+11. 实施完成后重新运行 `improve-metrics.mjs --project <project> --write --json`，把改善后的指标写入历史；下一轮 `/ai-improve` 用它检查本轮达成情况。
 
 ## 6. 持续优化策略
 
@@ -191,7 +217,9 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 - **净零**：每轮新增 `TEAM-CORE` ≤2，且 ≤ 关闭/合并数；团队 open 连续两轮上升→停止新增，先清债。
 - **债务指标**：`growth-check --debt` 看 team/project open、年龄、重复簇；`improve-scan` 报告趋势。
 - **触发**：每 10 个 `done`、每月、每次团队版本发布后、P0/P1 事故后、同类问题第 2 次出现、GROWTH 未处置 ≥3。
-- **基线**：先记录当前指标，再改；至少保留一组改动前后对比。
+- **基线**：先记录当前指标，再改；至少保留一组改动前后对比。`improve-metrics` 写 `IMPROVEMENT-HISTORY.json`，每轮报告展示成长曲线。
+- **成长曲线**：最近 6–8 轮 first-pass/review-ready/team open/project open/rounds/P1 escapes/tasks done 对比；负成长必须当轮加优化任务。
+- **上一轮验收**：每次先检查最新 `TEAM-IMPROVEMENT-*.md` 的任务状态；`partial/missed` 结转到本轮或写 `RISK-*`。
 - **小步**：一次最多 2 个改动；优先 prompt/命令/模板，再脚本，最后才角色。
 - **可回滚**：每个提案写回滚方式和观察窗口。
 - **无改善就撤回**：观察一个完整节奏后仍无改善，标记 `rejected`/`superseded`。
@@ -205,8 +233,10 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 
 - 目标校准：已复述 `docs/TEAM.md` §0/§0.1；与请求一致 / 冲突（冲突时先停）；
 - 四项检查：目标偏移 / 流程效率 / 定义冲突与过期 / 大型项目能力；每项 1 行结论 + 证据；
+- 成长曲线：最近 6–8 轮关键指标 + 本轮 vs 上轮 delta / verdict；`negativeGrowth` 是/否；
+- 上一轮达成：done/partial/missed 数量 + 未达成项结转；
 - 模式：分析 / 实施；
-- 结论：`NO-OP` / `DOCS-ONLY` / `PATCH` / `FEATURE` / `ROLE-GAP` / `DEFER`；
+- 结论：`NO-OP` / `DOCS-ONLY` / `PATCH` / `FEATURE` / `ROLE-GAP` / `DEFER`；负成长时不得 NO-OP；
 - 项目与证据：GROWTH 未处置数、会话/消息/工具错误/权限拒绝、最近审计水位；
 - 主要发现 3 条（带证据路径）；
 - 提案 1–3 条（目标/验收/版本级别）；

@@ -258,6 +258,7 @@ if (fs.existsSync(workflowDir)) {
     "PROJECT.md", "STATUS.md", "TASKS.md", "HANDOFF.md", "PRD.md",
     "ARCHITECTURE.md", "ADR.md", "REVIEW.md", "TEST-REPORT.md", "SECURITY-REPORT.md", "RELEASE-PLAN.md", "GROWTH.md", "AI-TEAM-GITIGNORE",
     "PROGRAM.md", "WORKSTREAM.md", "INTEGRATION.md", "QUALITY-TREND.md", "QUEUE.json",
+    "IMPROVEMENT-REPORT.md", "IMPROVEMENT-HISTORY.json",
   ];
   for (const t of expected) {
     addCheck(`workflow template ${t}`, fs.existsSync(path.join(workflowDir, "templates", t)));

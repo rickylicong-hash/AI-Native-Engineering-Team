@@ -3,6 +3,34 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.14.0] - 2026-11-09
+
+### Added
+
+- **`/ai-improve` historical growth curve**: `improve-metrics.mjs` records `.ai-team/team/IMPROVEMENT-HISTORY.json` and compares the current run with the previous 6–8 entries (first-pass, review-ready, team/project open, review rounds, P1 escapes, tasks done, review/security counts).
+- **Negative-growth action rule**: if a key metric worsens beyond threshold (first-pass/review-ready down >5pp, team open up, P1 escapes up, rounds up >0.25), `negativeGrowth=true`; the current round must add at least one task that directly improves the declining metric, with owner/acceptance/evidence. `NO-OP` is not allowed.
+- **Previous-improvement check**: every `/ai-improve` reads the latest `TEAM-IMPROVEMENT-*.md` “本轮任务” and checks `done/partial/missed` against `TASKS.md`/`GROWTH.md`; missed/partial items are carried into the current round or registered as `RISK-*`.
+- **Templates**: `templates/IMPROVEMENT-REPORT.md` (four mandatory sections) and `templates/IMPROVEMENT-HISTORY.json`.
+- **Team-source baseline**: `.ai-team/team/IMPROVEMENT-HISTORY.json` records the first snapshot.
+
+### Changed
+
+- `ai-improve` now mandates 0.3 history/previous-round verification, adds dimensions 9–10, and forbids `NO-OP` under negative growth.
+- `docs/IMPROVEMENT.md` §3.4, `ai-team-workflow` §3.9 and `audit-team-consistency` enforce the history/previous-round checks.
+- `test-gates` adds `improve-metrics` first-run and second-run comparison fixtures.
+
+### Verified
+
+- `node scripts/verify.mjs` → 229/229, 0 warnings.
+- `node scripts/test-gates.mjs` → 82/82.
+- `node scripts/audit-team-consistency.mjs` → 211 checks, 0 failed.
+- `node scripts/ownership-lint.mjs` → PASS.
+- `node scripts/sync-agent-permissions.mjs` → PASS.
+- `permission-lint.mjs` → 590 checks, PASS.
+- `artifact-check --strict` → 0 error / 0 warning.
+- `growth-check --project . --debt` → PASS.
+- `improve-metrics --project riccon-ai --write --no-sessions` → first snapshot; second run `stable`, `negativeGrowth=false`.
+
 ## [1.13.0] - 2026-11-09
 
 ### Added

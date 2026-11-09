@@ -443,15 +443,17 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
 2. **四项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力（按 `docs/LARGE-PROJECTS.md`）；每项给证据，缺证据写“数据缺口”；
-3. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；优先用 `gate-check.mjs --mode handoff` 做一次证据预检；
-4. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
-5. **默认停止并等待用户授权**；授权后用 `--apply` 实施，不能在同一轮自动修改团队源；
-6. 实施按风险调用子智能体：`DOCS-ONLY` 由 build 自己改；`PATCH` 加 code-reviewer；涉及脚本/权限/安全加 security-auditor；`FEATURE` 才用完整团队链；
-7. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`；完成后清理本地 `.ai-team` 证据。
+3. **历史成长曲线 + 上一轮达成**：运行 `improve-metrics.mjs --write` 比较最近 6–8 轮指标；检查最新 `TEAM-IMPROVEMENT-*.md` 的任务 done/partial/missed；负成长必须当轮加优化任务，未达成项必须结转；
+4. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；优先用 `gate-check.mjs --mode handoff` 做一次证据预检；
+5. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
+6. **默认停止并等待用户授权**；授权后用 `--apply` 实施，不能在同一轮自动修改团队源；
+7. 实施按风险调用子智能体：`DOCS-ONLY` 由 build 自己改；`PATCH` 加 code-reviewer；涉及脚本/权限/安全加 security-auditor；`FEATURE` 才用完整团队链；
+8. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`；完成后清理本地 `.ai-team` 证据。
 
 硬规则：
 
 - 单次现象写 `RISK-*`，≥2 次证据才写 GROWTH 提案；`ROLE-GAP` 需 ≥3 次、跨 ≥2 任务/项目且现有角色无法覆盖；
+- 负成长不得 `NO-OP`：本轮至少 1 个任务直接改善恶化指标；上一轮 `partial/missed` 必须结转或写 `RISK-*`；
 - 默认不新增角色；每轮最多 2 个改动；优先改 prompt/命令/模板，再考虑脚本；
 - 优化必须写清基线、验收、回滚和观察窗口；无改善就标记 `rejected`/`superseded`；
 - 文档、命令、计数、版本必须同轮同步，文档不一致视为未完成；

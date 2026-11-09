@@ -39,6 +39,7 @@ const nextTask = path.join(workflowScripts, "next-task.mjs");
 const impactScan = path.join(workflowScripts, "impact-scan.mjs");
 const integrationCheck = path.join(workflowScripts, "integration-check.mjs");
 const gateCheck = path.join(workflowScripts, "gate-check.mjs");
+const improveMetrics = path.join(workflowScripts, "improve-metrics.mjs");
 
 const failures = [];
 const checks = [];
@@ -962,6 +963,23 @@ async function main() {
     check("integration-check validates record", integrationRun.status === 0, `${integrationRun.status}; ${(integrationRun.stdout || integrationRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
   } finally {
     fs.rmSync(integrationDir, { recursive: true, force: true });
+  }
+
+  const metricsDir = tmp("metrics");
+  try {
+    write(path.join(metricsDir, ".ai-team", "state", "TASKS.md"), "# Tasks\n\n| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |\n|---|---|---|---|---|---|---|\n| TASK-9301 | fixture | ai-team/engineer | - | todo | AC | - |\n");
+    fs.mkdirSync(path.join(metricsDir, ".ai-team", "team"), { recursive: true });
+    fs.copyFileSync(path.join(process.cwd(), ".ai-team", "team", "GROWTH.md"), path.join(metricsDir, ".ai-team", "team", "GROWTH.md"));
+    const first = run(improveMetrics, ["--project", metricsDir, "--write", "--no-sessions", "--json"], metricsDir);
+    let firstData = null;
+    try { firstData = JSON.parse(first.stdout || ""); } catch { firstData = null; }
+    check("improve-metrics first run records history", first.status === 0 && firstData?.verdict === "first-run" && firstData?.entries === 1, `${first.status}; ${JSON.stringify({ verdict: firstData?.verdict, entries: firstData?.entries })}`);
+    const second = run(improveMetrics, ["--project", metricsDir, "--write", "--no-sessions", "--json"], metricsDir);
+    let secondData = null;
+    try { secondData = JSON.parse(second.stdout || ""); } catch { secondData = null; }
+    check("improve-metrics second run compares history", second.status === 0 && secondData?.entries === 2 && secondData?.previous !== null && secondData?.negativeGrowth === false, `${second.status}; ${JSON.stringify({ entries: secondData?.entries, verdict: secondData?.verdict, negativeGrowth: secondData?.negativeGrowth })}`);
+  } finally {
+    fs.rmSync(metricsDir, { recursive: true, force: true });
   }
 
   for (const item of checks) {

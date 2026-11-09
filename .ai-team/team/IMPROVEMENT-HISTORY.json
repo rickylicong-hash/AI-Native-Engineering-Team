@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "project": "D:\\Documents\\AI Native",
+  "entries": [
+    {
+      "recordedAt": "2026-11-09T12:31:38.578Z",
+      "date": "2026-11-09",
+      "metrics": {
+        "teamOpen": 0,
+        "projectOpen": 0,
+        "openTotal": 0,
+        "proposalsDone": 11,
+        "firstPassRate": null,
+        "reviewReadyRate": null,
+        "reviewRoundsAvg": null,
+        "p1Findings": 14,
+        "p1Escapes": 0,
+        "tasksDone": 21,
+        "tasksTotal": 31,
+        "reviews": 16,
+        "securityReports": 9,
+        "sessions": null,
+        "messages": null,
+        "toolCalls": null,
+        "toolErrors": null,
+        "permissionDenied": null
+      },
+      "verdict": "first-run",
+      "growthScore": 0,
+      "negativeGrowth": false,
+      "warningCount": 0
+    }
+  ],
+  "updated": "2026-11-09T12:31:38.578Z"
+}

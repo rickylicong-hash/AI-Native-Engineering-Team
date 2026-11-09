@@ -15,7 +15,7 @@
 
 | TASK | Owner | 状态 | 证据 |
 |---|---|---|---|
-| TASK-AUDIT-2026-11-09-A1..B6, LP-P0-1..4 | build | done | `.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md` |
+| TASK-AUDIT-2026-11-09-A1..B6, C1, LP-P0-1..4 | build | done | `.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md` |
 | LP-P1/P2 backlog | build | todo | `.ai-team/state/TASKS.md` |
 
 ## Blocked / Risks

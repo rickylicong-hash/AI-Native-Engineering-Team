@@ -384,6 +384,14 @@ const improveCommandText = read(path.join(commandsDir, "ai-improve.md"));
 for (const phrase of ["目标偏移检查", "流程与智能体效率检查", "定义冲突/臃肿/重复/过期检查", "大型项目能力检查"]) {
   check(`improve command has four-check ${phrase}`, improveCommandText.includes(phrase), "missing mandatory audit check");
 }
+for (const phrase of ["成长曲线", "上一轮 improve", "negativeGrowth", "IMPROVEMENT-HISTORY.json"]) {
+  check(`improve command has history/previous check ${phrase}`, improveCommandText.includes(phrase), "missing history/previous-round check");
+}
+check(
+  "improve-metrics script exists",
+  fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", "improve-metrics.mjs")),
+  "missing improve-metrics.mjs",
+);
 check(
   "improve command uses gate-check preflight",
   improveCommandText.includes("gate-check.mjs"),

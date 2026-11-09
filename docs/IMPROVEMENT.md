@@ -142,7 +142,18 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 - 上下文压缩/交接频率；
 - token 与耗时趋势（只观察，不建立预算机制）。
 
-### 3.4 文档与知识
+### 3.4 历史指标与成长曲线（1.14.0）
+
+每次 `/ai-improve` 必须记录历史快照并比较上一轮：
+
+- 脚本：`improve-metrics.mjs --project . --write --json`；历史文件 `.ai-team/team/IMPROVEMENT-HISTORY.json`。
+- 指标：first-pass、review-ready、review rounds、P1 findings/escapes、team/project open、tasks done、review/security 报告数、会话/工具错误（可选）。
+- 成长判定：关键指标改善/恶化超过阈值 → `improving / stable / declining`；`team open` 上升、first-pass/review-ready 下降 >5pp、P1 escapes 上升、rounds 上升 >0.25 视为 `negativeGrowth`。
+- 负成长：必须分析根因，并在本轮任务中至少增加 1 个直接改善恶化指标的任务（owner/验收/证据）；不得以 `NO-OP` 结束。
+- 上一轮达成：读取最新 `TEAM-IMPROVEMENT-*.md` 的“本轮任务”，对照 `TASKS.md`/`GROWTH.md`，输出 done/partial/missed；未达成项结转到本轮或写 `RISK-*`。
+- 报告模板：`templates/IMPROVEMENT-REPORT.md`。
+
+### 3.5 文档与知识
 
 - README/INSTALL/docs 中的命令能否执行；
 - 版本号、命令数、验证计数是否一致；
