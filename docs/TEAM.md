@@ -183,16 +183,24 @@ A = 批准；R = 负责执行；C = 咨询；I = 知会。
 
 | Agent | 流程上可写 | 流程上不可写 |
 |---|---|---|
-| Chief | `.ai-team/state/**`、`tasks/**`、`team/**`、`README.md` | 源码、产品、设计、测试、部署、`.opencode/**` |
+| Chief | `.ai-team/state/**`、`tasks/**`、`team/**` | 源码、产品、设计、测试、部署、`.opencode/**` |
 | PM | `.ai-team/product/**` | 其他一切 |
 | UX | `.ai-team/design/ux/**`、`design/**`、`mockups/**`、`prototypes/**` | 源码、需求、架构、测试、部署 |
 | Architect | `.ai-team/design/architecture/**`、`adr/**`、`docs/adr/**` | 源码、需求、UX、测试、部署 |
 | Engineer | 源码、单元测试、`.ai-team/work/**` | 产品/设计/审查/安全/QA/发布/状态；QA-owned `**/src/test/java/**/e2e/**`、`qa/**` |
 | Reviewer | `.ai-team/reviews/**` | 其他一切（尤其源码） |
-| QA | `tests/**`、`e2e/**`、`qa/**`、`**/src/test/java/**/e2e/**`、`**/src/test/java/**/qa/**`、测试文件、`.ai-team/qa/**` | 生产代码、需求/设计/部署 |
+| QA | `tests/**`、`test/**`、`e2e/**`、`qa/**`、`**/src/test/java/**/e2e/**`、`**/src/test/java/**/qa/**`、`**/src/test/resources/**/e2e/**`、`**/src/test/resources/**/qa/**`、`.ai-team/qa/**` | 生产代码、需求/设计/部署；Engineer-owned 单元测试（`**/*.test.*`、`**/*.spec.*`、`**/__tests__/**`） |
 | Security | `.ai-team/security/**` | 其他一切 |
 | DevOps | `deploy/**`、`ops/**`、`infra/**`、`terraform/**`、`k8s/**`、`helm/**`、`docker/**`、`.github/**`、CI/Docker/Makefile、`.ai-team/release/**`、`.ai-team/work/TASK-GIT-*EVIDENCE.md` | 业务代码、需求/设计/测试 |
-| Writer | `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.ai-team/docs/**` | 源码、需求/设计/测试/部署 |
+| Writer | `docs/**`、`README.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.ai-team/docs/**`（不含 `docs/adr/**`） | 源码、需求/设计/测试/部署 |
+
+**所有权优先级（1.13.0）**：
+
+- **单元测试**：与源码同目录的 `**/*.test.*`、`**/*.spec.*`、`**/__tests__/**` = Engineer；独立测试套件（`tests/**`、`test/**`、`e2e/**`、`qa/**`、Java e2e/qa）= QA；QA 不编辑 Engineer 单测。
+- **README**：根 `README.md` = Writer；Chief 只写 `.ai-team/README.md`。
+- **ADR**：`docs/adr/**` = Architect；Writer 的 `docs/**` 排除该目录。
+- **工作证据**：`.ai-team/work/TASK-GIT-*EVIDENCE.md` = DevOps，优先于 Engineer 的 `.ai-team/work/**`。
+- 机器可读定义以 `team-manifest.json` 的 `owns`/`excludes`/`ownershipPolicy` 为准；本表是解释，不是第二事实源。
 
 `edit`/`read`/`task`/`subagent`/`external_directory` 不再有 agent 级权限限制；唯一权限边界是 shell 破坏性命令 deny。项目级 `.opencode/opencode.jsonc` 可以新增破坏性 deny，但不能把 shell 重新收紧成 allowlist。
 

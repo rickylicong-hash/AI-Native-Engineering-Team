@@ -1,7 +1,7 @@
 {
   "name": "AI Native Engineering Team",
   "id": "ai-team",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "A stack-agnostic, globally installable AI engineering team for OpenCode V2. One instruction drives product, UX, architecture, implementation, review, testing, security, deployment and documentation.",
   "default_agent": "ai-team/chief",
   "entry_command": "/ai <goal>",
@@ -39,7 +39,8 @@
       "file": "agents/ai-team/engineer.md",
       "mode": "subagent",
       "role": "Software Engineer",
-      "owns": ["source code", "unit tests", ".ai-team/work/**"]
+      "owns": ["src/**", "app/**", "lib/**", "packages/**", "**/src/main/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", ".ai-team/work/**"],
+      "excludes": ["tests/**", "test/**", "e2e/**", "qa/**", "**/src/test/java/**/e2e/**", "**/src/test/java/**/qa/**", "**/src/test/resources/**/e2e/**", "**/src/test/resources/**/qa/**", ".ai-team/work/TASK-GIT-*EVIDENCE.md"]
     },
     {
       "id": "ai-team/code-reviewer",
@@ -53,7 +54,8 @@
       "file": "agents/ai-team/qa-engineer.md",
       "mode": "subagent",
       "role": "QA Engineer",
-      "owns": ["tests/**", "test/**", "e2e/**", "qa/**", "**/src/test/java/**/e2e/**", "**/src/test/java/**/qa/**", "**/src/test/resources/**/e2e/**", "**/src/test/resources/**/qa/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**", ".ai-team/qa/**"]
+      "owns": ["tests/**", "test/**", "e2e/**", "qa/**", "**/src/test/java/**/e2e/**", "**/src/test/java/**/qa/**", "**/src/test/resources/**/e2e/**", "**/src/test/resources/**/qa/**", ".ai-team/qa/**"],
+      "excludes": ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/src/main/**"]
     },
     {
       "id": "ai-team/security-auditor",
@@ -67,16 +69,24 @@
       "file": "agents/ai-team/devops-engineer.md",
       "mode": "subagent",
       "role": "DevOps / Release Engineer",
-      "owns": ["deploy/**", "ops/**", "infra/**", "terraform/**", "k8s/**", "helm/**", "docker/**", ".github/**", "Dockerfile*", "docker-compose*", ".ai-team/release/**"]
+      "owns": ["deploy/**", "ops/**", "infra/**", "terraform/**", "k8s/**", "helm/**", "docker/**", ".github/**", "Dockerfile*", "docker-compose*", ".ai-team/release/**", ".ai-team/work/TASK-GIT-*EVIDENCE.md"]
     },
     {
       "id": "ai-team/technical-writer",
       "file": "agents/ai-team/technical-writer.md",
       "mode": "subagent",
       "role": "Technical Writer",
-      "owns": ["docs/**", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", ".ai-team/docs/**"]
+      "owns": ["docs/**", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", ".ai-team/docs/**"],
+      "excludes": ["docs/adr/**"]
     }
   ],
+  "ownershipPolicy": {
+    "unitTests": "co-located unit tests (**/*.test.*, **/*.spec.*, **/__tests__/**) = Engineer; independent suites (tests/**, test/**, e2e/**, qa/**, Java e2e/qa) = QA",
+    "docs": "docs/** = Writer except docs/adr/** = Architect",
+    "readme": "root README.md = Writer; Chief only .ai-team/README.md",
+    "workEvidence": "DevOps .ai-team/work/TASK-GIT-*EVIDENCE.md takes precedence over Engineer .ai-team/work/**",
+    "exceptions": ["DevOps may write .ai-team/work/TASK-GIT-*EVIDENCE.md; Engineer owns the rest of .ai-team/work/**", "QA owns independent test suites only; it must not edit Engineer unit tests without a brief exception"]
+  },
   "commands": [
     { "id": "ai", "file": "commands/ai.md", "description": "One instruction starts the full lifecycle" },
     { "id": "ai-plan", "file": "commands/ai-plan.md", "description": "Product, UX, architecture and task plan only" },

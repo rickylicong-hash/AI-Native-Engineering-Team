@@ -3,6 +3,39 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.13.0] - 2026-11-09
+
+### Added
+
+- **Four mandatory `/ai-improve` checks**: goal drift, process/agent efficiency, definition conflicts/bloat/outdated docs, and large-project capability. The command now requires evidence for each and uses `gate-check` for the read-only baseline.
+- **Unified preflight (`gate-check.mjs`)**: runs artifact/secret once and reuses the result via `state-check/checkpoint-check --artifacts-ok`, then aggregates retro/checkpoint/growth; modes `start|handoff|gate|release|retro`.
+- **State gate fail-closed**: `state-check` now treats missing `PROJECT.md`/`STATUS.md`/`TASKS.md` as errors; `--bootstrap` allows initialization with warnings.
+- **Ownership lint**: `scripts/ownership-lint.mjs` + manifest `excludes`/`ownershipPolicy`; removes QA ownership of Engineer unit tests, Chief root README, and Writer ADR overlap.
+- **Permission-block sync**: `scripts/sync-agent-permissions.mjs --check` validates all 10 agents against `permissions.json`.
+- **Large-project P0**: `PROGRAM.md` / `WORKSTREAM.md` / `INTEGRATION.md` / `QUEUE.json` templates; `program-check.mjs`, `next-task.mjs`, `impact-scan.mjs`, `integration-check.mjs`.
+- **Quality trend**: `templates/QUALITY-TREND.md`; `/ai-retro` records quality-report metrics into `team/QUALITY-TREND.md` and STATUS.
+
+### Changed
+
+- T3/T4 reviewer/QA baseline wording is now conditional: rerun only when there is no valid baseline for the same candidate commit; otherwise reuse + V1.
+- Brief templates in `chief.md` / `docs/WORKFLOW.md` now point to `brief-new.mjs` + `brief-lint.mjs` as the single source, removing the stale field subset.
+- Agent Shell discipline is role-scoped and moved to `ai-team-workflow` §3.5; duplicated 10-line blocks were reduced.
+- CI no longer runs `test-gates` twice or `secret-check` twice (`verify` includes fixtures; `artifact-check` includes secret scan).
+- `checkpoint-check --offline` avoids `git ls-remote` waits; `review-check --strict` enforces modern review sections (ownership/P2/Done gate).
+- `docs/LARGE-PROJECTS.md` reflects 1.10–1.13 capabilities and resolves the Program Manager/token-budget policy conflicts.
+
+### Verified
+
+- `node scripts/verify.mjs` → 226/226, 0 warnings.
+- `node scripts/test-gates.mjs` → 80/80.
+- `node scripts/audit-team-consistency.mjs` → 206 checks, 0 failed.
+- `node scripts/audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `node scripts/ownership-lint.mjs` → PASS.
+- `node scripts/sync-agent-permissions.mjs` → PASS.
+- `node .opencode/skills/ai-team-workflow/scripts/permission-lint.mjs` → 590 checks, PASS.
+- `artifact-check --strict --max-files 2000` → 0 error / 0 warning.
+- `growth-check --project . --debt` → 11 proposals, team open 0, PASS; RETRO-0001..0007 archived.
+
 ## [1.12.0] - 2026-11-09
 
 ### Changed

@@ -258,6 +258,15 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\artifact-check.mjs" --project .
 ```
 
+1.13.0 起优先用统一预检，避免 state/checkpoint 各自重复扫描：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\gate-check.mjs" `
+  --project . --mode start   # 或 handoff / gate / release
+```
+
+`gate-check` 只跑一次 artifact+secret；state-check/checkpoint-check 通过 `--artifacts-ok` 复用结果；只有定位时才单独跑子脚本。
+
 有 error（stage/track 不一致、根目录产物、不可读证据等）时，**不得交接、不得把门禁标为通过**；先修正状态文件或清理产物。`--strict` 会把 warning 也变成失败。
 
 ### 3.4 成长档案处置与归档（1.3.0）
@@ -316,7 +325,8 @@ Profile 文件：
 - 只有破坏性命令 deny：`git reset --hard`、`git clean`、`git restore`/`checkout --`、force push/mirror/delete、history rewrite、删除分支/tag/stash、强制删除 worktree（`--force`/`-f`）、`rm -rf`、`Remove-Item -Recurse`、prune/destroy/delete；非 force 的 `git worktree remove` 允许，但只清理自己任务 brief 中的 worktree，不得删除他人工作区；
 - `.env`/密钥、commit/push、publish/deploy 不再由 shell 权限拦截；仍按 brief 和流程约束；
 - 写日志/证据必须 UTF-8：PowerShell 5.1 下 `Tee-Object`、`*>` 可能生成 UTF-16；统一用 `Out-File -Encoding utf8`（或 `$PSDefaultParameterValues['Out-File:Encoding']='utf8'`）；
-- 证据中的 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 必须脱敏；提交前跑 `secret-check.mjs`；
+- 证据中的 `Set-Cookie`/`Authorization`/`Cookie`/口令/token 必须脱敏；提交前跑 `secret-check.mjs` 或统一的 `gate-check.mjs`（artifact+secret 只扫一次）；
+- 角色化证据门禁：Engineer/QA/DevOps/Reviewer/Security 在产出或报告收口时运行 `gate-check.mjs --mode gate`；PM/UX/Architect/Writer 不运行 artifact/secret，除非 brief 明确要求；
 - 收到 `Permission denied` 时：若命令不是破坏性操作，先检查是否旧会话/旧版本（`version.mjs`），新开会话；不要为了绕过它扩大 allow。
 
 **Brief 生成 + 预检：**
@@ -432,11 +442,12 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 `/ai-improve <project>` 由 `build` 维护者运行，用真实项目证据优化团队本身：
 
 1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
-2. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；
-3. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
-4. **默认停止并等待用户授权**；授权后用 `--apply` 实施，不能在同一轮自动修改团队源；
-5. 实施按风险调用子智能体：`DOCS-ONLY` 由 build 自己改；`PATCH` 加 code-reviewer；涉及脚本/权限/安全加 security-auditor；`FEATURE` 才用完整团队链；
-6. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`；完成后清理本地 `.ai-team` 证据。
+2. **四项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力（按 `docs/LARGE-PROJECTS.md`）；每项给证据，缺证据写“数据缺口”；
+3. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；优先用 `gate-check.mjs --mode handoff` 做一次证据预检；
+4. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
+5. **默认停止并等待用户授权**；授权后用 `--apply` 实施，不能在同一轮自动修改团队源；
+6. 实施按风险调用子智能体：`DOCS-ONLY` 由 build 自己改；`PATCH` 加 code-reviewer；涉及脚本/权限/安全加 security-auditor；`FEATURE` 才用完整团队链；
+7. 回填项目 `GROWTH.md` 的提案处置索引，运行 `growth-check`；完成后清理本地 `.ai-team` 证据。
 
 硬规则：
 
@@ -491,7 +502,28 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 - 用“重跑通过”关闭 flaky / P1 / 安全项；
 - 复用基线但不校验指纹、不读计数；
 - Reviewer/QA 以“工程师已跑”为由完全不执行独立验证；
+- 把 T3/T4 当作“必须无条件重跑全量”；有有效基线时只做指纹校验 + V1；
 - 为省时间跳过 G5/G7 要求的全量。
+
+### 3.11 大型项目 P0 编排（1.13.0）
+
+大型项目先补“状态/集成/影响面/队列”，不先加角色：
+
+| 能力 | 文件/脚本 | 用法 |
+|---|---|---|
+| Program/Workstream | `templates/PROGRAM.md`、`templates/WORKSTREAM.md`、`program-check.mjs` | `node program-check.mjs --project . --strict`；检查 owner/依赖/循环/缺 workstream 文件 |
+| 持久队列 | `templates/QUEUE.json`、`next-task.mjs` | `node next-task.mjs --project . --claim`；只选依赖已 done 的 ready 任务 |
+| 影响面 | `impact-scan.mjs` | `node impact-scan.mjs --project . --base HEAD~1 --json`；输出 changed→module→affected tests，供 V1 |
+| 集成列车 | `templates/INTEGRATION.md`、`integration-check.mjs` | `node integration-check.mjs --project . --strict`；校验候选/baseline/命令/退出码/merge order/冒烟/回滚 |
+| 统一预检 | `gate-check.mjs` | `--mode start|handoff|gate|release`；artifact/secret 只扫一次 |
+
+规则：
+
+- 一个 workstream 一个 lead owner；同一文件同一时间只有一个 writer。
+- 契约先冻结，再并行；跨 workstream 依赖写 ID，`program-check` 校验循环。
+- 每个集成候选只跑 1 条全量；workstream 内部用 V1，不各自跑全量。
+- 成本/容量默认只观察；T4/workstream 预算需用户批准。
+- 不新增 Program Manager 角色，除非满足 `ROLE-GAP` 门槛并获得用户批准。
 
 ## 4. 目录与产物
 

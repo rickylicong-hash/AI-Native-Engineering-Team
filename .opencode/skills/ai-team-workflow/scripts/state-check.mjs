@@ -13,6 +13,8 @@
  * 用法：
  *   node state-check.mjs [--project <dir>] [--json] [--strict]
  *   node state-check.mjs --max-evidence-files 2000  # 证据扫描上限（默认 2000，必须 >= 1）
+ *   node state-check.mjs --bootstrap               # 初始化期允许缺核心状态文件（仅 warning）
+ *   node state-check.mjs --artifacts-ok            # 调用方已跑过 artifact-check，跳过重复扫描
  *
  * 退出码：
  *   0 = 无 error（warning 不阻断）
@@ -37,6 +39,8 @@ const hasFlag = (name) => args.includes(name);
 const project = path.resolve(getArg("--project", process.cwd()).replace(/^~(?=$|[\\/])/, process.env.USERPROFILE || process.env.HOME || ""));
 const json = hasFlag("--json");
 const strict = hasFlag("--strict");
+const bootstrap = hasFlag("--bootstrap");
+const artifactsOk = hasFlag("--artifacts-ok") || hasFlag("--skip-artifacts");
 
 /**
  * 读取数量型参数；显式传值必须是 >= 1 的整数（与 checkpoint-check 同一规则）。
@@ -141,6 +145,13 @@ if (!fs.existsSync(stateDir)) {
   process.exit(2);
 }
 
+const missingCore = [projectFile, statusFile, tasksFile].filter((file) => !fs.existsSync(file));
+if (missingCore.length > 0) {
+  const message = `missing core state file(s): ${missingCore.map((file) => path.basename(file)).join(", ")}`;
+  if (bootstrap) warnings.push(`${message} (bootstrap mode)`);
+  else errors.push(message);
+}
+
 try {
   const projectFm = fs.existsSync(projectFile) ? frontmatter(read(projectFile)) : {};
   const statusText = fs.existsSync(statusFile) ? read(statusFile) : "";
@@ -155,10 +166,10 @@ try {
   if (projectStage && statusStage && projectStage !== statusStage) {
     errors.push(`stage mismatch: PROJECT.md=${projectStage}, STATUS.md=${statusStage}`);
   }
-  if (!projectStage) warnings.push("PROJECT.md has no stage");
-  if (!statusStage) warnings.push("STATUS.md has no Stage");
-  if (!/^-\s*Retro:/m.test(statusText)) warnings.push("STATUS.md has no Retro line");
-  if (!/^-\s*Checkpoint:/m.test(statusText)) warnings.push("STATUS.md has no Checkpoint line");
+  if (fs.existsSync(projectFile) && !projectStage) warnings.push("PROJECT.md has no stage");
+  if (fs.existsSync(statusFile) && !statusStage) warnings.push("STATUS.md has no Stage");
+  if (fs.existsSync(statusFile) && !/^-\s*Retro:/m.test(statusText)) warnings.push("STATUS.md has no Retro line");
+  if (fs.existsSync(statusFile) && !/^-\s*Checkpoint:/m.test(statusText)) warnings.push("STATUS.md has no Checkpoint line");
 
   // P-18：CHECKPOINT.json 是 checkpoint 的唯一事实源；HANDOFF/STATUS 必须同步到它。
   let checkpointCommit = "";
@@ -258,19 +269,24 @@ try {
 
   // P-15/P-17：根目录产物与证据可读性也属于状态一致性的一部分。
   // P-36：扫描上限与 checkpoint-check 对齐，避免同一项目两套判定。
-  const artifacts = checkArtifacts(project, { maxEvidenceFiles });
-  artifactSummary = {
-    errors: artifacts.errors.length,
-    warnings: artifacts.warnings.length,
-    scanned: artifacts.scanned,
-    truncated: artifacts.truncated,
-  };
-  for (const issue of artifacts.errors) {
-    errors.push(`artifact ${issue.code}: ${issue.path}: ${issue.message}; ${issue.suggestion}`);
-  }
-  if (artifacts.warnings.length > 0) {
-    const sample = artifacts.warnings.slice(0, 3).map((issue) => `${issue.code} ${issue.path}`).join("; ");
-    warnings.push(`${artifacts.warnings.length} artifact warning(s): ${sample}${artifacts.warnings.length > 3 ? " ..." : ""}`);
+  // 1.13.0：gate-check 已跑过 artifact-check 时用 --artifacts-ok 复用结果，避免重复扫描。
+  if (!artifactsOk) {
+    const artifacts = checkArtifacts(project, { maxEvidenceFiles });
+    artifactSummary = {
+      errors: artifacts.errors.length,
+      warnings: artifacts.warnings.length,
+      scanned: artifacts.scanned,
+      truncated: artifacts.truncated,
+    };
+    for (const issue of artifacts.errors) {
+      errors.push(`artifact ${issue.code}: ${issue.path}: ${issue.message}; ${issue.suggestion}`);
+    }
+    if (artifacts.warnings.length > 0) {
+      const sample = artifacts.warnings.slice(0, 3).map((issue) => `${issue.code} ${issue.path}`).join("; ");
+      warnings.push(`${artifacts.warnings.length} artifact warning(s): ${sample}${artifacts.warnings.length > 3 ? " ..." : ""}`);
+    }
+  } else {
+    artifactSummary = { skipped: true, reason: "artifacts-ok" };
   }
 } catch (error) {
   const message = `could not read state: ${error.message}`;

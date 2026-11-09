@@ -17,6 +17,8 @@
  *   node checkpoint-check.mjs --mark --sync-docs # 标记后立即同步文档
  *   node checkpoint-check.mjs --max-files 20     # 自定义文件阈值
  *   node checkpoint-check.mjs --max-evidence-files 2000  # 证据扫描上限（默认 2000，必须 >= 1）
+ *   node checkpoint-check.mjs --artifacts-ok            # 调用方已跑过 artifact-check，跳过重复扫描
+ *   node checkpoint-check.mjs --offline                # 不调用 git ls-remote，直接用本地 upstream
  *
  * 远程行写入 HANDOFF 前会剥离 URL userinfo 与 query/fragment，并清洗换行/反引号，
  * 避免凭据随被提交的状态文件进入仓库历史。
@@ -49,6 +51,8 @@ const mark = hasFlag("--mark");
 const syncDocs = hasFlag("--sync-docs");
 const force = hasFlag("--force");
 const strict = hasFlag("--strict");
+const artifactsOk = hasFlag("--artifacts-ok") || hasFlag("--skip-artifacts");
+const offline = hasFlag("--offline");
 const maxFiles = Number.parseInt(getArg("--max-files", "20"), 10) || 20;
 
 /**
@@ -211,7 +215,7 @@ function remoteLine() {
   let ahead = "(unknown)";
   let sha = "(unknown)";
   let source = "local";
-  const remoteResult = git(["ls-remote", "--heads", remoteName], { timeout: 15000 });
+  const remoteResult = offline ? { status: 1, stdout: "" } : git(["ls-remote", "--heads", remoteName], { timeout: 15000 });
   if (remoteResult.status === 0 && remoteResult.stdout.trim()) {
     const ref = `refs/heads/${branchRaw}`;
     const line = remoteResult.stdout.trim().split(/\r?\n/).find((row) => row.split(/\s+/)[1] === ref);
@@ -540,12 +544,17 @@ if (syncDocs && !mark) {
 }
 
 // P-15/P-17：被 .gitignore 忽略的日志不会被 git status 看到，必须单独扫描根目录。
+// 1.13.0：gate-check 已跑过 artifact-check 时用 --artifacts-ok 复用结果，避免重复扫描。
 let artifactResult = { errors: [], warnings: [], scanned: 0, truncated: false };
 let artifactReadError = "";
-try {
-  artifactResult = checkArtifacts(project, { maxEvidenceFiles });
-} catch (error) {
-  artifactReadError = `artifact check failed: ${error.message}`;
+if (!artifactsOk) {
+  try {
+    artifactResult = checkArtifacts(project, { maxEvidenceFiles });
+  } catch (error) {
+    artifactReadError = `artifact check failed: ${error.message}`;
+  }
+} else {
+  artifactResult = { errors: [], warnings: [], scanned: 0, truncated: false, skipped: true, reason: "artifacts-ok" };
 }
 const artifactErrors = artifactResult.errors;
 const artifactWarnings = artifactResult.warnings;

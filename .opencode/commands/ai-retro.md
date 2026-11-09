@@ -12,6 +12,7 @@ $ARGUMENTS
 1. 读取 `.ai-team/state/TASKS.md`、`RUN_LOG.md`、`RISKS.md`、`STATUS.md`、`reviews/**`、`qa/DEFECTS.md`、`security/**`；已有 `team/GROWTH.md` 时先读它的 frontmatter 和历史条目。
 2. 计数：`TASKS.md` 中状态以 `done` 开头的行（含 `done（待确认）`）；`superseded` 不算，返工 `-R1`/`-R2` 算；同一 TASK-ID 只算一次。与 `tasks_at_last_retro` 比较，得出本次覆盖任务数。
 3. 统计：一次验收通过率、返工原因、审查轮次/重复 P1、测试基线变化、交接缺失、未提交改动、跨职责事件。
+3.1 **质量趋势（A6，强制）**：运行 `quality-report.mjs --project . --json`；把 `implementation_tasks/reviewed_tasks/first_pass_rate/review_ready_rate/review_rounds_avg/p1_findings/p1_escapes/data_quality` 追加到 `.ai-team/team/QUALITY-TREND.md`（模板 `templates/QUALITY-TREND.md`）；在 `STATUS.md` 写 `- Quality: first-pass X% / review-ready Y% / rounds Z / data-quality W`。数据不足或代理指标误分类时写“数据缺口”，不得用 0 冒充。
 4. 按角色评估：产出完整性、范围遵守、证据质量、协作质量；只评价有证据的行为，不评价“感觉”。
 5. 首次到期时创建 `.ai-team/team/GROWTH.md`（使用 `ai-team-workflow` 的 `templates/GROWTH.md`）；否则追加 `RETRO-000N`，不覆盖历史。内容：
    - 本周期指标与覆盖任务；

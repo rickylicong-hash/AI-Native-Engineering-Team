@@ -33,6 +33,12 @@ const artifactCheck = path.join(workflowScripts, "artifact-check.mjs");
 const qualityReport = path.join(workflowScripts, "quality-report.mjs");
 const ownershipCheck = path.join(workflowScripts, "ownership-check.mjs");
 const reviewCheck = path.join(workflowScripts, "review-check.mjs");
+const stateCheck = path.join(workflowScripts, "state-check.mjs");
+const programCheck = path.join(workflowScripts, "program-check.mjs");
+const nextTask = path.join(workflowScripts, "next-task.mjs");
+const impactScan = path.join(workflowScripts, "impact-scan.mjs");
+const integrationCheck = path.join(workflowScripts, "integration-check.mjs");
+const gateCheck = path.join(workflowScripts, "gate-check.mjs");
 
 const failures = [];
 const checks = [];
@@ -653,6 +659,50 @@ async function main() {
     const zeroEvidenceReview = run(reviewCheck, ["--report", path.join(e2eDir, ".ai-team", "reviews", "REV-3002.md"), "--kind", "review", "--strict"], e2eDir);
     check("e2e review-check zero evidence", zeroEvidenceReview.status === 1, `${zeroEvidenceReview.status}; ${(zeroEvidenceReview.stdout || zeroEvidenceReview.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
 
+    write(path.join(e2eDir, ".ai-team", "reviews", "REV-3003.md"), [
+      "# REV-3003 — TASK-3001",
+      "",
+      "## Review-entry 核对",
+      "",
+      "- 语义源：ADR §1 → src/app.js → test",
+      "",
+      "## 独立验证",
+      "",
+      "- `node test.js` exit 0",
+      "",
+    ].join("\n"));
+    const modernMissing = run(reviewCheck, ["--report", path.join(e2eDir, ".ai-team", "reviews", "REV-3003.md"), "--kind", "review", "--strict"], e2eDir);
+    check("e2e review-check modern sections required", modernMissing.status === 1, `${modernMissing.status}; ${(modernMissing.stdout || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    write(path.join(e2eDir, ".ai-team", "reviews", "REV-3003.md"), [
+      "# REV-3003 — TASK-3001",
+      "",
+      "## Review-entry 核对",
+      "",
+      "- 语义源：ADR §1 → src/app.js → test",
+      "",
+      "## 越权检查",
+      "",
+      "- `ownership-check --brief brief.md --diff diff.txt`：PASS",
+      "",
+      "## P2 处置",
+      "",
+      "| P2 ID | 问题 | 处置 | Owner | 关闭条件 |",
+      "|---|---|---|---|---|",
+      "| P2-01 | none | 接受 | reviewer | n/a |",
+      "",
+      "## Done gate",
+      "",
+      "- [x] P0/P1=0",
+      "",
+      "## 独立验证",
+      "",
+      "- `node test.js` exit 0",
+      "",
+    ].join("\n"));
+    const modernComplete = run(reviewCheck, ["--report", path.join(e2eDir, ".ai-team", "reviews", "REV-3003.md"), "--kind", "review", "--strict"], e2eDir);
+    check("e2e review-check modern sections pass", modernComplete.status === 0, `${modernComplete.status}; ${(modernComplete.stdout || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
     const e2eQualityRun = run(qualityReport, ["--project", e2eDir, "--strict", "--json"], e2eDir);
     let e2eQuality = null;
     try {
@@ -782,6 +832,136 @@ async function main() {
     check("fix reports all fixed files", fixed.fixed.length === 5, `fixed=${fixed.fixed.length}`);
   } finally {
     fs.rmSync(fixDir, { recursive: true, force: true });
+  }
+
+  const stateCoreDir = tmp("state-core");
+  try {
+    write(path.join(stateCoreDir, ".ai-team", "state", "TASKS.md"), [
+      "# Tasks",
+      "",
+      "| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |",
+      "|---|---|---|---|---|---|---|",
+      "| TASK-9001 | fixture | ai-team/engineer | - | todo | AC | - |",
+      "",
+    ].join("\n"));
+    const missing = run(stateCheck, ["--project", stateCoreDir], stateCoreDir);
+    check("state-check missing core files fails", missing.status === 1, `${missing.status}; ${(missing.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    const boot = run(stateCheck, ["--project", stateCoreDir, "--bootstrap"], stateCoreDir);
+    check("state-check bootstrap allows initialization", boot.status === 0, `${boot.status}; ${(boot.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    write(path.join(stateCoreDir, ".ai-team", "state", "PROJECT.md"), "---\ntrack: T2\nstage: G0\n---\n# Project\n");
+    write(path.join(stateCoreDir, ".ai-team", "state", "STATUS.md"), "# Status\n\n- Track: T2\n- Stage: G0 Intake\n- Retro: not due\n- Checkpoint: none\n");
+    const complete = run(stateCheck, ["--project", stateCoreDir], stateCoreDir);
+    check("state-check complete state passes", complete.status === 0, `${complete.status}; ${(complete.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    const artifactsOk = run(stateCheck, ["--project", stateCoreDir, "--artifacts-ok", "--json"], stateCoreDir);
+    let artifactsData = null;
+    try { artifactsData = JSON.parse(artifactsOk.stdout || ""); } catch { artifactsData = null; }
+    check("state-check artifacts-ok skips duplicate scan", artifactsOk.status === 0 && artifactsData?.artifacts?.skipped === true, `${artifactsOk.status}; ${JSON.stringify(artifactsData?.artifacts || {})}`);
+  } finally {
+    fs.rmSync(stateCoreDir, { recursive: true, force: true });
+  }
+
+  const gateDir = tmp("gate");
+  try {
+    write(path.join(gateDir, ".ai-team", "state", "PROJECT.md"), "---\ntrack: T2\nstage: G0\n---\n# Project\n");
+    write(path.join(gateDir, ".ai-team", "state", "STATUS.md"), "# Status\n\n- Track: T2\n- Stage: G0 Intake\n- Retro: not due\n- Checkpoint: none\n");
+    write(path.join(gateDir, ".ai-team", "state", "TASKS.md"), "# Tasks\n\n| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |\n|---|---|---|---|---|---|---|\n| TASK-9201 | fixture | ai-team/engineer | - | todo | AC | - |\n");
+    fs.mkdirSync(path.join(gateDir, ".ai-team", "team"), { recursive: true });
+    fs.copyFileSync(path.join(process.cwd(), ".ai-team", "team", "GROWTH.md"), path.join(gateDir, ".ai-team", "team", "GROWTH.md"));
+    spawnSync("git", ["init", "-q"], { cwd: gateDir, encoding: "utf8" });
+    spawnSync("git", ["config", "user.email", "fixture@example.com"], { cwd: gateDir, encoding: "utf8" });
+    spawnSync("git", ["config", "user.name", "fixture"], { cwd: gateDir, encoding: "utf8" });
+    spawnSync("git", ["add", "."], { cwd: gateDir, encoding: "utf8" });
+    spawnSync("git", ["commit", "-q", "-m", "fixture"], { cwd: gateDir, encoding: "utf8" });
+    const gateRun = run(gateCheck, ["--project", gateDir, "--mode", "start", "--offline", "--json"], gateDir);
+    let gateData = null;
+    try { gateData = JSON.parse(gateRun.stdout || ""); } catch { gateData = null; }
+    check("gate-check unified preflight", gateRun.status === 0 && gateData?.artifacts?.ok === true && gateData?.state?.parsed?.artifacts?.skipped === true, `${gateRun.status}; ${JSON.stringify({ artifacts: gateData?.artifacts?.ok, stateSkipped: gateData?.state?.parsed?.artifacts?.skipped, failures: gateData?.failures })}`);
+  } finally {
+    fs.rmSync(gateDir, { recursive: true, force: true });
+  }
+
+  const programDir = tmp("program");
+  try {
+    const program = (deps) => [
+      "# Program",
+      "",
+      "## 2. Workstreams",
+      "",
+      "| ID | Owner | 范围 | 依赖 | 状态 | 契约 | 基线 |",
+      "|---|---|---|---|---|---|---|",
+      `| WS-01 | ai-team/engineer | src | ${deps} | doing | API-CONTRACTS §1 | pending |`,
+      `| WS-02 | ai-team/engineer | web | ${deps === "-" ? "WS-01" : "-"} | planning | API-CONTRACTS §2 | pending |`,
+      "",
+    ].join("\n");
+    write(path.join(programDir, ".ai-team", "state", "PROGRAM.md"), program("-"));
+    const okProgram = run(programCheck, ["--project", programDir, "--json"], programDir);
+    check("program-check valid graph", okProgram.status === 0, `${okProgram.status}; ${(okProgram.stdout || okProgram.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+    const cycleText = program("-").replace(
+      "| WS-01 | ai-team/engineer | src | - | doing |",
+      "| WS-01 | ai-team/engineer | src | WS-02 | doing |",
+    );
+    write(path.join(programDir, ".ai-team", "state", "PROGRAM.md"), cycleText);
+    const cycleProgram = run(programCheck, ["--project", programDir, "--json"], programDir);
+    check("program-check rejects cycle", cycleProgram.status === 1, `${cycleProgram.status}; ${(cycleProgram.stdout || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+  } finally {
+    fs.rmSync(programDir, { recursive: true, force: true });
+  }
+
+  const queueDir = tmp("queue");
+  try {
+    write(path.join(queueDir, ".ai-team", "state", "QUEUE.json"), JSON.stringify({
+      schema: 1,
+      tasks: [
+        { id: "TASK-9101", title: "ready", owner: "ai-team/engineer", priority: 2, status: "ready", dependsOn: [] },
+        { id: "TASK-9102", title: "blocked", owner: "ai-team/engineer", priority: 1, status: "ready", dependsOn: ["TASK-9101"] },
+      ],
+    }, null, 2));
+    const queueRun = run(nextTask, ["--project", queueDir, "--json"], queueDir);
+    let queueData = null;
+    try { queueData = JSON.parse(queueRun.stdout || ""); } catch { queueData = null; }
+    check("next-task picks dependency-ready task", queueRun.status === 0 && queueData?.next?.id === "TASK-9101", `${queueRun.status}; ${JSON.stringify(queueData?.next || {})}`);
+  } finally {
+    fs.rmSync(queueDir, { recursive: true, force: true });
+  }
+
+  const impactDir = tmp("impact");
+  try {
+    write(path.join(impactDir, "package.json"), "{\"name\":\"fixture\"}\n");
+    write(path.join(impactDir, "src", "a.js"), "export const a = 1;\n");
+    write(path.join(impactDir, "src", "a.test.js"), "import './a.js';\n");
+    write(path.join(impactDir, "diff.txt"), "src/a.js\n");
+    const impactRun = run(impactScan, ["--project", impactDir, "--diff", "diff.txt", "--json"], impactDir);
+    let impactData = null;
+    try { impactData = JSON.parse(impactRun.stdout || ""); } catch { impactData = null; }
+    check("impact-scan finds affected test", impactRun.status === 0 && impactData?.affectedTests?.includes("src/a.test.js"), `${impactRun.status}; ${JSON.stringify(impactData?.affectedTests || [])}`);
+  } finally {
+    fs.rmSync(impactDir, { recursive: true, force: true });
+  }
+
+  const integrationDir = tmp("integration");
+  try {
+    write(path.join(integrationDir, ".ai-team", "state", "INTEGRATION.md"), [
+      "# Integration",
+      "",
+      "- 集成候选 commit：`abc1234`",
+      "- `baseline_id`：`INTEGRATION-abc1234-1`",
+      "- 全量命令：`npm test`",
+      "- 退出码：0",
+      "- 冒烟命令：`npm run smoke`",
+      "- 回滚命令：`npm run rollback`",
+      "- 结论：通过",
+      "",
+      "## 2. 合并顺序",
+      "",
+      "| 顺序 | Workstream | Commit | 依赖 | 状态 |",
+      "|---:|---|---|---|---|",
+      "| 1 | WS-01 | `abc1234` | - | merged |",
+      "",
+    ].join("\n"));
+    const integrationRun = run(integrationCheck, ["--project", integrationDir, "--strict", "--json"], integrationDir);
+    check("integration-check validates record", integrationRun.status === 0, `${integrationRun.status}; ${(integrationRun.stdout || integrationRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+  } finally {
+    fs.rmSync(integrationDir, { recursive: true, force: true });
   }
 
   for (const item of checks) {

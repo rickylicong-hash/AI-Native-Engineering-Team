@@ -11,7 +11,7 @@
 | L1 临时 | 靠个人经验，无标准流程 | — |
 | L2 可重复 | 有角色、模板、基本门禁 | ✅ 已超过 |
 | L3 已定义 | 标准流程、职责边界、证据标准 | ✅ **当前主水平** |
-| L4 量化管理 | 指标、成本、质量、容量可度量并用于决策 | ⚠️ 部分（缺自动化度量） |
+| L4 量化管理 | 指标、成本、质量、容量可度量并用于决策 | ⚠️ 部分（quality-report + CI 已有；缺 DORA/成本/容量看板） |
 | L5 持续优化 | 流程自动适应、数据驱动改进 | ❌ 未达 |
 
 **判断**：流程定义达到 L3；执行能力在 L2–L3；规模化编排、成本治理、组合管理仍在 L2 左右。
@@ -27,7 +27,7 @@
 | 架构 / 契约 / ADR | 8/10 | C4、数据模型、OpenAPI/AsyncAPI、失败模式、部署拓扑、ADR |
 | 多模块实现 | 7/10 | 可按模块并行、文件所有权切分；缺自动 merge queue / affected tests |
 | 代码审查 | 8/10 | 独立 reviewer、P0–P3、验收对照、越权检查、回归审查 |
-| 自动化测试 | 7/10 | 测试金字塔、契约、E2E、性能、可访问性；缺环境编排/flaky 治理 |
+| 自动化测试 | 7/10 | 测试金字塔、契约、E2E、性能、可访问性；离线 E2E 已有；缺环境编排/平台化 flaky 隔离 |
 | 安全审计 | 8/10 | STRIDE、OWASP ASVS/Top 10、依赖/密钥/SAST/IaC/容器 |
 | 一键部署 / 回滚 | 7/10 | Docker/Compose/K8s/CI 模板、冒烟、回滚、可观测性；缺真实环境 provisioning |
 | 文档 | 8/10 | Diátaxis、README/API/运维/CHANGELOG、命令验证 |
@@ -66,6 +66,8 @@
    - `ai-team-ai-native` 提供 eval、RAG、Agent 工具权限、guardrails、成本/隐私。
 10. **团队成长机制**
     - `.ai-team/team/GROWTH.md` 提案、证据 ≥2 次、用户批准后才改团队。
+11. **大型项目 P0 工具（1.13.0）**
+    - `PROGRAM.md` / `WORKSTREAM.md` + `program-check.mjs`；`INTEGRATION.md` + `integration-check.mjs`；`impact-scan.mjs`；`QUEUE.json` + `next-task.mjs`；`gate-check.mjs` 统一预检。
 
 ## 4. 规模化缺口（按影响排序）
 
@@ -73,17 +75,17 @@
 
 当前 Chief 是一个会话内的编排者：
 
-- 没有任务队列、调度器、自动重试、失败恢复；
+- 有轻量 `QUEUE.json` + `next-task`，但没有持久队列服务、调度器、自动重试、失败恢复；
 - 长任务靠 `HANDOFF.md` 人工续跑；
 - 多 workstream 并行依赖模型/harness 的 subagent 能力；
-- 没有 merge queue / 集成列车。
+- 没有 merge queue / 集成列车服务（`integration-check` 是记录门禁，不是队列服务）。
 
 **影响**：项目越大，Chief 的上下文和调度越容易成为瓶颈。
 
 ### 4.2 缺代码库智能
 
-- 没有语义索引、依赖图、调用图、影响面分析；
-- 大 monorepo 只能靠 grep/read，容易漏改、重复改；
+- 没有语义索引、依赖图、调用图；`impact-scan` 只是 changed→module→tests 的启发式；
+- 大 monorepo 仍主要靠 grep/read，容易漏改、重复改；
 - 没有 affected-only 测试选择，CI 会越来越慢。
 
 **影响**：10 万行以上代码库的修改效率和正确性下降。
@@ -139,8 +141,9 @@
 
 ### P0：支撑 20–50 人等效项目（必须先做）
 
-1. **Program Manager 角色**
+1. **Program / Workstream 层**
    - 多项目路线图、跨 workstream 依赖、里程碑、预算/人力、风险组合。
+   - 优先由 Chief 的 Program 视角 + `PROGRAM.md` / `WORKSTREAM.md` + Workstream Lead 承担；独立 Program Manager agent 需满足 `ROLE-GAP` 门槛并获用户批准。
 2. **Workstream Lead 机制**
    - 每个 workstream 一个 lead（可以是 engineer 实例），对模块交付负责。
 3. **持久编排**
@@ -151,6 +154,8 @@
    - 小步合并、自动 rebase、按序验证、失败自动回退。
 6. **成本治理**
    - 每任务 token/成本预算、模型分级路由、并发配额、成本看板。
+
+> **1.13.0 已落地（P0 最小版）**：`PROGRAM.md`/`WORKSTREAM.md` + `program-check`；`QUEUE.json` + `next-task`；`impact-scan`（启发式）；`INTEGRATION.md` + `integration-check`；`gate-check` 统一预检。**仍未落地**：持久队列服务/调度器、自动 rebase/merge queue 服务、语义依赖图、成本预算/配额。
 
 ### P1：支撑 50–150 人等效项目
 
@@ -181,7 +186,7 @@
 4. **每周集成**，不要月末大合并；每次集成都跑门禁。
 5. **一个 workstream 同一时间只有一个 writer**；冲突走 merge/rebase + 重跑测试。
 6. **里程碑门禁**：每个里程碑都写 `REVIEW_LOG`/`STATUS`，不通过不进入下一里程碑。
-7. **成本预算**：给每个 workstream 设 token/时间预算；超预算先降范围/换小模型。
+7. **成本预算**：给每个 workstream 设 token/时间预算；超预算先降范围/换小模型。项目 AI 功能成本可按产品预算；团队自身运行 token 默认只观察，T4/workstream 预算需用户批准。
 8. **生产发布**：永远 L3 人工批准；灰度 + 回滚 + 监控窗口。
 9. **跨会话**：每个 workstream 结束写 HANDOFF；不要靠聊天历史。
 10. **人机分工**：人负责目标、优先级、风险接受、生产批准；团队负责分析、实现、验证、证据。

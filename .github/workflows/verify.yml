@@ -29,17 +29,11 @@ jobs:
       - name: Package verification
         run: node scripts/verify.mjs
 
-      - name: Gate fixtures
-        run: node scripts/test-gates.mjs
-
       - name: Permission lint
         run: node .opencode/skills/ai-team-workflow/scripts/permission-lint.mjs
 
       - name: Artifact check
         run: node .opencode/skills/ai-team-workflow/scripts/artifact-check.mjs --strict --max-files 2000
-
-      - name: Secret check
-        run: node .opencode/skills/ai-team-workflow/scripts/secret-check.mjs
 
       - name: Review report check
         if: hashFiles('.ai-team/reviews/REV-*.md') != ''

@@ -7,10 +7,12 @@ agent: ai-team/chief
 
 1. 读取 `.ai-team/state/PROJECT.md`、`STATUS.md`、`TASKS.md`、`DECISIONS.md`、`RISKS.md`、`RUN_LOG.md`。
 2. 更新 `STATUS.md`、`TASKS.md`、`RUN_LOG.md`：当前 Track/Stage、完成项、未完成项、阻塞、证据路径。
-3. **检查复盘是否到期**（`retro-check` / `ai-team-workflow` 3.1）。若到期，先按 `/ai-retro` 轻量流程写 `team/GROWTH.md`；不要把复盘债务交给下一个会话。
-4. **检查提交状态**（`checkpoint-check --handoff`）。若到期，先调度 `ai-team/devops-engineer` 做精选 checkpoint；你不得自己 `git add`/`git commit`。用户明确要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED`、原因和 `RISK-*`。
-5. **检查状态一致性**（`state-check`，含 artifact 检查）。stage/track 不一致时先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git/Baseline 必须等于最近代码 checkpoint，纯文档提交允许落后；根目录产物或不可读证据先清理。未通过不得交接。
-5.1 **检查成长提案处置**（`growth-check --debt`）。本轮新增/处置的提案必须已在 `team/GROWTH.md` 的“提案处置索引”回填状态、scope、落地版本/任务、证据、日期；`scope: project` 不计入团队 open；净零违规（新增 >2、新增 > 关闭/合并、团队 open 连续两轮上升）不得交接。有缺失状态先补，回填后再跑 `state-check`；同一批次重复 TASK-ID 不得交接。STATUS 的 `Retro`/`Growth`/`远程` 行由 checkpoint 脚本生成，不手写。
+3. **统一交接预检**：运行 `node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\gate-check.mjs" --project . --mode handoff --json`（artifact/secret 一次，state/checkpoint 复用）。按失败项处理：
+   - `retro` 到期 → 先按 `/ai-retro` 轻量流程写 `team/GROWTH.md`，不要把复盘债务交给下一个会话；
+   - `checkpoint` 到期 → 先调度 `ai-team/devops-engineer` 做精选 checkpoint；你不得自己 `git add`/`git commit`；用户明确要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED`、原因和 `RISK-*`；
+   - `state` error → 先修正 `PROJECT.md`/`STATUS.md`；HANDOFF 的 Git/Baseline 必须等于最近代码 checkpoint，纯文档提交允许落后；
+   - `growth` error → 先补提案处置索引/净零；同一批次重复 TASK-ID 不得交接。
+   只有定位时才单独运行 `retro-check`/`checkpoint-check`/`state-check`/`growth-check`，不要重复扫描。STATUS 的 `Retro`/`Growth`/`远程` 行由 checkpoint 脚本生成，不手写。
 6. 按 skill `ai-team-workflow` 的 `templates/HANDOFF.md` 重写 `.ai-team/state/HANDOFF.md`，至少包含：
    - 时间、Track/Stage、目标；
    - 已完成（含证据路径）；

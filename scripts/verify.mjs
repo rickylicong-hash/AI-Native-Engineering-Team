@@ -257,6 +257,7 @@ if (fs.existsSync(workflowDir)) {
   const expected = [
     "PROJECT.md", "STATUS.md", "TASKS.md", "HANDOFF.md", "PRD.md",
     "ARCHITECTURE.md", "ADR.md", "REVIEW.md", "TEST-REPORT.md", "SECURITY-REPORT.md", "RELEASE-PLAN.md", "GROWTH.md", "AI-TEAM-GITIGNORE",
+    "PROGRAM.md", "WORKSTREAM.md", "INTEGRATION.md", "QUALITY-TREND.md", "QUEUE.json",
   ];
   for (const t of expected) {
     addCheck(`workflow template ${t}`, fs.existsSync(path.join(workflowDir, "templates", t)));
@@ -296,7 +297,7 @@ for (const file of scriptFiles) {
 }
 
 if (!installed) {
-  for (const audit of ["audit-git-permissions.mjs", "audit-team-consistency.mjs"]) {
+  for (const audit of ["audit-git-permissions.mjs", "audit-team-consistency.mjs", "ownership-lint.mjs", "sync-agent-permissions.mjs"]) {
     const file = path.join(root, "scripts", audit);
     if (!fs.existsSync(file)) continue;
     const result = spawnSync(process.execPath, [file], { cwd: root, encoding: "utf8", timeout: 120000 });

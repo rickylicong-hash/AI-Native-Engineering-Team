@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "program": "<program-name>",
+  "updated": "YYYY-MM-DD",
+  "tasks": [
+    {
+      "id": "TASK-0001",
+      "title": "<task title>",
+      "owner": "ai-team/engineer",
+      "workstream": "WS-01",
+      "priority": 1,
+      "status": "ready",
+      "dependsOn": [],
+      "acceptance": "AC-1..",
+      "evidence": ".ai-team/work/TASK-0001-EVIDENCE.md"
+    },
+    {
+      "id": "TASK-0002",
+      "title": "<task title>",
+      "owner": "ai-team/engineer",
+      "workstream": "WS-01",
+      "priority": 2,
+      "status": "blocked",
+      "dependsOn": ["TASK-0001"],
+      "acceptance": "AC-1..",
+      "evidence": ".ai-team/work/TASK-0002-EVIDENCE.md"
+    }
+  ]
+}

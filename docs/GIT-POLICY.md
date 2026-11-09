@@ -1,6 +1,6 @@
 # Git 权限策略（GIT POLICY）
 
-> **1.12.0 Shell-first strict**：每个角色只有 43 条 shell 规则（1 allow + 42 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；shell 层的 commit/push/tag/publish 都不再被拦截，`.env`/`.env.*` 的 `read` 另有显式 allow。
+> **1.13.0 Shell-first strict**：每个角色只有 43 条 shell 规则（1 allow + 42 破坏性 deny）+ 2 条 `.env` read allow；Git 只有破坏性命令 `deny`。下文的角色分层和 commit 归属是**流程约定**，不再由权限强制；shell 层的 commit/push/tag/publish 都不再被拦截，`.env`/`.env.*` 的 `read` 另有显式 allow。
 >
 > 注意：shell 权限是**破坏性操作护栏**，不是沙箱；它不防越权或密钥读取。
 

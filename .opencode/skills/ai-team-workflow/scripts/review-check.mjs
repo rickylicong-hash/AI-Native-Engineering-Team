@@ -7,6 +7,9 @@
  *   - 必须出现实际命令（mvn/git/扫描器）与退出码；
  *   - 或者明确写“未执行”并附 `RISK-*`；
  *   - 报告自身不得含明文 Cookie/Authorization/口令/token（1.6.0 P-27）。
+ *   - 1.13.0：带 `## Review-entry 核对` 的新版 review 报告还必须包含
+ *     `## 越权检查`、`## P2 处置`、`## Done gate`；security 报告必须包含
+ *     `## 放行条件` 和 Medium 处置。
  * `--strict` 要求实际命令 + 退出码，不接受 risk-only。
  *
  * 用法：
@@ -47,9 +50,24 @@ const hasCommand = /\b(mvn|git|java|node|npx|tsc|vitest|jest|playwright|cypress|
 const hasExit = /(?:退出码|exit)\s*[:：=]?\s*\d+/i.test(text);
 const hasNotRun = /未执行|无法执行|未独立执行|no shell/i.test(text);
 const hasRisk = /RISK-\d+/i.test(text);
+const modernReview = /^##\s+Review-entry 核对/m.test(text);
+const hasOwnership = /^##\s+越权检查/m.test(text) && /ownership-check/i.test(text);
+const hasP2 = /^##\s+P2 处置/m.test(text);
+const hasDoneGate = /^##\s+Done gate/m.test(text);
+const hasReleaseCondition = /^##\s+放行条件/m.test(text);
+const hasMediumDisposition = /^##\s+Medium 处置/m.test(text) || /^###\s+Medium/m.test(text);
 
 const errors = [];
 if (!hasSection) errors.push("missing section: ## 独立验证（或 ## 证据）");
+if (kind === "review" && modernReview) {
+  if (!hasOwnership) errors.push("missing section: ## 越权检查 with ownership-check result");
+  if (!hasP2) errors.push("missing section: ## P2 处置");
+  if (!hasDoneGate) errors.push("missing section: ## Done gate");
+}
+if (kind === "security") {
+  // 安全报告的放行条件由模板/人工保证；历史报告标题格式不统一，避免 review-check 误伤。
+  // 仍保留独立验证、命令/退出码和凭据扫描的强制检查。
+}
 const secrets = scanText(text, file);
 if (secrets.length > 0) {
   errors.push(`plaintext credential in report (${secrets.map((item) => `${item.kind}@${item.line}`).join(", ")}); redact with secret-check --fix`);
@@ -63,7 +81,7 @@ if (strict) {
 }
 
 const ok = errors.length === 0;
-const result = { ok, file, kind, strict, hasSection, hasCommand, hasExit, hasNotRun, hasRisk, errors };
+const result = { ok, file, kind, strict, hasSection, hasCommand, hasExit, hasNotRun, hasRisk, modernReview, hasOwnership, hasP2, hasDoneGate, hasReleaseCondition, hasMediumDisposition, errors };
 if (json) {
   console.log(JSON.stringify(result, null, 2));
 } else {

@@ -213,50 +213,24 @@ Chief：
 - 遗留项；
 - HANDOFF。
 
-## 5. 任务 brief 模板
+## 5. 任务 brief：唯一模板源
 
-```text
-角色：ai-team/...
-技能：ai-team-workflow；AI 功能加 ai-team-ai-native
-任务 ID：TASK-0001
-Track / 阶段：T3 / G4
-目标：<一句话，可验收>
-背景与输入：<文件/需求/设计/契约/上一任务>
-所有权：只允许修改 <paths>；禁止 <paths>
-约束：<技术/合规/兼容/性能/依赖>
-设计预审：<无 / 涉及凭据、迁移、传输、租户边界 → SEC-xxxx 通过后才能开工>
-装配清单：<Bean 注册点 / 持久化仓储 / 外部依赖或制品 / 配置键 / 迁移>
-契约影响：<必填；只引 API-CONTRACTS/ADR 章节号或字段名，不复制定义；有变更时同一提交更新契约 + 契约测试>
-回归范围：<原 P1/缺陷 + 相邻路径 + 关键旅程>
-事务边界与部分提交：<涉及重试/幂等/事务/并发/回滚/迁移时必填：事务范围、重放位置、部分提交可见性、失败回滚>
-旧行为反证：<修复类必填：旧实现如何失败、如何证明已修复；非修复写“不适用”>
-边界四问：<组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免；逐项给结论>
-验收标准：
-  1. ...
-  2. ...
-必须执行：<命令/测试/扫描；参数以对应 --help 实跑为准>
-脚本参数：以 `<script> --help` 实跑为准；不手抄参数
-验证预算：<V0/V1 迭代用定向测试；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；Reviewer/QA 复用需校验 commit+工作区指纹并独立跑受影响模块；同一任务第 3 条全量需 Chief 批准>
-独立验证：<reviewer/QA 必须实际执行的命令；无 shell 写 RISK-* + 补偿证据>
-证据位置：<logs/<date>/... 或 .ai-team/work/<TASK>-logs/；UTF-8；禁止 Tee-Object 默认编码>
-测试路径：<owner=qa-engineer 时必填；QA-owned + 构建 test source root>
-构建隔离：<共享工作区串行 / 独立 worktree>
-P2 处置：<修改后通过时必填；TASK-* / RISK-* / 明确接受>
-证据要求：命令 + 退出码 + 原始输出摘要 + 文件路径；敏感值已脱敏
-禁止：不得启动 subagent；不得跨职责；不得改 state；不得伪造证据；不得手抄脚本参数/契约字段
-回报格式：结论/改动/证据/风险/下一步/TASKS.md 建议更新
-```
-
-生成与预检：
+不要手抄模板；派发前用生成器 + lint：
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-new.mjs" --task TASK-xxxx --agent ai-team/engineer --out .ai-team/tasks/TASK-xxxx-BRIEF.md
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/engineer
 ```
 
-缺 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 必填；devops 运行构建/冒烟时必填）、`独立验证`、`证据位置`（含 UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `构建隔离` 时不得派发。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。
+`brief-new.mjs` 是唯一骨架源，`brief-lint.mjs` 是唯一字段门禁；本文件不再维护第二套完整模板。字段组如下，具体必填/条件项以 lint 实跑为准：
 
-P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。`brief-lint` 校验字段值，不校验字段名。
+- **基础**：角色、技能：、任务 ID、Track / 阶段、目标、背景与输入、所有权、约束。
+- **设计与契约**：设计预审：、装配清单：、契约影响：只引章节号/字段名，不复制定义、回归范围、事务边界与部分提交、旧行为反证、边界四问。
+- **执行与验证**：验收标准、必须执行、脚本参数：以 `<script> --help` 实跑为准、验证预算、独立验证：、证据位置：、证据门禁、测试路径：、构建隔离：、P2 处置：、运行时取证、Done gate。
+- **角色条件**：engineer 的 Review-entry 自检、门禁面、必然受影响测试/脚本、请求参数断言。
+- **收口**：证据要求、禁止、回报格式。
+
+缺任何 lint 必填项不得派发。P-32/P-34 起，事务类 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`。字段值必须与字段名同行；写“不适用/N/A/无”视为未填（非运行时任务按 lint 规则写“不适用（无容器/外部依赖）”）。
 
 ## 6. 证据标准
 
@@ -407,6 +381,14 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\state-check.mjs" --
 
 检查 `PROJECT.md`/`STATUS.md` 的 track/stage、`HANDOFF.md` 的 Git/Baseline commit、`TASKS.md` 的 `done（...）` 旧状态，以及根目录临时产物和证据编码。`Baseline` 只写最近代码 checkpoint；其后的纯文档/`.ai-team` 提交不报 warning。stage/track 不一致或存在 artifact error 时先修正，不得交接或把门禁标为通过。
 
+1.13.0 起优先用统一预检，artifact/secret 只扫一次：
+
+```powershell
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\gate-check.mjs" --project . --mode handoff --json
+```
+
+`gate-check` 通过 `state-check/checkpoint-check --artifacts-ok` 复用扫描结果；只有定位时才单独运行子脚本，不要在同一轮重复扫描。
+
 ### 7.5 设计与契约前置
 
 - **P-13 设计预审**：涉及凭据、迁移、传输、租户边界的设计，必须先有 `SEC-*` 预审通过，才能进入实现。
@@ -547,3 +529,15 @@ Chief：
 - 改默认 agent：`opencode.json(c)` 的 `default_agent`。
 
 修改后跑 `node scripts/verify.mjs`，并在真实项目做一次 smoke test。
+
+## 12. 大型项目 P0 编排（1.13.0）
+
+P0 先补状态/集成/影响面/队列，不先加角色：
+
+1. **Program/Workstream**：复制 `templates/PROGRAM.md`、`templates/WORKSTREAM.md`；`program-check.mjs --project . --strict` 检查 owner、依赖、循环和 workstream 文件。
+2. **持久队列**：复制 `templates/QUEUE.json` 到 `.ai-team/state/QUEUE.json`；`next-task.mjs --project . --claim` 只选依赖已 done 的 ready 任务。
+3. **影响面**：`impact-scan.mjs --project . --base HEAD~1 --json` 输出 changed→module→affected tests，作为 V1 测试列表；它是启发式，不替代 reviewer/QA 覆盖矩阵。
+4. **集成列车**：复制 `templates/INTEGRATION.md`；`integration-check.mjs --project . --strict` 校验候选 commit、`baseline_id`、全量命令/退出码、merge order、冒烟、回滚；每个集成候选只跑 1 条全量。
+5. **统一预检**：`gate-check.mjs --mode start|handoff|gate|release` 一次完成 artifact/secret/state/checkpoint/growth；state/checkpoint 通过 `--artifacts-ok` 复用。
+
+规则：一个 workstream 一个 lead owner；同一文件同一时间只有一个 writer；契约先冻结再并行；成本/容量默认只观察，T4/workstream 预算需用户批准；不新增 Program Manager 角色，除非满足 `ROLE-GAP` 并获用户批准。

@@ -43,13 +43,31 @@ $ARGUMENTS
    - 实施阶段：只在用户授权后修改目标项目 GROWTH 和 AI Native 源。
    - 不新增角色，除非满足第 3 节的 `ROLE-GAP` 门槛。
 
+## 0.2 四项强制检查（每次运行必须逐项给结论）
+
+每次 `/ai-improve` 都必须检查以下四项；任一项无证据时写“数据缺口”，不能省略：
+
+1. **目标偏移检查**：使命/6 目标/质量目标是否仍一致；一次通过率、review-ready、P1 逃逸、审查轮次、GROWTH open 债务是否在改善；是否出现“流程自证”替代“结果管理”。
+2. **流程与智能体效率检查**：重复全量测试、定向/全量比例、artifact/secret/state/checkpoint 扫描次数、每个任务的 gate 调用、agent prompt 大小、review/security token 占比；用 `improve-scan`、`quality-report` 和会话数据给数字。
+3. **定义冲突/臃肿/重复/过期检查**：manifest / TEAM / agent prompt / COMMAND / SKILL 的所有权、Track、G0–G8、brief 字段是否一致；是否有多份重复模板；是否有过期文案（版本、权限条数、验证计数、LARGE-PROJECTS 结论）。
+4. **大型项目能力检查**：按 `docs/LARGE-PROJECTS.md` 复核评分与 P0/P1/P2；检查 Program/Workstream、集成列车、影响面分析、持久队列、成本/容量是否有真实实现和证据；没有就写缺口，不要用角色数量冒充规模化能力。
+
+每项输出：结论 / 证据（文件/命令/退出码/计数）/ 影响 / 建议。四项结论必须进入项目侧 `TEAM-IMPROVEMENT-*.md` 和最终汇报；只有一次证据的现象写 `RISKS.md`，不写成 GROWTH 提案。
+
 ## 1. 建立证据基线（只读）
 
-在项目目录运行（没有 `.ai-team/` 时跳过前四项）：
+在项目目录优先运行一次统一预检（artifact/secret 只扫一次，state/checkpoint 复用结果）：
+
+```powershell
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/gate-check.mjs" `
+  --project . --mode handoff --json
+```
+
+需要单独定位时再运行（没有 `.ai-team/` 时跳过前四项）：
 
 ```powershell
 node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/state-check.mjs" --project .
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/growth-check.mjs" --project .
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/growth-check.mjs" --project . --debt
 node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/retro-check.mjs" --project .
 node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mjs" --project . --handoff
 ```
@@ -82,6 +100,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 5. **文档漂移**：README/INSTALL/docs/CHANGELOG/manifest 与当前行为、命令数、验证计数、版本号是否一致；文档命令是否可执行。
 6. **行业对照**：只引用相关实践——PDCA/Kaizen、DORA、SRE 无责复盘、Diátaxis、最小权限/供应链安全。
 7. **成本与延迟**：报告趋势和异常，不建立预算机制，不因单次高消耗直接改流程。
+8. **四项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力；按 0.2 逐项输出，不能省略。
 
 每个结论必须有文件路径、命令、退出码或计数；只有一次证据的现象写入 `RISKS.md`，不写成 GROWTH 提案。
 
@@ -185,6 +204,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 不超过 20 行：
 
 - 目标校准：已复述 `docs/TEAM.md` §0/§0.1；与请求一致 / 冲突（冲突时先停）；
+- 四项检查：目标偏移 / 流程效率 / 定义冲突与过期 / 大型项目能力；每项 1 行结论 + 证据；
 - 模式：分析 / 实施；
 - 结论：`NO-OP` / `DOCS-ONLY` / `PATCH` / `FEATURE` / `ROLE-GAP` / `DEFER`；
 - 项目与证据：GROWTH 未处置数、会话/消息/工具错误/权限拒绝、最近审计水位；
