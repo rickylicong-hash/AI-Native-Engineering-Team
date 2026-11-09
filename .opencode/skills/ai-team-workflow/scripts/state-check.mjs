@@ -110,7 +110,7 @@ function isDocOnly(file) {
   const f = file.replace(/\\/g, "/");
   return /^docs\//.test(f)
     || /^\.ai-team\//.test(f)
-    || /^(README|CHANGELOG|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT|LICENSE)(\.|$)/.test(f)
+    || /^(README|INSTALL|CHANGELOG|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT|LICENSE)(\.|$)/.test(f)
     || /^(AGENTS|CLAUDE)\.md$/.test(f)
     || /^opencode\.jsonc?$/.test(f)
     || /^\.github\/(ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE|CODEOWNERS)\//.test(f);
