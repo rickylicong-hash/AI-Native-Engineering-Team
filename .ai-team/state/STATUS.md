@@ -2,14 +2,14 @@
 
 - Track: T3
 - Stage: G5 Verify
-- Overall: 80%
-- Last gate: G5 — 审计整改进行中（2026-11-09）
+- Overall: 85%
+- Last gate: G5 — 审计整改完成；B4 目标项目 team open 1（2026-11-09）
 - Retro: 2026-11-09（done 20 → next 30）
 - Growth: open 0 / done 11（以 `growth-check` 为准）
 - Quality: team-source-mode / first-pass — / review-ready — / data-quality 14 unattributed P1
 - Checkpoint: `7ee56c2`（done 20）
-- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead 5（`origin/main=7726e13`，local）
-- HEAD: `7ee56c2`
+- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead 6（`origin/main=7726e13`，local）
+- HEAD: `f07e2bd`
 
 ## In progress
 
@@ -25,6 +25,6 @@
 
 ## Next 3
 
-1. 完成 A1–A6 与 B1–B6 并验证。
-2. 完成大型项目 P0 模板/脚本并验证。
-3. 更新版本、CHANGELOG、VERIFICATION 与安装验证。
+1. LP-P1-1 `capacity-report`（token/耗时/全量测试次数/审查轮次）。
+2. LP-P1-2 专家 profile（frontend/backend/data-ml/sre，不新增 agent）。
+3. LP-P1-3 CI 质量门禁；P-41/P-57 复查 2026-12-07。
