@@ -23,7 +23,7 @@
 | TASK-AUDIT-2026-11-09-B1 | 角色化证据门禁（非 checkpoint 角色不扫 artifact/secret） | build | A3 | done | architect/PM/UX 提示不再要求扫描；reviewer/security 每轮≤1 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-B2 | 降低 agent 样板：生成权限块 + 移出 Shell 纪律 | build | - | done | agent 总大小下降；permission-lint PASS | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-B3 | review-check 强制越权/P2/Done gate | build | A5 | done | 缺节 exit 1；正负 fixture | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
-| TASK-AUDIT-2026-11-09-B4 | GROWTH 归档 + 目标项目 open 债务上限 | build | - | partial | 团队源 GROWTH 已归档；目标项目 team open 仍需项目侧处置（当前 9） | `.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md` |
+| TASK-AUDIT-2026-11-09-B4 | GROWTH 归档 + 目标项目 open 债务上限 | build | - | done | 团队源 GROWTH 已归档；目标项目 `riccon-ai` team open 9 → 1（P-41）；project open 5；`growth-check --debt` PASS | `D:\Development\riccon-ai\.ai-team\team\GROWTH.md`；`.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md` |
 | TASK-AUDIT-2026-11-09-B5 | 修过期文档（VERIFICATION/LARGE-PROJECTS） | build | A1/A4/A5 | done | 计数/策略与当前行为一致 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-B6 | CI 去重 + checkpoint 远端离线模式 | build | A3 | done | CI 不再重复 test-gates/secret；离线 sync 不等待 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |
 | TASK-AUDIT-2026-11-09-LP-P0-1 | 大型项目 Program/Workstream 模板 + program-check | build | A5 | done | 模板存在；program-check 通过有效/拒绝循环依赖 | .ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md |

@@ -138,7 +138,7 @@ team_open_at_prev2_retro: 0
 ### 1. 范围与指标
 
 - 覆盖：审计整改 A1–A6、B1–B6、LP-P0-1..4、1.13.0 文档/版本
-- 新增完成：15（A1–A6、B1–B3、B5–B6、LP-P0-1..4；B4 为 partial）
+- 新增完成：16（A1–A6、B1–B6、LP-P0-1..4；B4 目标项目 team open 9 → 1）
 - 返工任务：0 / 15
 - 审查轮次：审计 + 本地验证；本轮无独立 code-reviewer/security 复审（已登记限制）
 - 首轮未关闭 P0/P1：0
@@ -157,7 +157,7 @@ team_open_at_prev2_retro: 0
 | ID | 现象 | 证据 1 | 证据 2 | 影响 |
 |---|---|---|---|---|
 | G-14 | 审计整改缺独立 reviewer/security 复审 | 本轮由 build 自验 | 无 REV/SEC 报告 | 结论独立性不足 |
-| G-15 | 目标项目 team open 债务仍高 | `riccon-ai` team open 9 | `growth-check --debt` | 项目侧流程债务未清 |
+| G-15 | 目标项目团队提案债务曾高 | `riccon-ai` team open 9 | 2026-11-09 B4 follow-up team open 1 | 项目侧债务已分诊，P-41/P-57 保留复查 |
 
 ### 4. 改进提案
 
@@ -169,7 +169,7 @@ team_open_at_prev2_retro: 0
 ### 5. 结论
 
 - 本周期结论：保持
-- 下一周期重点：LP-P1 成本/容量、专家 profile、CI 质量门禁；B4 目标项目债务处置；补独立 review
+- 下一周期重点：LP-P1 成本/容量、专家 profile、CI 质量门禁；补独立 review；P-41/P-57 复查（2026-12-07）
 - 下次复盘：第 30 个 `done` 任务或 1.14.0 发布前
 
 ## 观察项（不计入团队 open）
