@@ -40,6 +40,7 @@ const impactScan = path.join(workflowScripts, "impact-scan.mjs");
 const integrationCheck = path.join(workflowScripts, "integration-check.mjs");
 const gateCheck = path.join(workflowScripts, "gate-check.mjs");
 const improveMetrics = path.join(workflowScripts, "improve-metrics.mjs");
+const improvePrevious = path.join(workflowScripts, "improve-previous.mjs");
 
 const failures = [];
 const checks = [];
@@ -980,6 +981,28 @@ async function main() {
     check("improve-metrics second run compares history", second.status === 0 && secondData?.entries === 2 && secondData?.previous !== null && secondData?.negativeGrowth === false, `${second.status}; ${JSON.stringify({ entries: secondData?.entries, verdict: secondData?.verdict, negativeGrowth: secondData?.negativeGrowth })}`);
   } finally {
     fs.rmSync(metricsDir, { recursive: true, force: true });
+  }
+
+  const previousDir = tmp("previous");
+  try {
+    write(path.join(previousDir, ".ai-team", "state", "TASKS.md"), "# Tasks\n\n| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |\n|---|---|---|---|---|---|---|\n| TASK-9401 | done fixture | ai-team/engineer | - | done | AC | - |\n| TASK-9402 | missed fixture | ai-team/engineer | - | todo | AC | - |\n");
+    write(path.join(previousDir, ".ai-team", "team", "TEAM-IMPROVEMENT-2026-11-09.md"), [
+      "# TEAM-IMPROVEMENT — fixture",
+      "",
+      "## 5. 本轮任务",
+      "",
+      "| ID | 标题 | Owner | 验收 | 证据 |",
+      "|---|---|---|---|---|",
+      "| TASK-9401 | done fixture | ai-team/engineer | AC | - |",
+      "| TASK-9402 | missed fixture | ai-team/engineer | AC | - |",
+      "",
+    ].join("\n"));
+    const prevRun = run(improvePrevious, ["--project", previousDir, "--json"], previousDir);
+    let prevData = null;
+    try { prevData = JSON.parse(prevRun.stdout || ""); } catch { prevData = null; }
+    check("improve-previous checks last round", prevRun.status === 0 && prevData?.done === 1 && prevData?.missed === 1, `${prevRun.status}; ${JSON.stringify({ done: prevData?.done, missed: prevData?.missed })}`);
+  } finally {
+    fs.rmSync(previousDir, { recursive: true, force: true });
   }
 
   for (const item of checks) {

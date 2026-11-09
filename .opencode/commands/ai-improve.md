@@ -66,7 +66,12 @@ $ARGUMENTS
    历史文件为 `.ai-team/team/IMPROVEMENT-HISTORY.json`；采集 quality-report、growth-check、TASKS、reviews/security、improve-scan（可用 `--no-sessions` 跳过会话扫描）。
 2. **输出成长曲线**：在报告中列出最近 6–8 轮的关键指标（first-pass、review-ready、team open、project open、review rounds、P1 escapes、tasks done），并与上一轮逐项比较：`improved / declined / flat`、delta、`growthScore`、`verdict`。
 3. **负成长处理**：若 `negativeGrowth=true`，必须做根因分析（流程/角色/工具/文档），并在本轮任务中至少增加 1 个直接改善恶化指标的任务（owner、验收、证据）；不能只解释不行动，也不能把 `NO-OP` 当作结论。
-4. **检查上一轮 improve 达成情况**：读取最新 `TEAM-IMPROVEMENT-*.md` 的“本轮任务”，逐项对照 `TASKS.md` 状态和 `GROWTH.md` 处置索引；输出 `done/partial/missed`、证据、未达成原因。`missed/partial` 必须结转为本轮任务或写入 `RISK-*`，不能静默丢失。
+4. **检查上一轮 improve 达成情况**：运行
+   ```powershell
+   node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-previous.mjs" `
+     --project . --json
+   ```
+   它读取最新 `TEAM-IMPROVEMENT-*.md` 的“本轮任务”，对照 `TASKS.md`/`GROWTH.md`，输出 `done/partial/missed/unverified`；`missed/partial/unverified` 必须结转为本轮任务或写入 `RISK-*`，不能静默丢失。
 5. **报告模板**：使用 `ai-team-workflow/templates/IMPROVEMENT-REPORT.md`，必须包含“历史指标与成长曲线”“上一轮达成情况”“负成长原因与优化策略”“本轮任务”四节。
 
 ## 1. 建立证据基线（只读）
@@ -92,6 +97,8 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mj
 ```powershell
 node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-metrics.mjs" `
   --project . --write --json
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-previous.mjs" `
+  --project . --json
 node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
   --project "<project-path>" `
   --out "<project-path>/.ai-team/team/IMPROVEMENT-SCAN-YYYY-MM-DD.md"

@@ -252,7 +252,7 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
-for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "improve-scan.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs", "gate-check.mjs", "program-check.mjs", "next-task.mjs", "impact-scan.mjs", "integration-check.mjs"]) {
+for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "improve-scan.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs", "gate-check.mjs", "program-check.mjs", "next-task.mjs", "impact-scan.mjs", "integration-check.mjs", "improve-metrics.mjs", "improve-previous.mjs"]) {
   check(
     `workflow script ${script} exists`,
     fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),

@@ -443,7 +443,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
 2. **四项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力（按 `docs/LARGE-PROJECTS.md`）；每项给证据，缺证据写“数据缺口”；
-3. **历史成长曲线 + 上一轮达成**：运行 `improve-metrics.mjs --write` 比较最近 6–8 轮指标；检查最新 `TEAM-IMPROVEMENT-*.md` 的任务 done/partial/missed；负成长必须当轮加优化任务，未达成项必须结转；
+3. **历史成长曲线 + 上一轮达成**：运行 `improve-metrics.mjs --write` 比较最近 6–8 轮指标；运行 `improve-previous.mjs` 检查最新 `TEAM-IMPROVEMENT-*.md` 的任务 done/partial/missed/unverified；负成长必须当轮加优化任务，未达成项必须结转；
 4. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；优先用 `gate-check.mjs --mode handoff` 做一次证据预检；
 5. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
 6. **默认停止并等待用户授权**；授权后用 `--apply` 实施，不能在同一轮自动修改团队源；

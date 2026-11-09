@@ -9,7 +9,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 
 - **`/ai-improve` historical growth curve**: `improve-metrics.mjs` records `.ai-team/team/IMPROVEMENT-HISTORY.json` and compares the current run with the previous 6–8 entries (first-pass, review-ready, team/project open, review rounds, P1 escapes, tasks done, review/security counts).
 - **Negative-growth action rule**: if a key metric worsens beyond threshold (first-pass/review-ready down >5pp, team open up, P1 escapes up, rounds up >0.25), `negativeGrowth=true`; the current round must add at least one task that directly improves the declining metric, with owner/acceptance/evidence. `NO-OP` is not allowed.
-- **Previous-improvement check**: every `/ai-improve` reads the latest `TEAM-IMPROVEMENT-*.md` “本轮任务” and checks `done/partial/missed` against `TASKS.md`/`GROWTH.md`; missed/partial items are carried into the current round or registered as `RISK-*`.
+- **Previous-improvement check**: every `/ai-improve` reads the latest `TEAM-IMPROVEMENT-*.md` “本轮任务” and checks `done/partial/missed` against `TASKS.md`/`GROWTH.md`; missed/partial items are carried into the current round or registered as `RISK-*`. `improve-previous.mjs` automates the check and reports `unverified` for IDs missing from both ledgers.
 - **Templates**: `templates/IMPROVEMENT-REPORT.md` (four mandatory sections) and `templates/IMPROVEMENT-HISTORY.json`.
 - **Team-source baseline**: `.ai-team/team/IMPROVEMENT-HISTORY.json` records the first snapshot.
 
@@ -21,9 +21,9 @@ Format based on Keep a Changelog; versioning follows SemVer.
 
 ### Verified
 
-- `node scripts/verify.mjs` → 229/229, 0 warnings.
-- `node scripts/test-gates.mjs` → 82/82.
-- `node scripts/audit-team-consistency.mjs` → 211 checks, 0 failed.
+- `node scripts/verify.mjs` → 230/230, 0 warnings.
+- `node scripts/test-gates.mjs` → 83/83.
+- `node scripts/audit-team-consistency.mjs` → 213 checks, 0 failed.
 - `node scripts/ownership-lint.mjs` → PASS.
 - `node scripts/sync-agent-permissions.mjs` → PASS.
 - `permission-lint.mjs` → 590 checks, PASS.
