@@ -111,6 +111,7 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
   - 基线：约 **56.8%**（RETRO-0018 6/10、RETRO-0019 8/15、RETRO-0020 8/14）。
   - 目标：整体 10 任务 ≥ **70%**、30 任务 ≥ **80%**、长期约 85%；T1/T2 10 任务 ≥ **75%**、30 任务 ≥ **85%**、长期 ≥ **90%**；T3/T4 10 任务 ≥ **65%**、30 任务 ≥ **75%**、长期约 80%；review-ready 率 10 任务 ≥ **90%**、30 任务 ≥ **95%**。
   - 护栏：P1 逃逸不上升、审查轮次 ≤2、安全覆盖不降；一次通过率是趋势指标，不作为硬门禁；禁止用缩小 review 范围、隐藏缺陷或“重跑通过”抬数字。
+  - 生成：`node .opencode/skills/ai-team-workflow/scripts/quality-report.mjs --project . --json`；输出 `first_pass_rate`、`review_ready_rate`、`review_rounds_avg`、`p1_findings`、`p1_escapes` 和 data-quality 警告。团队源仓库没有产品实现任务时会标记 `team-source-mode`，指标应在目标项目运行。
 - 返工次数、P1 复发、审查轮次；
 - checkpoint 是否按期、`state-check` 是否 PASS；
 - HANDOFF 是否包含下一步/最小上下文；
@@ -165,7 +166,7 @@ proposed → accepted → in_progress → done
 | 触发 | 动作 |
 |---|---|
 | 每 10 个 `done` | 轻量复盘；检查是否有重复问题 |
-| 每月 | 跨项目 `/ai-improve`，看趋势而非单点 |
+| 每月 | 跨项目 `/ai-improve`，看趋势而非单点；用 `quality-report` 对比一次通过率/审查轮次/P1 逃逸 |
 | 团队版本发布后 | 检查安装、文档、命令计数、旧版本残留 |
 | P0/P1 事故/回滚后 | 无责复盘；先修系统，不先追责 |
 | 同类问题第 2 次出现 | 登记 `RISK-*`；第 3 次考虑提案 |

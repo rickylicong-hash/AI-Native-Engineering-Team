@@ -1,0 +1,54 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Package verification
+        run: node scripts/verify.mjs
+
+      - name: Gate fixtures
+        run: node scripts/test-gates.mjs
+
+      - name: Permission lint
+        run: node .opencode/skills/ai-team-workflow/scripts/permission-lint.mjs
+
+      - name: Artifact check
+        run: node .opencode/skills/ai-team-workflow/scripts/artifact-check.mjs --strict --max-files 2000
+
+      - name: Secret check
+        run: node .opencode/skills/ai-team-workflow/scripts/secret-check.mjs
+
+      - name: Review report check
+        if: hashFiles('.ai-team/reviews/REV-*.md') != ''
+        run: |
+          shopt -s nullglob
+          files=(.ai-team/reviews/REV-*.md)
+          for f in "${files[@]}"; do
+            node .opencode/skills/ai-team-workflow/scripts/review-check.mjs --report "$f" --kind review --strict
+          done
+
+      - name: Quality report
+        run: node .opencode/skills/ai-team-workflow/scripts/quality-report.mjs --project . --json --out .ai-team/work/QUALITY-REPORT.json

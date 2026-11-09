@@ -4,15 +4,15 @@ project: AI Native Engineering Team
 track: T3
 last_retro: 2026-11-09
 last_gate: G5
-tasks_at_last_retro: 5
+tasks_at_last_retro: 2
 next_due_at: 10
-last_trigger: release-1.9.4
+last_trigger: release-1.10.0
 open_proposals: 0
 last_disposition: 2026-11-09
 scope_model: three-tier
 net_zero: enforced
-last_retro_new: 1
-last_retro_closed: 1
+last_retro_new: 2
+last_retro_closed: 2
 team_open_at_last_retro: 0
 team_open_at_prev_retro: 0
 team_open_at_prev2_retro: 0
@@ -41,7 +41,9 @@ team_open_at_prev2_retro: 0
 | T-02 | RETRO-0002 | 净零真值与证据扫描自适应 | done | 1.9.1 / TASK-IMPROVE-2026-11-08-R6 | `CHANGELOG.md` 1.9.1 | 2026-11-08 | team | 2026-11-22 |
 | T-03 | RETRO-0003 | 团队质量目标与 `/ai-improve` 目标校准 | done | 1.9.2 / commit `c484f74` | `CHANGELOG.md` 1.9.2 | 2026-11-08 | team | 2026-11-22 |
 | T-04 | RETRO-0004 | Review-entry 合同与首轮横向面 | done | 1.9.3 / commit `2de7bb0` | `CHANGELOG.md` 1.9.3 | 2026-11-08 | team | 2026-11-22 |
-| T-05 | RETRO-0005 | 验证预算与全量基线复用 | done | 1.9.4 / commit `ec6738c` | `CHANGELOG.md` 1.9.4；`TASK-IMPROVE-2026-11-08-R8-EVIDENCE.md` | 2026-11-09 | team | 2026-11-23 |
+| T-05 | RETRO-0005 | 验证预算与全量基线复用 | done | 1.9.4 / commit `ec6738c` | `CHANGELOG.md` 1.9.4；`TASK-IMPROVE-2026-11-08-R8-EVIDENCE.md` | 2026-11-08 | team | 2026-11-23 |
+| T-06 | RETRO-0006 | 质量报告 `quality-report.mjs` | done | 1.10.0 / TASK-IMPROVE-2026-11-09-R9 | `TASK-IMPROVE-2026-11-09-R9-EVIDENCE.md`；`test-gates` 46/46 | 2026-11-09 | team | 2026-11-23 |
+| T-07 | RETRO-0006 | CI 门禁 `.github/workflows/verify.yml` | done | 1.10.0 / TASK-IMPROVE-2026-11-09-R9 | `.github/workflows/verify.yml`；`CHANGELOG.md` 1.10.0 | 2026-11-09 | team | 2026-11-23 |
 
 ## 已归档复盘
 
@@ -218,6 +220,46 @@ team_open_at_prev2_retro: 0
 - 本周期结论：保持
 - 下一周期重点：T-06（质量度量）与 T-07（CI）
 - 下次复盘：第 10 个 `done` 任务或 1.9.5 发布前
+
+## RETRO-0006 — 2026-11-09 — G5 — release-1.10.0
+
+### 1. 范围与指标
+
+- 覆盖：质量报告与 CI 门禁
+- 新增完成：2
+- 返工任务：1 / 2（首轮 code-review 不通过，R1 通过）
+- 审查轮次：REV-IMPROVE-2026-11-09-R9 → R9-R1；SEC-IMPROVE-2026-11-09-R9 → R9-R1
+- 首轮未关闭 P0/P1：P1=2（GROWTH 提前标 done、EVIDENCE 缺失），R1 关闭
+- 最终未关闭 P0/P1：0
+- 证据：`CHANGELOG.md` 1.10.0、`TASK-IMPROVE-2026-11-09-R9-EVIDENCE.md`、`.ai-team/reviews/REV-IMPROVE-2026-11-09-R9-R1.md`、`.ai-team/security/SEC-IMPROVE-2026-11-09-R9-R1.md`
+
+### 2. 做得好（保留）
+
+- 把“一次通过率”从文档声明变成可运行报告，且明确是趋势/代理指标。
+- CI 与本地使用同一组门禁，减少“本机通过、合并后失败”。
+- 质量报告带 data-quality 警告，不把不可推断的 checkpoint/跨角色返工伪装成精确值。
+- 首轮审查发现 2 个 P1（提前 done、证据缺失）并在 R1 关闭，说明审查有效。
+
+### 3. 问题（每条至少 2 次证据）
+
+| ID | 现象 | 证据 1 | 证据 2 | 影响 |
+|---|---|---|---|---|
+| G-07 | 质量目标缺少自动度量 | 56.8% 基线为历史值 | `improve-scan` 无一次通过率 | 无法判断改进是否有效 |
+| G-08 | 发布/验证依赖本机 | 无 `.github/` | R7-06 第三方扫描未安装 | 安全/发布纪律不可持续 |
+| G-09 | 规则改动容易提前标 done | R9 首轮 P1-1 | R8 曾用 provisional 证据 | 证据链失真 |
+
+### 4. 改进提案
+
+| ID | scope | 提案 | 对应问题 | 最小改动 | 验收方式 | 复查日期 | 需要谁批准 |
+|---|---|---|---|---|---|---|---|
+| T-06 | team | 质量报告 `quality-report.mjs` | G-07 | 从 TASKS/reviews/security/qa 计算趋势指标 | `test-gates` 46/46；strict 探针通过 | 2026-11-23 | 用户 |
+| T-07 | team | CI 门禁 `.github/workflows/verify.yml` | G-08 | push/PR 跑 verify/test-gates/permission/artifact/secret/review-check/quality-report | 本地同命令全绿；CI 首次运行待 push 回填 | 2026-11-23 | 用户 |
+
+### 5. 结论
+
+- 本周期结论：保持
+- 下一周期重点：T-08（角色边界机器校验）与 T-09（离线 E2E）
+- 下次复盘：第 12 个 `done` 任务或 1.10.1 发布前
 
 ## 观察项（不计入团队 open）
 

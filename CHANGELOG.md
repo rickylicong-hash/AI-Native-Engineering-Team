@@ -3,6 +3,31 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.10.0] - 2026-11-09
+
+### Added
+
+- **Quality report (`quality-report.mjs`)**: computes the team quality goal from `.ai-team/state/TASKS.md`, `reviews/**`, `security/**` and `qa/**`: first-pass rate, review-ready rate, review rounds, P1 findings and P1 escapes. Outputs Markdown/JSON with data-quality warnings. It is a trend/proxy metric, not a hard gate; a team-source repo without product tasks is reported as `team-source-mode`.
+- **CI gate (`.github/workflows/verify.yml`)**: runs on push/PR with `verify`, `test-gates`, `permission-lint`, `artifact-check --strict`, `secret-check`, `review-check` for available reports and `quality-report`; failures block merge. Local and CI use the same commands.
+
+### Changed
+
+- `scripts/test-gates.mjs` adds 10 quality-report fixtures (JSON output, first-pass rate, review-ready rate, review rounds, P1 escape, Markdown escaping, out-of-tree `--out`, strict no-review failure, max-files truncation, strict empty-project failure) → 46/46.
+- `docs/TEAM.md` §0.1, `docs/IMPROVEMENT.md` §3.1/§5, `docs/WORKFLOW.md` T-40, `README.md`, `INSTALL.md` and `docs/VERIFICATION.md` §5.43 document the quality report and CI gate.
+- Version `1.10.0`; source verify count is now 207 (new script syntax check), installed 197, installed+OpenCode 207.
+
+### Verified
+
+- `node scripts/verify.mjs` → 207/207.
+- `node scripts/verify.mjs --root ~/.config/opencode --installed` → 197/197.
+- `node scripts/verify.mjs --root ~/.config/opencode --installed --opencode` → 207/207.
+- `scripts/test-gates.mjs` → 46/46.
+- `audit-team-consistency.mjs` → 195 checks, 0 failed.
+- `audit-git-permissions.mjs` → 10 agents, 0 failed.
+- `permission-lint.mjs` → 570 checks, PASS.
+- `artifact-check.mjs --strict --max-files 2000` → 0 error / 0 warning.
+- `sourceHash === installedHash` (`a23ece05...`), version `1.10.0`.
+
 ## [1.9.4] - 2026-11-08
 
 ### Added

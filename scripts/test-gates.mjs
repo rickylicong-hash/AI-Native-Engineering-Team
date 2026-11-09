@@ -30,6 +30,7 @@ const workflowScripts = path.join(skillsRoot, "ai-team-workflow", "scripts");
 const growthCheck = path.join(workflowScripts, "growth-check.mjs");
 const secretCheck = path.join(workflowScripts, "secret-check.mjs");
 const artifactCheck = path.join(workflowScripts, "artifact-check.mjs");
+const qualityReport = path.join(workflowScripts, "quality-report.mjs");
 
 const failures = [];
 const checks = [];
@@ -431,6 +432,79 @@ async function main() {
     }
   } finally {
     fs.rmSync(briefDir, { recursive: true, force: true });
+  }
+
+  const qualityDir = tmp("quality");
+  try {
+    write(path.join(qualityDir, ".ai-team", "state", "TASKS.md"), [
+      "# Tasks",
+      "",
+      "| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |",
+      "|---|---|---|---|---|---|---|",
+      "| TASK-1001 | 实现登录 | ai-team/engineer | - | done | AC | - |",
+      "| TASK-1002 | 实现支付 | ai-team/engineer | - | done | AC | - |",
+      "| TASK-1003 | 审查登录 | ai-team/code-reviewer | - | done | AC | - |",
+      "| TASK-1004 | 实现导出 | ai-team/engineer<b> | - | doing | AC | - |",
+      "",
+    ].join("\n"));
+    write(path.join(qualityDir, ".ai-team", "reviews", "REV-1001.md"), "# REV-1001 — TASK-1001\n\n- 结论：通过\n- P0=0；P1=0；P2=0\n");
+    write(path.join(qualityDir, ".ai-team", "reviews", "REV-1002.md"), "# REV-1002 — TASK-1002\n\n- 结论：修改后通过\n- P0=0；P1=1；P2=0\n");
+    write(path.join(qualityDir, ".ai-team", "reviews", "REV-1002-R1.md"), "# REV-1002-R1 — TASK-1002-R1\n\n- 结论：通过\n- P0=0；P1=0；P2=0\n");
+    write(path.join(qualityDir, ".ai-team", "security", "SEC-1002.md"), "# SEC-1002 — TASK-1002\n\n- 结论：通过\n- P0=0；P1=1；P2=0\n");
+
+    const qualityRun = run(qualityReport, ["--project", qualityDir, "--json"], qualityDir);
+    let qualityData = null;
+    try {
+      qualityData = JSON.parse(qualityRun.stdout || "");
+    } catch {
+      qualityData = null;
+    }
+    check("quality report json", qualityRun.status === 0 && qualityData !== null, `${qualityRun.status}; ${(qualityRun.stdout || qualityRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+    check("quality first pass", qualityData?.summary?.first_pass_rate === 0.5, JSON.stringify(qualityData?.summary || {}));
+    check("quality review ready", Math.abs((qualityData?.summary?.review_ready_rate ?? -1) - (2 / 3)) < 0.001, String(qualityData?.summary?.review_ready_rate));
+    check("quality review rounds", qualityData?.summary?.review_rounds_avg === 1.5, String(qualityData?.summary?.review_rounds_avg));
+    check("quality p1 escapes", qualityData?.summary?.p1_escapes === 1, String(qualityData?.summary?.p1_escapes));
+
+    const qualityMarkdown = run(qualityReport, ["--project", qualityDir], qualityDir);
+    check("quality markdown escapes cells", qualityMarkdown.status === 0 && qualityMarkdown.stdout.includes("&lt;b&gt;") && !qualityMarkdown.stdout.includes("<b>"), `${qualityMarkdown.status}; ${(qualityMarkdown.stdout || qualityMarkdown.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const qualityLimited = run(qualityReport, ["--project", qualityDir, "--json", "--max-files", "1"], qualityDir);
+    let limitedData = null;
+    try {
+      limitedData = JSON.parse(qualityLimited.stdout || "");
+    } catch {
+      limitedData = null;
+    }
+    check("quality max-files warns", qualityLimited.status === 0 && (limitedData?.data_quality?.warnings || []).some((item) => item.id === "scan-truncated"), `${qualityLimited.status}; ${JSON.stringify(limitedData?.data_quality?.warnings || [])}`);
+
+    const badOut = run(qualityReport, ["--project", qualityDir, "--out", path.join(path.parse(qualityDir).root, "quality-evil.md")], qualityDir);
+    check("quality rejects out-of-tree out", badOut.status === 2, `${badOut.status}; ${(badOut.stdout || badOut.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+
+    const noReviewDir = tmp("quality-no-review");
+    try {
+      write(path.join(noReviewDir, ".ai-team", "state", "TASKS.md"), [
+        "# Tasks",
+        "",
+        "| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |",
+        "|---|---|---|---|---|---|---|",
+        "| TASK-2001 | 实现未审查 | ai-team/engineer | - | doing | AC | - |",
+        "",
+      ].join("\n"));
+      const noReviewRun = run(qualityReport, ["--project", noReviewDir, "--strict"], noReviewDir);
+      check("quality strict no-review fails", noReviewRun.status === 1, `${noReviewRun.status}; ${(noReviewRun.stdout || noReviewRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+    } finally {
+      fs.rmSync(noReviewDir, { recursive: true, force: true });
+    }
+
+    const emptyQualityDir = tmp("quality-empty");
+    try {
+      const strictRun = run(qualityReport, ["--project", emptyQualityDir, "--strict"], emptyQualityDir);
+      check("quality strict empty fails", strictRun.status === 1, `${strictRun.status}; ${(strictRun.stdout || strictRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
+    } finally {
+      fs.rmSync(emptyQualityDir, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(qualityDir, { recursive: true, force: true });
   }
 
   const scanDir = tmp("scan");

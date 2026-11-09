@@ -13,6 +13,11 @@
 | RISK-2026-11-09-R7-04 | P3 | 扫描无单文件大小/超时上限 | build | 2026-11-23 | 增加单文件上限（如 5 MiB）与总超时 |
 | RISK-2026-11-09-R7-05 | P3 | 最新 RETRO 多个 `### 4`/`### 5` 表的精确回归缺失 | build | 2026-11-23 | 增加 legacy + 真实 `### 5` fixture |
 | RISK-2026-11-09-R7-06 | P3 | 第三方 SCA/secret 扫描未安装 | build | 2026-11-23 | CI 安装并记录版本/退出码，或书面接受 |
+| RISK-2026-11-09-R9-01 | P3 | `quality-report` 的任务类型/标题/轮次启发式可能误分类 | build | 2026-11-23 | 观察 2 个项目；补充 owner/type 字段或结构化 TASKS |
+| RISK-2026-11-09-R9-02 | P3 | CI 只覆盖 GitHub Actions，其他托管平台未覆盖 | build | 2026-11-23 | 如使用 GitLab/Jenkins，补等价流水线或书面接受 |
+| RISK-2026-11-09-R9-03 | P3 | `p1_escapes` 为代理指标，security/QA P1 可能重复计数 | build | 2026-11-23 | 人工核对 2 个项目报告；必要时按 P1 ID 去重 |
+| RISK-2026-11-09-R9-04 | P2 | CI 使用 `actions/checkout@v4`/`setup-node@v4` 可移动 tag，未 pin 到 40 位 SHA | devops-engineer | 2026-11-23 | pin action SHA + 固定 Node patch，或书面接受 |
+| RISK-2026-11-09-R9-05 | P3 | 分支保护/首次贡献者审批属仓库外设置，未验证 | build | 2026-11-23 | 在 GitHub 仓库启用并记录截图/规则 |
 
 ## 已关闭
 
