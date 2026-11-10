@@ -233,7 +233,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.14.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.14.1 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -498,7 +498,7 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 
 单项目策略不再污染团队核心。`skills/ai-team-workflow/profiles/` 提供 `java-spring`、`vue`、`strict-security` 三个示例；新项目初始化时选择 profile，在项目 `PROJECT.md`/`DECISIONS.md` 记录覆盖项、owner 和复查日期。只有跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据的提案才进 `TEAM-CORE`；其余归 `PROJECT-PROFILE` 或 `OBSERVE`。
 
-净零规则：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭），历史 3+ 新增只能通过显式 `net_zero_exception` 记录 RETRO 号/原因/批准日期。`growth-check --debt` 从最新 RETRO/索引推导真值，frontmatter 陈旧即 FAIL。团队核心保持通用、可分享。
+净零规则：每轮新增 `TEAM-CORE` 提案 ≤5，且 ≤ 本轮关闭/合并数；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭），历史 6+ 新增只能通过显式 `net_zero_exception` 记录 RETRO 号/原因/批准日期。`growth-check --debt` 从最新 RETRO/索引推导真值，frontmatter 陈旧即 FAIL。团队核心保持通用、可分享。
 
 ### 编码约定
 

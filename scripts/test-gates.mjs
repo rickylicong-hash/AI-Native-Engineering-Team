@@ -3,10 +3,10 @@
  * 1.9.1 gate regression fixtures.
  *
  * 覆盖：
- *   - 净零真值：latest RETRO 新增 3 条 open + last_retro_new: 0 → FAIL；
+ *   - 净零真值：last_retro_new 与最新 RETRO 新增数不一致 → FAIL；
  *   - 陈旧 frontmatter：team_open_at_last_retro 与实际不符 → FAIL；
- *   - 同轮合并：3 条新增全部 superseded，last_retro_new: 0 / closed: 3 → PASS；
- *   - 既有规则：new > 2、new > closed → FAIL；
+ *   - 同轮合并：5 条新增全部 superseded → PASS；6 条超限需 exception；
+ *   - 既有规则：new > 5、new > closed → FAIL；
  *   - 旧台账（无 scope_model/net_zero）→ PASS；
  *   - 证据扫描：默认 2000 起点自动升限；到硬上限仍截断 → PARTIAL/error。
  *
@@ -169,6 +169,12 @@ async function main() {
   try {
     const baseRow = { id: "P-01", scope: "team", status: "proposed", title: "alpha gate", landing: "-", evidence: "-", date: "2026-01-02" };
     const closedRow = { id: "P-02", retro: "RETRO-0000", scope: "team", status: "superseded", title: "beta duplicate", landing: "并入 P-01", evidence: "fixture", date: "2026-01-02" };
+    const teamRows = (count, overrides = {}) => Array.from({ length: count }, (_, index) => ({
+      ...baseRow,
+      id: `P-${String(index + 1).padStart(2, "0")}`,
+      title: `gate ${index + 1}`,
+      ...overrides,
+    }));
 
     const scenarios = [
       {
@@ -209,19 +215,15 @@ async function main() {
         text: growthText({ lastRetroNew: 1, lastRetroClosed: 1, teamOpenLast: 0, teamOpenPrev: 2, teamOpenPrev2: 2, rows: [baseRow, closedRow], tableRows: [baseRow], previousRows: [closedRow] }),
       },
       {
-        name: "new-over-two",
+        name: "new-over-five",
         expect: 1,
         text: growthText({
-          lastRetroNew: 3,
-          lastRetroClosed: 3,
-          teamOpenLast: 3,
-          teamOpenPrev: 3,
-          teamOpenPrev2: 3,
-          rows: [
-            baseRow,
-            { ...baseRow, id: "P-03", title: "gamma gate" },
-            { ...baseRow, id: "P-04", title: "delta gate" },
-          ],
+          lastRetroNew: 6,
+          lastRetroClosed: 6,
+          teamOpenLast: 0,
+          teamOpenPrev: 0,
+          teamOpenPrev2: 0,
+          rows: teamRows(6, { status: "superseded", landing: "并入 P-10", evidence: "fixture" }),
         }),
       },
       {
@@ -237,36 +239,28 @@ async function main() {
         }),
       },
       {
-        name: "same-round-merged",
+        name: "same-round-merged-six-with-exception",
         expect: 0,
         text: growthText({
-          lastRetroNew: 3,
-          lastRetroClosed: 3,
+          lastRetroNew: 6,
+          lastRetroClosed: 6,
           teamOpenLast: 0,
           teamOpenPrev: 0,
           teamOpenPrev2: 0,
-          exception: "RETRO-0001: 3 new (>2); approved 2026-01-02; merged same round",
-          rows: [
-            { ...baseRow, status: "superseded", landing: "并入 P-10", evidence: "fixture", title: "merged alpha" },
-            { ...baseRow, id: "P-03", status: "superseded", landing: "并入 P-11", evidence: "fixture", title: "merged beta" },
-            { ...baseRow, id: "P-04", status: "superseded", landing: "并入 P-12", evidence: "fixture", title: "merged gamma" },
-          ],
+          exception: "RETRO-0001: 6 new (>5); approved 2026-01-02; merged same round",
+          rows: teamRows(6, { status: "superseded", landing: "并入 P-10", evidence: "fixture" }),
         }),
       },
       {
-        name: "same-round-merged-no-exception",
-        expect: 1,
+        name: "new-at-five",
+        expect: 0,
         text: growthText({
-          lastRetroNew: 3,
-          lastRetroClosed: 3,
+          lastRetroNew: 5,
+          lastRetroClosed: 5,
           teamOpenLast: 0,
           teamOpenPrev: 0,
           teamOpenPrev2: 0,
-          rows: [
-            { ...baseRow, status: "superseded", landing: "并入 P-10", evidence: "fixture", title: "merged alpha" },
-            { ...baseRow, id: "P-03", status: "superseded", landing: "并入 P-11", evidence: "fixture", title: "merged beta" },
-            { ...baseRow, id: "P-04", status: "superseded", landing: "并入 P-12", evidence: "fixture", title: "merged gamma" },
-          ],
+          rows: teamRows(5, { status: "superseded", landing: "并入 P-10", evidence: "fixture" }),
         }),
       },
       {
@@ -288,34 +282,26 @@ async function main() {
         name: "exception-malformed",
         expect: 1,
         text: growthText({
-          lastRetroNew: 3,
-          lastRetroClosed: 3,
+          lastRetroNew: 6,
+          lastRetroClosed: 6,
           teamOpenLast: 0,
           teamOpenPrev: 0,
           teamOpenPrev2: 0,
           exception: "RETRO-0001",
-          rows: [
-            { ...baseRow, status: "superseded", landing: "并入 P-10", evidence: "fixture", title: "merged alpha" },
-            { ...baseRow, id: "P-03", status: "superseded", landing: "并入 P-11", evidence: "fixture", title: "merged beta" },
-            { ...baseRow, id: "P-04", status: "superseded", landing: "并入 P-12", evidence: "fixture", title: "merged gamma" },
-          ],
+          rows: teamRows(6, { status: "superseded", landing: "并入 P-10", evidence: "fixture" }),
         }),
       },
       {
-        name: "exception-open",
+        name: "exception-open-six",
         expect: 1,
         text: growthText({
-          lastRetroNew: 3,
-          lastRetroClosed: 3,
-          teamOpenLast: 3,
-          teamOpenPrev: 3,
-          teamOpenPrev2: 3,
-          exception: "RETRO-0001: 3 new (>2); approved 2026-01-02; migration",
-          rows: [
-            baseRow,
-            { ...baseRow, id: "P-03", title: "gamma gate" },
-            { ...baseRow, id: "P-04", title: "delta gate" },
-          ],
+          lastRetroNew: 6,
+          lastRetroClosed: 0,
+          teamOpenLast: 6,
+          teamOpenPrev: 6,
+          teamOpenPrev2: 6,
+          exception: "RETRO-0001: 6 new (>5); approved 2026-01-02; migration",
+          rows: teamRows(6),
         }),
       },
       {

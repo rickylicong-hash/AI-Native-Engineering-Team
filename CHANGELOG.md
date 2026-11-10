@@ -3,6 +3,25 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.14.1] - 2026-11-10
+
+### Changed
+
+- **Per-round change cap 2 → 10**: `ai-improve` now allows up to 10 changes per round, grouped into 1–2 systemic bottlenecks plus same-cluster fixes/debt closures. A single `PATCH` remains ≤2 files; a round may contain multiple PATCHes, each with its own acceptance/rollback.
+- **TEAM-CORE new-proposal cap 2 → 5**: the absolute ceiling is now 5, but net-zero still requires `new ≤ closed/merged`; the effective cap is `min(5, closed/merged)`. `growth-check` uses a single `TEAM_CORE_NEW_LIMIT` constant; the `new > closed/merged` guard and the two-consecutive-rise stop rule are unchanged.
+- **Report/output alignment**: `/ai-improve` report format now allows 1–10 proposals/tasks (grouped into 1–3 themes); `IMPROVEMENT-REPORT.md` is unchanged in structure, with the cap documented in the command.
+- **Consistency**: `audit-team-consistency` now checks the per-round change cap and TEAM-CORE cap; `test-gates` fixtures cover 5-at-cap, 6-over-cap, same-round merge, malformed/over-cap exceptions.
+
+### Verified
+
+- `node scripts/verify.mjs` → 230/230, 0 warnings.
+- `node scripts/test-gates.mjs` → 83/83.
+- `node scripts/audit-team-consistency.mjs` → 215 checks, 0 failed.
+- `node scripts/ownership-lint.mjs` → 19 checks, PASS.
+- `permission-lint.mjs` → 590 checks, PASS.
+- `node scripts/verify.mjs --installed` → 216/216; `--installed --opencode` → 226/226.
+- `version.mjs --check` → source 1.14.1 = installed 1.14.1.
+
 ## [1.14.0] - 2026-11-09
 
 ### Added

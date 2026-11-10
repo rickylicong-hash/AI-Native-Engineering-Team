@@ -28,7 +28,7 @@ Decide   NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER
   ↓
 Authorize 用户阅读报告并明确授权（--apply）
   ↓
-Change   一次最多 2 个改动，写清验收与回滚
+Change   一次最多 10 个改动，写清验收与回滚
   ↓
 Verify   用同一组指标对比改动前后
   ↓
@@ -75,7 +75,7 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 |---|---|---|
 | `NO-OP` | 没有可复现的系统缺口 | 不发布 |
 | `DOCS-ONLY` | 仅文档/计数/版本漂移 | patch |
-| `PATCH` | ≤2 个文件的小修 | patch |
+| `PATCH` | 单个小修 ≤2 个文件；一轮可由多个 PATCH 组成，最多 10 个改动 | patch |
 | `FEATURE` | 新脚本/命令/工作流 | minor |
 | `ROLE-GAP` | 现有角色无法覆盖的高频能力缺口 | 需用户明确批准 |
 | `DEFER` | 证据不足或环境阻塞 | 写 `RISK-*` + 复查日期 |
@@ -100,9 +100,9 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 
 净零规则：
 
-- 每轮新增 `TEAM-CORE` 提案 ≤2；
+- 每轮新增 `TEAM-CORE` 提案 ≤5；
 - 新增 `TEAM-CORE` ≤ 本轮关闭/合并数；
-- `last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭）；同轮合并不能绕过 ≤2，历史 3+ 新增只能通过显式 `net_zero_exception`（含 RETRO 号/原因/批准日期）记录；
+- `last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭）；同轮合并不能绕过 ≤5，历史 6+ 新增只能通过显式 `net_zero_exception`（含 RETRO 号/原因/批准日期）记录；
 - `growth-check` 从最新 RETRO 表和索引推导 `last_retro_new`、`team_open_at_last_retro`；frontmatter 陈旧即 error，不再只信自报值；
 - 团队 open 连续两轮上升 → 停止新增，先合并/关闭/延期至少 2 条；
 - 每条提案写 scope、owner、验收、复查日期；`deferred` 必须有复查触发点；

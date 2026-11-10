@@ -11,7 +11,7 @@
  *   - 只有 scope=team 的未处置提案计入团队 open（open）；
  *   - 净零：last_retro_new 必须等于最新 RETRO 表里的 team 新增数（含同轮合并/关闭），
  *     team_open_at_last_retro 必须等于实际 team open；陈旧 frontmatter 直接 error；
- *   - last_retro_new ≤ 2 且 ≤ last_retro_closed；历史 3+ 新增必须有显式 net_zero_exception；
+ *   - last_retro_new ≤ 5 且 ≤ last_retro_closed；历史 6+ 新增必须有显式 net_zero_exception；
  *     team open 连续两轮上升报 error；
  *   - --strict 下 team 未处置提案也算失败；默认只报 warning。
  *
@@ -48,6 +48,7 @@ const openOnly = hasFlag("--open");
 const strict = hasFlag("--strict");
 const archive = hasFlag("--archive");
 const debt = hasFlag("--debt");
+const TEAM_CORE_NEW_LIMIT = 5;
 const yes = hasFlag("--yes");
 
 const TERMINAL = new Set(["done", "rejected", "superseded"]);
@@ -351,29 +352,29 @@ if (netZeroEnabled && latestRetro) {
     staleNetZeroFields.push("last_retro_closed");
     errors.push(`net-zero: last_retro_closed=${lastRetroClosed} 与按最新 RETRO 日期 ${latestRetroDate} 推导的关闭/合并 ${actualClosed} 不一致；请核对索引日期`);
   }
-  if (actualNewRawTeam > 2) {
+  if (actualNewRawTeam > TEAM_CORE_NEW_LIMIT) {
     const exception = (meta.net_zero_exception || "").trim();
     const exceptionHasRetro = exception.includes(latestRetro.match[1]);
     const exceptionHasDate = /\b(20\d{2}-\d{2}-\d{2})\b/.test(exception);
     const exceptionHasReason = /(approved|批准|用户|migration|迁移|over|超出|合并|关闭)/i.test(exception);
-    const overageClosed = actualNewRawTeam - actualNewOpenTeam >= actualNewRawTeam - 2;
-    if (exceptionHasRetro && exceptionHasDate && exceptionHasReason && actualNewOpenTeam <= 2 && overageClosed) {
-      warnings.push(`net-zero: ${latestRetro.match[1]} 新增 team 提案 ${actualNewRawTeam} > 2，已由 net_zero_exception 记录；本轮不得再新增`);
+    const overageClosed = actualNewRawTeam - actualNewOpenTeam >= actualNewRawTeam - TEAM_CORE_NEW_LIMIT;
+    if (exceptionHasRetro && exceptionHasDate && exceptionHasReason && actualNewOpenTeam <= TEAM_CORE_NEW_LIMIT && overageClosed) {
+      warnings.push(`net-zero: ${latestRetro.match[1]} 新增 team 提案 ${actualNewRawTeam} > ${TEAM_CORE_NEW_LIMIT}，已由 net_zero_exception 记录；本轮不得再新增`);
     } else {
       const reasons = [];
       if (!exceptionHasRetro) reasons.push("缺少 RETRO 号");
       if (!exceptionHasDate) reasons.push("缺少批准日期");
       if (!exceptionHasReason) reasons.push("缺少原因/批准说明");
-      if (actualNewOpenTeam > 2) reasons.push(`本轮仍有 ${actualNewOpenTeam} 条新 open`);
-      if (!overageClosed) reasons.push("超出 2 条的部分未全部关闭/合并");
-      errors.push(`net-zero: ${latestRetro.match[1]} 新增 team 提案 ${actualNewRawTeam} > 2；${reasons.join("；")}；历史违规必须显式 net_zero_exception（RETRO 号/原因/批准日期）`);
+      if (actualNewOpenTeam > TEAM_CORE_NEW_LIMIT) reasons.push(`本轮仍有 ${actualNewOpenTeam} 条新 open`);
+      if (!overageClosed) reasons.push(`超出 ${TEAM_CORE_NEW_LIMIT} 条的部分未全部关闭/合并`);
+      errors.push(`net-zero: ${latestRetro.match[1]} 新增 team 提案 ${actualNewRawTeam} > ${TEAM_CORE_NEW_LIMIT}；${reasons.join("；")}；历史违规必须显式 net_zero_exception（RETRO 号/原因/批准日期）`);
     }
   }
 } else if (netZeroEnabled && !latestRetro) {
   warnings.push("net-zero: scope_model/net_zero 已启用，但没有可解析的 RETRO 段；无法校验 last_retro_new");
 }
-if (lastRetroNew !== null && lastRetroNew > 2 && !latestRetro) {
-  errors.push(`net-zero: last_retro_new=${lastRetroNew} > 2；每轮新增 TEAM-CORE 提案最多 2 条`);
+if (lastRetroNew !== null && lastRetroNew > TEAM_CORE_NEW_LIMIT && !latestRetro) {
+  errors.push(`net-zero: last_retro_new=${lastRetroNew} > ${TEAM_CORE_NEW_LIMIT}；每轮新增 TEAM-CORE 提案最多 ${TEAM_CORE_NEW_LIMIT} 条`);
 }
 if (lastRetroNew !== null && lastRetroClosed !== null && lastRetroNew > lastRetroClosed) {
   errors.push(`net-zero: last_retro_new=${lastRetroNew} > last_retro_closed=${lastRetroClosed}；新增不得高于关闭/合并数`);

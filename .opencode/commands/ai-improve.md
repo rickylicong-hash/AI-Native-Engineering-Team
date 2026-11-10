@@ -142,17 +142,17 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 |---|---|---|
 | `NO-OP` | 无反复出现的缺口，文档也一致 | 记录“本轮不优化”+ 下次复查触发点 |
 | `DOCS-ONLY` | 仅文档/计数/版本/命令与行为不一致 | 授权后只改文档与 manifest；patch 版本 |
-| `PATCH` | ≤2 个文件的小修，如 prompt、命令、脚本参数、模板 | 授权后实施；patch 版本 |
+| `PATCH` | 单个小修 ≤2 个文件；一轮可由多个 PATCH 组成，最多 10 个改动（每个改动仍写验收/回滚） | 授权后实施；patch 版本 |
 | `FEATURE` | 需要新脚本/新命令/新工作流 | 授权后设计、审查、QA、安全；minor 版本 |
 | `ROLE-GAP` | 同一能力缺口在 ≥2 个任务/项目出现 ≥3 次，且现有角色无法覆盖 | 先提案；默认不新增角色，需单独明确批准 |
 | `DEFER` | 证据不足或环境阻塞 | 写 `RISK-*` + 复查日期，不硬改 |
 
 硬规则：
 
-- 每轮最多推进 **2 个改动**，优先解决一个系统性瓶颈。
+- 每轮最多推进 **10 个改动**，优先解决 1–2 个系统性瓶颈；其余用于同簇小修/债务关闭。
 - 不把单项目特例写进通用团队规则；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`），一次性现象写 `RISKS.md`。
 - 只有 `TEAM-CORE`（跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据）才进团队 GROWTH / AI Native 源。
-- 净零：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债。
+- 净零：每轮新增 `TEAM-CORE` 提案 ≤5，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债。10 个改动中应包含关闭/合并旧提案的名额，避免只新增不清债。
 - 提案必须有：目标、证据、验收标准、风险、回滚、文档影响、版本级别、scope、复查日期。
 - 分析阶段**不修改** `GROWTH.md`、AI Native 源、版本或安装。
 - 报告必须写清“授权后将要改哪些文件、调用哪些角色、版本级别、风险”。
@@ -221,13 +221,13 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 ## 6. 持续优化策略
 
 - **三层入口**：`TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`；单项目策略进 `profiles/` 或项目 `.ai-team/tasks`，不进团队核心。
-- **净零**：每轮新增 `TEAM-CORE` ≤2，且 ≤ 关闭/合并数；团队 open 连续两轮上升→停止新增，先清债。
+- **净零**：每轮新增 `TEAM-CORE` ≤5，且 ≤ 关闭/合并数；团队 open 连续两轮上升→停止新增，先清债。
 - **债务指标**：`growth-check --debt` 看 team/project open、年龄、重复簇；`improve-scan` 报告趋势。
 - **触发**：每 10 个 `done`、每月、每次团队版本发布后、P0/P1 事故后、同类问题第 2 次出现、GROWTH 未处置 ≥3。
 - **基线**：先记录当前指标，再改；至少保留一组改动前后对比。`improve-metrics` 写 `IMPROVEMENT-HISTORY.json`，每轮报告展示成长曲线。
 - **成长曲线**：最近 6–8 轮 first-pass/review-ready/team open/project open/rounds/P1 escapes/tasks done 对比；负成长必须当轮加优化任务。
 - **上一轮验收**：每次先检查最新 `TEAM-IMPROVEMENT-*.md` 的任务状态；`partial/missed` 结转到本轮或写 `RISK-*`。
-- **小步**：一次最多 2 个改动；优先 prompt/命令/模板，再脚本，最后才角色。
+- **小步**：一次最多 10 个改动，按主题分批；优先 prompt/命令/模板，再脚本，最后才角色；单批仍须可回滚。
 - **可回滚**：每个提案写回滚方式和观察窗口。
 - **无改善就撤回**：观察一个完整节奏后仍无改善，标记 `rejected`/`superseded`。
 - **文档同轮**：行为、命令、计数、版本必须同轮同步；文档不一致视为未完成。
@@ -246,7 +246,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 - 结论：`NO-OP` / `DOCS-ONLY` / `PATCH` / `FEATURE` / `ROLE-GAP` / `DEFER`；负成长时不得 NO-OP；
 - 项目与证据：GROWTH 未处置数、会话/消息/工具错误/权限拒绝、最近审计水位；
 - 主要发现 3 条（带证据路径）；
-- 提案 1–3 条（目标/验收/版本级别）；
+- 提案/任务 1–10 条（可按 1–3 个主题归纳；每条写目标/验收/版本级别）；
 - 如需实施：拟改文件、拟调用角色、风险、是否等待授权；
 - 风险与复查触发点；
 - 是否已 commit/push。

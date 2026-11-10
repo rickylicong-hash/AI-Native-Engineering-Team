@@ -24,7 +24,7 @@ $ARGUMENTS
    - 把每条提案分类为 `TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`：`TEAM-CORE` 只收跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据；单项目策略（迁移号、worktree、CI/BOM、状态格式、VEX 例外）归 `PROJECT-PROFILE`，落到项目 `.ai-team/tasks` 或 `profiles/`；一次性现象归 `OBSERVE`，写 `RISKS.md` + 复查日期；
    - 只有 `scope: team` 计入团队 open；`PROJECT-PROFILE` 在索引中保留 `scope: project` 追踪，但不占团队 open；
    - team open ≥3 时，本轮至少关闭/合并/延期 2 条；
-   - 新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数（净零）；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭）；同轮合并不能绕过 ≤2，历史 3+ 新增只能通过显式 `net_zero_exception` 记录；
+   - 新增 `TEAM-CORE` 提案 ≤5，且 ≤ 本轮关闭/合并数（净零）；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭）；同轮合并不能绕过 ≤5，历史 6+ 新增只能通过显式 `net_zero_exception` 记录；
    - 团队 open 连续两轮上升时不得新增，先清债；
    - 每条提案必须写 scope、owner、验收方式、复查日期；`deferred` 必须写复查触发点。
 6. 更新 frontmatter：`last_retro`、`last_gate`、`tasks_at_last_retro`、`next_due_at`（= 当前 done + 10）、`last_trigger`、`last_retro_new`、`last_retro_closed`；把上一轮的 `team_open_at_last_retro` 前移到 `team_open_at_prev_retro`，上一轮 `prev` 前移到 `prev2`，本轮团队 open 写入 `last`。这些字段由 `growth-check` 从索引/RETRO 交叉校验；陈旧即 error，不得手填自报值。

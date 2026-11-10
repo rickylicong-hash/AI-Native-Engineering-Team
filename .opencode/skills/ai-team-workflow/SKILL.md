@@ -185,7 +185,7 @@ Chief 不替任何角色执行专业工作；角色不替 Chief 做门禁决定�
 8. 复盘、交接、门禁前运行 `growth-check --debt`；有缺失状态或净零违规不得交接。全部处置且非最近一轮的 RETRO 可用 `growth-check --archive --yes` 归档到 `team/archive/`。
 9. 归档不删除历史：主文件保留索引和归档导航，完整原文进 `team/archive/GROWTH-<year>.md`。
 10. **三层入口（1.9.0，1.9.1 真值校验）**：`TEAM-CORE` 只收跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`）；一次性现象归 `OBSERVE`（`RISKS.md` + 复查日期）。只有 `scope: team` 计入团队 open。
-11. **净零（1.9.0，1.9.1 真值校验）**：每轮新增 `TEAM-CORE` 提案 ≤2，且 ≤ 本轮关闭/合并数；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭），历史 3+ 新增只能通过显式 `net_zero_exception` 记录 RETRO 号/原因/批准日期；`growth-check` 从最新 RETRO/索引校验 frontmatter，陈旧即 error；团队 open 连续两轮上升时停止新增，先清债。`PROJECT-PROFILE` 不占团队 open，但必须写 owner、验收、复查日期。
+11. **净零（1.9.0，1.9.1 真值校验）**：每轮新增 `TEAM-CORE` 提案 ≤5，且 ≤ 本轮关闭/合并数；`last_retro_new` 必须等于最新 RETRO 的 team 新增数（含同轮合并/关闭），历史 6+ 新增只能通过显式 `net_zero_exception` 记录 RETRO 号/原因/批准日期；`growth-check` 从最新 RETRO/索引校验 frontmatter，陈旧即 error；团队 open 连续两轮上升时停止新增，先清债。`PROJECT-PROFILE` 不占团队 open，但必须写 owner、验收、复查日期。
 12. `deferred` 必须写复查日期/触发点；长期停在 `proposed` 的提案由 `--debt` 的年龄视图暴露，不得用新增提案掩盖。
 
 **检查命令（随本 skill 安装）：**
@@ -454,7 +454,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 
 - 单次现象写 `RISK-*`，≥2 次证据才写 GROWTH 提案；`ROLE-GAP` 需 ≥3 次、跨 ≥2 任务/项目且现有角色无法覆盖；
 - 负成长不得 `NO-OP`：本轮至少 1 个任务直接改善恶化指标；上一轮 `partial/missed` 必须结转或写 `RISK-*`；
-- 默认不新增角色；每轮最多 2 个改动；优先改 prompt/命令/模板，再考虑脚本；
+- 默认不新增角色；每轮最多 10 个改动，按主题分批；优先改 prompt/命令/模板，再考虑脚本；
 - 优化必须写清基线、验收、回滚和观察窗口；无改善就标记 `rejected`/`superseded`；
 - 文档、命令、计数、版本必须同轮同步，文档不一致视为未完成；
 - token/成本只观察，不建立预算机制，除非用户另行批准。

@@ -398,6 +398,16 @@ check(
   "improve command must use the unified gate-check preflight",
 );
 check(
+  "improve command sets per-round change cap 10",
+  improveCommandText.includes("每轮最多推进 **10 个改动**"),
+  "improve command must set the per-round change cap to 10",
+);
+check(
+  "improve command keeps TEAM-CORE cap 5",
+  improveCommandText.includes("TEAM-CORE") && improveCommandText.includes("≤5"),
+  "improve command must keep the TEAM-CORE net-zero cap at 5",
+);
+check(
   "ownership-lint script exists",
   fs.existsSync(path.resolve("scripts", "ownership-lint.mjs")),
   "missing scripts/ownership-lint.mjs",

@@ -348,7 +348,7 @@ Co-authored-by: ai-team/qa-engineer <ai-team@local>
 - `TEAM-CORE`（跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据）才进团队核心；
 - `PROJECT-PROFILE`（迁移号、worktree、CI/BOM、状态格式、VEX 例外）落到项目 `.ai-team/tasks` 或 `profiles/`，索引用 `scope: project` 追踪，不占团队 open；
 - `OBSERVE`（一次性现象）写 `RISKS.md` + 复查日期；
-- 每轮新增 `TEAM-CORE` ≤2，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债；
+- 每轮新增 `TEAM-CORE` ≤5，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债；
 - `growth-check --debt` 输出 team/project open、年龄、重复簇；`debt` 上升时先清债，再加规则。
 
 ### 7.3 Checkpoint 提交
@@ -440,7 +440,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\gate-check.mjs" --p
 规则：
 
 - 单次证据写 `RISK-*`；≥2 次才写 GROWTH 提案；`ROLE-GAP` 需 ≥3 次、跨 ≥2 任务/项目且现有角色无法覆盖；
-- 每轮最多 2 个改动；优先改 prompt/命令/模板，再考虑脚本；
+- 每轮最多 10 个改动，按主题分批；优先改 prompt/命令/模板，再考虑脚本；
 - 必须写基线、验收、回滚和观察窗口；无改善就 `rejected`/`superseded`；
 - 行为、命令、计数、版本、文档同轮同步；文档不一致视为未完成；
 - token/成本只观察，不建立预算机制，除非用户另行批准。
