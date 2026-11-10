@@ -268,6 +268,47 @@ function growthSummary() {
 }
 
 /**
+ * 读取页面/端点覆盖摘要（1.15.0），供 HANDOFF/STATUS 的 Surface 行使用。
+ * 只读；没有 map 或脚本失败返回 null，不阻断 checkpoint。
+ */
+function surfaceSummary() {
+  const scripts = path.dirname(process.argv[1]);
+  const pageMap = path.join(project, ".ai-team", "design", "ux", "PAGE-MAP.json");
+  const endpointMap = path.join(project, ".ai-team", "design", "architecture", "ENDPOINT-MAP.json");
+  if (!fs.existsSync(pageMap) && !fs.existsSync(endpointMap)) return null;
+  const run = (script) => {
+    const result = spawnSync(process.execPath, [path.join(scripts, script), "--project", project, "--json"], {
+      cwd: project,
+      encoding: "utf8",
+      timeout: 15000,
+    });
+    if (!result.stdout) return null;
+    try {
+      return JSON.parse(result.stdout);
+    } catch {
+      return null;
+    }
+  };
+  const parts = [];
+  if (fs.existsSync(pageMap)) {
+    const data = run("page-coverage-check.mjs");
+    const summary = data?.summary;
+    if (summary && Number.isFinite(summary.due?.total)) {
+      const pct = summary.due.p0_rate === null ? "n/a" : `${(summary.due.p0_rate * 100).toFixed(0)}%`;
+      parts.push(`pages ${summary.current_milestone || "?"} ${summary.due.real}/${summary.due.total} (P0 ${summary.due.p0_real}/${summary.due.p0_total} ${pct})`);
+    }
+  }
+  if (fs.existsSync(endpointMap)) {
+    const data = run("endpoint-coverage-check.mjs");
+    const summary = data?.summary;
+    if (summary && Number.isFinite(summary.contract_endpoints)) {
+      parts.push(`endpoints ${summary.covered}/${summary.contract_endpoints} (deferred ${summary.deferred})`);
+    }
+  }
+  return parts.length > 0 ? `- Surface: ${parts.join(" | ")}` : null;
+}
+
+/**
  * 构建 HANDOFF/STATUS 的下一版内容（只读，不写盘，P2-01）。
  *
  * 所有前置校验都在这里完成：文件存在、HANDOFF 的 Git/Baseline 行、
@@ -289,6 +330,7 @@ function buildStateDocs(commit, doneCount) {
   const remote = remoteLine();
   const growth = growthSummary();
   const meta = growthMeta();
+  const surface = surfaceSummary();
   const remoteIndexes = [];
   let gitIndex = -1;
   let baselineIndex = -1;
@@ -342,6 +384,11 @@ function buildStateDocs(commit, doneCount) {
       label: "HANDOFF.md Growth",
       value: `- Growth: open ${growth.openAll ?? growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`,
     }] : []),
+    ...(surface ? [{
+      regex: /^-\s*Surface[：:]/,
+      label: "HANDOFF.md Surface",
+      value: surface,
+    }] : []),
   ];
   let insertAt = handoffLines.findIndex((line) => /^-\s*Baseline[：:]/.test(line));
   if (insertAt >= 0) insertAt += 1;
@@ -367,6 +414,7 @@ function buildStateDocs(commit, doneCount) {
   let statusRemote = false;
   let statusRetro = false;
   let statusGrowth = false;
+  let statusSurface = false;
   for (let i = 0; i < statusLines.length; i += 1) {
     const line = statusLines[i];
     if (/^-\s*Checkpoint[：:]/.test(line)) {
@@ -392,6 +440,10 @@ function buildStateDocs(commit, doneCount) {
       if (updated !== line) changes.push("STATUS.md Growth");
       statusLines[i] = updated;
       statusGrowth = true;
+    } else if (!statusSurface && /^-\s*Surface[：:]/.test(line) && surface) {
+      if (line !== surface) changes.push("STATUS.md Surface");
+      statusLines[i] = surface;
+      statusSurface = true;
     }
   }
   if (!statusCheckpoint) {
@@ -417,6 +469,13 @@ function buildStateDocs(commit, doneCount) {
     if (anchor >= 0) {
       statusLines.splice(anchor + 1, 0, `- Growth: open ${growth.openAll ?? growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`);
       changes.push("STATUS.md Growth");
+    }
+  }
+  if (!statusSurface && surface) {
+    const anchor = statusLines.findIndex((line) => /^-\s*Growth[：:]/.test(line));
+    if (anchor >= 0) {
+      statusLines.splice(anchor + 1, 0, surface);
+      changes.push("STATUS.md Surface");
     }
   }
   const nextStatus = statusLines.join(statusEol);

@@ -46,12 +46,13 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 - `docs/LARGE-PROJECTS.md` 的评分与 P0/P1/P2 路线；
 - OpenCode 会话数据（脚本：`improve-scan.mjs`）。
 
-每次 `/ai-improve` 必须完成四项强制检查（详见命令 §0.2）：
+每次 `/ai-improve` 必须完成五项强制检查（详见命令 §0.2）：
 
 1. **目标偏移检查**：使命/6 目标/质量目标是否仍一致；一次通过率、review-ready、P1 逃逸、审查轮次、GROWTH open 债务是否改善。
 2. **流程与智能体效率检查**：重复全量测试、定向/全量比例、artifact/secret/state/checkpoint 扫描次数、每任务 gate 调用、agent prompt 大小、review/security token 占比。
 3. **定义冲突/臃肿/重复/过期检查**：manifest/TEAM/agent/COMMAND/SKILL 的所有权、Track、G0–G8、brief 字段是否一致；是否有多份重复模板或过期文案。
 4. **大型项目能力检查**：按 `docs/LARGE-PROJECTS.md` 复核评分与 P0/P1/P2；Program/Workstream、集成列车、影响面分析、持久队列、成本/容量是否有真实实现和证据。
+5. **交付面覆盖与骨架闭环检查**：运行 `page-coverage-check.mjs` / `endpoint-coverage-check.mjs`（有 map 时）；检查 P0 占位无延期、契约端点无实现、骨架未接线、用全量页面数掩盖当前里程碑。没有账本写“数据缺口”并列入本轮任务。
 
 证据预检优先使用 `gate-check.mjs --mode handoff`，让 artifact/secret 只扫描一次，state/checkpoint 复用结果。
 

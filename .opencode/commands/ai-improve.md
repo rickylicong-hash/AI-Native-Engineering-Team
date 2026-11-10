@@ -43,16 +43,17 @@ $ARGUMENTS
    - 实施阶段：只在用户授权后修改目标项目 GROWTH 和 AI Native 源。
    - 不新增角色，除非满足第 3 节的 `ROLE-GAP` 门槛。
 
-## 0.2 四项强制检查（每次运行必须逐项给结论）
+## 0.2 五项强制检查（每次运行必须逐项给结论）
 
-每次 `/ai-improve` 都必须检查以下四项；任一项无证据时写“数据缺口”，不能省略：
+每次 `/ai-improve` 都必须检查以下五项；任一项无证据时写“数据缺口”，不能省略：
 
 1. **目标偏移检查**：使命/6 目标/质量目标是否仍一致；一次通过率、review-ready、P1 逃逸、审查轮次、GROWTH open 债务是否在改善；是否出现“流程自证”替代“结果管理”。
 2. **流程与智能体效率检查**：重复全量测试、定向/全量比例、artifact/secret/state/checkpoint 扫描次数、每个任务的 gate 调用、agent prompt 大小、review/security token 占比；用 `improve-scan`、`quality-report` 和会话数据给数字。
 3. **定义冲突/臃肿/重复/过期检查**：manifest / TEAM / agent prompt / COMMAND / SKILL 的所有权、Track、G0–G8、brief 字段是否一致；是否有多份重复模板；是否有过期文案（版本、权限条数、验证计数、LARGE-PROJECTS 结论）。
 4. **大型项目能力检查**：按 `docs/LARGE-PROJECTS.md` 复核评分与 P0/P1/P2；检查 Program/Workstream、集成列车、影响面分析、持久队列、成本/容量是否有真实实现和证据；没有就写缺口，不要用角色数量冒充规模化能力。
+5. **交付面覆盖与骨架闭环检查**：页面/端点覆盖率（`PAGE-MAP.json`/`ENDPOINT-MAP.json` + 两个 coverage 脚本）；是否有 P0 占位无延期、契约有端点无实现、骨架后端已落地但未接线、用全量页面数掩盖当前里程碑；没有账本写“数据缺口”并列为本轮任务。
 
-每项输出：结论 / 证据（文件/命令/退出码/计数）/ 影响 / 建议。四项结论必须进入项目侧 `TEAM-IMPROVEMENT-*.md` 和最终汇报；只有一次证据的现象写 `RISKS.md`，不写成 GROWTH 提案。
+每项输出：结论 / 证据（文件/命令/退出码/计数）/ 影响 / 建议。五项结论必须进入项目侧 `TEAM-IMPROVEMENT-*.md` 和最终汇报；只有一次证据的现象写 `RISKS.md`，不写成 GROWTH 提案。
 
 ## 0.3 历史指标、成长曲线与上一轮达成（强制）
 
@@ -128,7 +129,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 5. **文档漂移**：README/INSTALL/docs/CHANGELOG/manifest 与当前行为、命令数、验证计数、版本号是否一致；文档命令是否可执行。
 6. **行业对照**：只引用相关实践——PDCA/Kaizen、DORA、SRE 无责复盘、Diátaxis、最小权限/供应链安全。
 7. **成本与延迟**：报告趋势和异常，不建立预算机制，不因单次高消耗直接改流程。
-8. **四项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力；按 0.2 逐项输出，不能省略。
+8. **五项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力、**交付面覆盖与骨架闭环**；按 0.2 逐项输出，不能省略。交付面检查必须回答：页面/端点覆盖率、是否有无延期占位、是否有“契约有端点无实现”、是否有骨架未接线；有 `PAGE-MAP.json`/`ENDPOINT-MAP.json` 时运行 `page-coverage-check.mjs`、`endpoint-coverage-check.mjs`。
 9. **历史成长曲线**：按 0.3 比较最近 6–8 轮指标；负成长必须有根因和本轮优化任务。
 10. **上一轮 improve 达成**：按 0.3 检查最新 `TEAM-IMPROVEMENT-*.md` 的任务状态；未达成项必须结转。
 
@@ -239,7 +240,7 @@ node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
 不超过 20 行：
 
 - 目标校准：已复述 `docs/TEAM.md` §0/§0.1；与请求一致 / 冲突（冲突时先停）；
-- 四项检查：目标偏移 / 流程效率 / 定义冲突与过期 / 大型项目能力；每项 1 行结论 + 证据；
+- 五项检查：目标偏移 / 流程效率 / 定义冲突与过期 / 大型项目能力 / 交付面覆盖与骨架闭环；每项 1 行结论 + 证据；
 - 成长曲线：最近 6–8 轮关键指标 + 本轮 vs 上轮 delta / verdict；`negativeGrowth` 是/否；
 - 上一轮达成：done/partial/missed 数量 + 未达成项结转；
 - 模式：分析 / 实施；

@@ -107,6 +107,8 @@
 
 **影响**：超大项目需要更深的技术判断和领域合规。
 
+**1.15.0 的取舍**：先用 `变更面`（FE/BE/full-stack/infra）+ `references/FRONTEND.md`/`BACKEND.md` 检查清单补齐交付纪律；不新增前端/后端 agent。只有满足 `ROLE-GAP`（≥2 项目、≥3 次、现有角色无法覆盖）才拆角色。
+
 ### 4.5 环境与运维仍是模板级
 
 - 有一键部署/回滚模板，但没有真实环境 provisioning；
@@ -159,7 +161,7 @@
 
 ### P1：支撑 50–150 人等效项目
 
-1. **专家 agent 包**：frontend/backend/mobile/data/ML/SRE/performance/compliance。
+1. **专家 profile 包**：先用 `references/FRONTEND.md`/`BACKEND.md` + `变更面` 覆盖 frontend/backend；mobile/data/ML/SRE/performance/compliance 仍按 `ROLE-GAP` 评估，不默认新增 agent。
 2. **CI 质量门禁**：覆盖率（变更行/关键路径）、架构 fitness、契约兼容、性能预算、flaky 隔离。
 3. **环境自动化**：IaC provisioning、secrets 生命周期、证书/DNS、预览环境。
 4. **事故/on-call**：SLO/错误预算、告警路由、事故指挥、复盘模板。

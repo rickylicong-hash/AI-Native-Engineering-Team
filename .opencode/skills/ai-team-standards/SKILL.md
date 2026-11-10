@@ -37,7 +37,8 @@ description: 通用工程标准与质量门禁：需求、UX/可访问性、架�
 - [ ] 支持 `prefers-reduced-motion`；动效不阻塞；
 - [ ] 文案具体、可执行；错误不泄露内部信息；
 - [ ] 设计 token 化，工程师可直接实现；
-- [ ] 国际化/RTL/深色模式按需覆盖。
+- [ ] 国际化/RTL/深色模式按需覆盖；
+- [ ] IA 页面在 `PAGE-MAP.json` 有 milestone/status/evidence；占位/骨架有 DEC/RISK + 复查日期 + 接线触发（1.15.0）。
 
 ## 3. 架构标准
 
@@ -54,6 +55,7 @@ description: 通用工程标准与质量门禁：需求、UX/可访问性、架�
 - [ ] 部署拓扑/环境/发布/回滚可执行；
 - [ ] 可观测性（日志/指标/trace/告警）设计；
 - [ ] 重要取舍有 ADR（含被否决选项）；
+- [ ] 契约端点有 `ENDPOINT-MAP.json` 映射：implemented 有 Controller 证据，deferred 有 DEC/RISK + 复查日期（1.15.0）；
 - [ ] 未验证假设标 TBD，有验证计划。
 
 ## 4. 编码标准
@@ -227,4 +229,6 @@ String tenantId = SecurityContext.requireTenantId();
 - `references/STACK-PLAYBOOK.md`：技术栈识别、命令、测试/构建/部署入口
 - `references/SECURITY.md`：OWASP/STRIDE/供应链详细清单
 - `references/UX.md`：WCAG/设计系统/状态清单
+- `references/FRONTEND.md`：页面覆盖、状态、a11y、视觉回归、骨架延期
+- `references/BACKEND.md`：端点覆盖、事务/幂等、迁移、资源生命周期
 - `references/DOCS.md`：文档结构与写作规范

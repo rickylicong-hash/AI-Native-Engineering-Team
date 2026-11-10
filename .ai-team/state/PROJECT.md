@@ -20,5 +20,5 @@ owner: build
 ## 当前约束
 
 - 团队源由用户批准的 `build` 维护者修改；团队 agent 不自我修改。
-- 每轮最多 2 个 TEAM-CORE 改动；净零与 GROWTH 处置必须同步。
+- 每轮最多 10 个改动；TEAM-CORE 新增提案 ≤5 且净零；GROWTH 处置必须同步。
 - 生产发布、push、外部凭据仍需用户明确批准。

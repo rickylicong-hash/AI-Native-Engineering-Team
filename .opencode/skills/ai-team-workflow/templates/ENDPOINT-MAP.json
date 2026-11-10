@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "description": "端点覆盖账本：API 契约端点 → 实现 Controller/路由 → 状态。团队脚本 endpoint-coverage-check.mjs 读取；项目在 G3 初始化、G5 收口。",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/v1/xxx",
+      "status": "implemented",
+      "evidence": "server/src/main/java/.../XxxController.java"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/xxx/{id}/action",
+      "status": "deferred",
+      "deferral": {
+        "decision": "DEC-0000",
+        "review_at": "2026-12-31",
+        "upgrade_trigger": "权限模型冻结后实现"
+      }
+    }
+  ]
+}

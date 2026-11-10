@@ -30,6 +30,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 const getArg = (name, fallback = null) => {
@@ -373,6 +375,54 @@ const p1Unattributed = evidence
 const isTeamSource = fs.existsSync(path.join(project, "team-manifest.json"))
   && fs.existsSync(path.join(aiTeam, "team", "GROWTH.md"));
 
+/**
+ * 交付面覆盖摘要（1.15.0）：只读运行页面/端点覆盖脚本，供趋势报告使用。
+ * 没有 map 时返回 null；脚本失败也返回已解析的 JSON，不阻断质量报告。
+ */
+function surfaceMetrics() {
+  const scripts = path.dirname(fileURLToPath(import.meta.url));
+  const pageMap = path.join(project, ".ai-team", "design", "ux", "PAGE-MAP.json");
+  const endpointMap = path.join(project, ".ai-team", "design", "architecture", "ENDPOINT-MAP.json");
+  const run = (script, file) => {
+    if (!fs.existsSync(file)) return null;
+    const result = spawnSync(process.execPath, [path.join(scripts, script), "--project", project, "--json"], {
+      cwd: project,
+      encoding: "utf8",
+      timeout: 20000,
+    });
+    if (!result.stdout) return null;
+    try {
+      return JSON.parse(result.stdout);
+    } catch {
+      return null;
+    }
+  };
+  const pages = run("page-coverage-check.mjs", pageMap);
+  const endpoints = run("endpoint-coverage-check.mjs", endpointMap);
+  const pageSummary = pages?.summary || null;
+  const endpointSummary = endpoints?.summary || null;
+  return {
+    pages: pageSummary ? {
+      current_milestone: pageSummary.current_milestone,
+      total: pageSummary.due?.total ?? pageSummary.total,
+      real: pageSummary.due?.real ?? pageSummary.real,
+      rate: pageSummary.due?.rate ?? pageSummary.rate,
+      p0_total: pageSummary.due?.p0_total ?? pageSummary.p0_total,
+      p0_real: pageSummary.due?.p0_real ?? pageSummary.p0_real,
+      p0_rate: pageSummary.due?.p0_rate ?? pageSummary.p0_rate,
+    } : null,
+    endpoints: endpointSummary ? {
+      total: endpointSummary.contract_endpoints,
+      implemented: endpointSummary.implemented,
+      deferred: endpointSummary.deferred,
+      covered: endpointSummary.covered,
+      rate: endpointSummary.coverage_rate,
+    } : null,
+    errors: [...(pages?.errors || []), ...(endpoints?.errors || [])],
+    warnings: [...(pages?.warnings || []), ...(endpoints?.warnings || [])],
+  };
+}
+
 const summary = {
   mode: isTeamSource ? "team-source" : "project",
   implementation_tasks: taskRows.length,
@@ -403,6 +453,25 @@ const summary = {
   p1_escapes: p1Escapes,
   p1_unattributed: p1Unattributed,
 };
+
+const surface = surfaceMetrics();
+Object.assign(summary, {
+  surface_pages_present: Boolean(surface.pages),
+  surface_pages_milestone: surface.pages?.current_milestone ?? null,
+  surface_pages_total: surface.pages?.total ?? null,
+  surface_pages_real: surface.pages?.real ?? null,
+  surface_pages_pct: surface.pages?.rate === null || surface.pages?.rate === undefined ? null : `${(surface.pages.rate * 100).toFixed(1)}%`,
+  surface_p0_total: surface.pages?.p0_total ?? null,
+  surface_p0_real: surface.pages?.p0_real ?? null,
+  surface_p0_pct: surface.pages?.p0_rate === null || surface.pages?.p0_rate === undefined ? null : `${(surface.pages.p0_rate * 100).toFixed(1)}%`,
+  surface_endpoints_present: Boolean(surface.endpoints),
+  surface_endpoints_total: surface.endpoints?.total ?? null,
+  surface_endpoints_implemented: surface.endpoints?.implemented ?? null,
+  surface_endpoints_deferred: surface.endpoints?.deferred ?? null,
+  surface_endpoints_pct: surface.endpoints?.rate === null || surface.endpoints?.rate === undefined ? null : `${(surface.endpoints.rate * 100).toFixed(1)}%`,
+  surface_ok: surface.errors.length === 0,
+});
+for (const warning of surface.warnings) warn("surface-warning", warning);
 
 if (isTeamSource) {
   warn("team-source-mode", "团队源仓库没有产品实现任务；质量指标应在目标项目运行，或只作为团队维护任务的观察");
@@ -439,6 +508,7 @@ const result = {
       "review-ready 同时给全量、done/review 口径和最近 N 个完成/审查任务窗口；目标 10/30 任务应看窗口值。",
       "P1 escapes = 首轮之后 review 轮次或 security/QA 中的 P1 数；为代理指标，需人工复核。",
       "P1 findings 含未能归属到实现任务的 P1；p1_unattributed 单独列出，避免与 escapes 混淆。",
+      "页面/端点覆盖来自项目维护的 PAGE-MAP.json / ENDPOINT-MAP.json；缺失时只给 warning，不默认算 0 或 100。",
       "checkpoint 阻断与跨角色返工无法完全从 Markdown 推断；报告不替代 reviewer/Chief 判断。",
     ],
   },
@@ -489,6 +559,13 @@ function markdown() {
   lines.push(`| P1 findings | ${summary.p1_findings} |`);
   lines.push(`| P1 escapes | ${summary.p1_escapes} |`);
   lines.push(`| P1 unattributed | ${summary.p1_unattributed} |`);
+  if (summary.surface_pages_present) {
+    lines.push(`| Page coverage (${summary.surface_pages_milestone || "-"}) | ${summary.surface_pages_real}/${summary.surface_pages_total} (${summary.surface_pages_pct}) |`);
+    lines.push(`| P0 page coverage (${summary.surface_pages_milestone || "-"}) | ${summary.surface_p0_real}/${summary.surface_p0_total} (${summary.surface_p0_pct}) |`);
+  }
+  if (summary.surface_endpoints_present) {
+    lines.push(`| Endpoint coverage | ${summary.surface_endpoints_implemented} implemented + ${summary.surface_endpoints_deferred} deferred / ${summary.surface_endpoints_total} (${summary.surface_endpoints_pct}) |`);
+  }
   lines.push("");
   lines.push("## Tasks");
   lines.push("");

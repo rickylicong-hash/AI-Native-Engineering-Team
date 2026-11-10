@@ -99,6 +99,7 @@ const summary = {
   retro: null,
   checkpoint: null,
   growth: null,
+  surface: { pages: null, endpoints: null, warnings: [] },
 };
 
 // 1) artifact + secret 只扫描一次；后续 state/checkpoint 用 --artifacts-ok 复用。
@@ -146,6 +147,31 @@ if (!summary.checkpoint.ok) failures.push(`checkpoint: exit ${summary.checkpoint
 summary.growth = run("growth-check.mjs", ["--project", project, "--json", "--debt"]);
 if (!summary.growth.ok) failures.push(`growth: exit ${summary.growth.status}`);
 
+// 6) 交付面覆盖（1.15.0）：项目有 map 才强制；没有 map 时在 gate/release 给出
+// “未建立账本”的 warning，--strict 下升级为失败，避免新项目静默跳过。
+const pageMap = path.join(project, ".ai-team", "design", "ux", "PAGE-MAP.json");
+const iaFile = path.join(project, ".ai-team", "design", "ux", "IA.md");
+const endpointMap = path.join(project, ".ai-team", "design", "architecture", "ENDPOINT-MAP.json");
+const contractFile = path.join(project, ".ai-team", "design", "architecture", "API-CONTRACTS.md");
+const surfaceMissing = [];
+if (fs.existsSync(pageMap)) {
+  summary.surface.pages = run("page-coverage-check.mjs", ["--project", project, "--json"]);
+  if (!summary.surface.pages.ok) failures.push(`surface-pages: exit ${summary.surface.pages.status}`);
+} else if (fs.existsSync(iaFile)) {
+  surfaceMissing.push("PAGE-MAP.json");
+}
+if (fs.existsSync(endpointMap)) {
+  summary.surface.endpoints = run("endpoint-coverage-check.mjs", ["--project", project, "--json"]);
+  if (!summary.surface.endpoints.ok) failures.push(`surface-endpoints: exit ${summary.surface.endpoints.status}`);
+} else if (fs.existsSync(contractFile)) {
+  surfaceMissing.push("ENDPOINT-MAP.json");
+}
+if (surfaceMissing.length > 0 && (mode === "gate" || mode === "release")) {
+  const message = `surface: missing ${surfaceMissing.join(" + ")}; create the coverage ledger before G5/release`;
+  summary.surface.warnings.push(message);
+  if (strict) failures.push(message);
+}
+
 const ok = failures.length === 0;
 if (json) {
   console.log(JSON.stringify({ ok, failures, ...summary }, null, 2));
@@ -158,6 +184,9 @@ if (json) {
   console.log(`retro:     ${summary.retro?.ok ? "not due" : "DUE/FAIL"}`);
   console.log(`checkpoint:${summary.checkpoint?.ok ? " not due" : " DUE/FAIL"}`);
   console.log(`growth:    ${summary.growth?.ok ? "PASS" : "FAIL"}`);
+  const surfaceLine = (entry) => (entry ? (entry.ok ? "PASS" : "FAIL") : "SKIP");
+  console.log(`surface:   pages ${surfaceLine(summary.surface.pages)} / endpoints ${surfaceLine(summary.surface.endpoints)}`);
+  for (const warning of summary.surface.warnings) console.log(`  WARN ${warning}`);
   if (!ok) {
     for (const failure of failures) console.log(`  FAIL ${failure}`);
   }

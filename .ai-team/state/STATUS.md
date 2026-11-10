@@ -2,19 +2,21 @@
 
 - Track: T3
 - Stage: G5 Verify
-- Overall: 85%
-- Last gate: G5 — 审计整改完成；B4 目标项目 team open 1（2026-11-09）
-- Retro: 2026-11-09（done 22 → next 30）
+- Overall: 90%
+- Last gate: G5 — 1.15.0 交付面覆盖门禁（页面/端点/brief/gate/checkpoint/quality）通过（2026-11-10）
+- Retro: 2026-11-09（done 20 → next 30）
 - Growth: open 0 / done 11（以 `growth-check` 为准）
+- Surface: n/a（团队源无产品页面/端点；riccon-ai 只读 pilot 见 `work/TASK-SURFACE-2026-11-10-EVIDENCE.md`）
 - Quality: team-source-mode / first-pass — / review-ready — / data-quality 14 unattributed P1
-- Checkpoint: `684490f`（done 22）
-- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead 1（`origin/main=813b4d2`，local）
-- HEAD: `684490f`
+- Checkpoint: `pending`（done 29）
+- 远程：`origin https://github.com/rickylicong-hash/AI-Native-Engineering-Team.git`，`main` ahead N（`origin/main=38ef9e7`，local）
+- HEAD: `pending`
 
 ## In progress
 
 | TASK | Owner | 状态 | 证据 |
 |---|---|---|---|
+| TASK-SURFACE-2026-11-10-T1..T7 | build | done | `.ai-team/work/TASK-SURFACE-2026-11-10-EVIDENCE.md` |
 | TASK-AUDIT-2026-11-09-A1..B6, C1, LP-P0-1..4 | build | done | `.ai-team/work/AUDIT-2026-11-09-REMEDIATION-EVIDENCE.md` |
 | LP-P1/P2 backlog | build | todo | `.ai-team/state/TASKS.md` |
 
@@ -25,6 +27,6 @@
 
 ## Next 3
 
-1. LP-P1-1 `capacity-report`（token/耗时/全量测试次数/审查轮次）。
-2. LP-P1-2 专家 profile（frontend/backend/data-ml/sre，不新增 agent）。
-3. LP-P1-3 CI 质量门禁；P-41/P-57 复查 2026-12-07。
+1. 在下一个 T3/T4/UI/API 项目的 G3 建 `PAGE-MAP.json` / `ENDPOINT-MAP.json`，验证门禁在真实项目落地。
+2. LP-P1-1 `capacity-report`（token/耗时/全量测试次数/审查轮次）。
+3. LP-P1-2 专家 profile（mobile/data-ml/sre；frontend/backend 已由 1.15.0 检查清单覆盖）；P-41/P-57 复查 2026-12-07。

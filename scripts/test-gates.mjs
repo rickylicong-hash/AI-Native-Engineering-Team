@@ -41,6 +41,8 @@ const integrationCheck = path.join(workflowScripts, "integration-check.mjs");
 const gateCheck = path.join(workflowScripts, "gate-check.mjs");
 const improveMetrics = path.join(workflowScripts, "improve-metrics.mjs");
 const improvePrevious = path.join(workflowScripts, "improve-previous.mjs");
+const pageCoverage = path.join(workflowScripts, "page-coverage-check.mjs");
+const endpointCoverage = path.join(workflowScripts, "endpoint-coverage-check.mjs");
 
 const failures = [];
 const checks = [];
@@ -131,7 +133,7 @@ function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev,
   return frontmatter;
 }
 
-function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配", ownership = "只允许修改 `src/**`、`tests/**`；禁止 `docs/**`", mustExecute = "node scripts/test-gates.mjs；node ownership-check.mjs --brief .ai-team/tasks/TASK-BRIEF-FIXTURE.md --diff .ai-team/work/changed-files.txt" } = {}) {
+function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配", ownership = "只允许修改 `src/**`、`tests/**`；禁止 `docs/**`", mustExecute = "node scripts/test-gates.mjs；node ownership-check.mjs --brief .ai-team/tasks/TASK-BRIEF-FIXTURE.md --diff .ai-team/work/changed-files.txt", surface = "BE", delivery = "/v1/test", deliveryStatus = "完整", skeletonDeferral = "不适用（完整交付）" } = {}) {
   return `角色：ai-team/engineer
 技能：ai-team-workflow
 任务 ID：TASK-BRIEF-FIXTURE
@@ -142,6 +144,10 @@ Track / 阶段：T2 / G4
 约束：无
 契约影响：不适用（无契约变更）
 回归范围：fixture
+变更面：${surface}
+交付面：${delivery}
+交付状态：${deliveryStatus}
+骨架延期：${skeletonDeferral}
 Review-entry 自检：${reviewEntry}
 门禁面：${gateSurfaces}
 必然受影响测试/脚本：${testWhitelist}
@@ -475,6 +481,12 @@ async function main() {
       { name: "brief-mid-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "定向 全量 提交 复用，待确认" }) },
       { name: "brief-missing-ownership-tests", expect: 1, text: engineerBrief({ ownership: "只允许修改 fixture" }) },
       { name: "brief-missing-ownership-check", expect: 1, text: engineerBrief({ mustExecute: "node scripts/test-gates.mjs" }) },
+      { name: "brief-missing-surface", expect: 1, text: engineerBrief({ surface: "" }) },
+      { name: "brief-fe-without-page", expect: 1, text: engineerBrief({ surface: "FE", delivery: "/v1/test" }) },
+      { name: "brief-be-without-endpoint", expect: 1, text: engineerBrief({ surface: "BE", delivery: "P-XXX-01" }) },
+      { name: "brief-skeleton-without-deferral", expect: 1, text: engineerBrief({ deliveryStatus: "骨架", skeletonDeferral: "TBD" }) },
+      { name: "brief-fe-with-page", expect: 0, text: engineerBrief({ surface: "FE", delivery: "P-XXX-01", deliveryStatus: "完整", skeletonDeferral: "不适用（完整交付）" }) },
+      { name: "brief-skeleton-with-deferral", expect: 0, text: engineerBrief({ deliveryStatus: "骨架", skeletonDeferral: "DEC-0124，复查 2026-12-07，端点合并后接线并补 E2E" }) },
     ];
     for (const scenario of briefScenarios) {
       const briefFile = path.join(briefDir, `${scenario.name}.md`);
@@ -484,6 +496,78 @@ async function main() {
     }
   } finally {
     fs.rmSync(briefDir, { recursive: true, force: true });
+  }
+
+  const pageDir = tmp("pagecov");
+  try {
+    const mapFile = path.join(pageDir, ".ai-team", "design", "ux", "PAGE-MAP.json");
+    write(path.join(pageDir, "src", "App.vue"), "<template>ok</template>\n");
+    const baseMap = (placeholderDeferral = null) => ({
+      schema: 1,
+      current_milestone: "M1",
+      milestones: ["M1", "M2"],
+      pages: [
+        { id: "P-001", path: "/", priority: "P0", milestone: "M1", status: "real", evidence: "src/App.vue" },
+        {
+          id: "P-002",
+          path: "/todo",
+          priority: "P0",
+          milestone: "M1",
+          status: "placeholder",
+          ...(placeholderDeferral ? { deferral: placeholderDeferral } : {}),
+        },
+      ],
+    });
+    write(mapFile, JSON.stringify(baseMap(), null, 2));
+    const pageFail = run(pageCoverage, ["--project", pageDir, "--json"], pageDir);
+    let pageFailData = null;
+    try { pageFailData = JSON.parse(pageFail.stdout || ""); } catch { pageFailData = null; }
+    check("page coverage rejects P0 placeholder without deferral", pageFail.status === 1 && pageFailData?.summary?.due?.p0_real === 1, `${pageFail.status}; ${(pageFail.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    write(mapFile, JSON.stringify(baseMap({ decision: "DEC-0124", review_at: "2026-12-07", upgrade_trigger: "后端端点合并后接线" }), null, 2));
+    const pagePass = run(pageCoverage, ["--project", pageDir, "--json"], pageDir);
+    let pagePassData = null;
+    try { pagePassData = JSON.parse(pagePass.stdout || ""); } catch { pagePassData = null; }
+    check("page coverage accepts documented deferral", pagePass.status === 0 && pagePassData?.ok === true, `${pagePass.status}; ${(pagePass.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+  } finally {
+    fs.rmSync(pageDir, { recursive: true, force: true });
+  }
+
+  const endpointDir = tmp("endpointcov");
+  try {
+    const mapFile = path.join(endpointDir, ".ai-team", "design", "architecture", "ENDPOINT-MAP.json");
+    write(path.join(endpointDir, ".ai-team", "design", "architecture", "API-CONTRACTS.md"), [
+      "# Contracts",
+      "",
+      "| Method | Path | Notes |",
+      "|---|---|---|",
+      "| GET | `/v1/ok` | fixture |",
+      "| GET | `/v1/missing` | fixture |",
+      "",
+    ].join("\n"));
+    write(path.join(endpointDir, "server", "OkController.java"), "class OkController {}\n");
+    write(mapFile, JSON.stringify({
+      schema: 1,
+      endpoints: [{ method: "GET", path: "/v1/ok", status: "implemented", evidence: "server/OkController.java" }],
+    }, null, 2));
+    const endpointFail = run(endpointCoverage, ["--project", endpointDir, "--json"], endpointDir);
+    let endpointFailData = null;
+    try { endpointFailData = JSON.parse(endpointFail.stdout || ""); } catch { endpointFailData = null; }
+    check("endpoint coverage rejects contract endpoint without map", endpointFail.status === 1 && endpointFailData?.summary?.missing === 1, `${endpointFail.status}; ${(endpointFail.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    write(mapFile, JSON.stringify({
+      schema: 1,
+      endpoints: [
+        { method: "GET", path: "/v1/ok", status: "implemented", evidence: "server/OkController.java" },
+        { method: "GET", path: "/v1/missing", status: "deferred", deferral: { decision: "DEC-0124", review_at: "2026-12-07" } },
+      ],
+    }, null, 2));
+    const endpointPass = run(endpointCoverage, ["--project", endpointDir, "--json"], endpointDir);
+    let endpointPassData = null;
+    try { endpointPassData = JSON.parse(endpointPass.stdout || ""); } catch { endpointPassData = null; }
+    check("endpoint coverage accepts documented deferral", endpointPass.status === 0 && endpointPassData?.summary?.covered === 2, `${endpointPass.status}; ${(endpointPass.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+  } finally {
+    fs.rmSync(endpointDir, { recursive: true, force: true });
   }
 
   const qualityDir = tmp("quality");
@@ -504,6 +588,13 @@ async function main() {
     write(path.join(qualityDir, ".ai-team", "reviews", "REV-1002.md"), "# REV-1002 — TASK-1002\n\n- 结论：修改后通过\n- P0=0；P1=1；P2=0\n");
     write(path.join(qualityDir, ".ai-team", "reviews", "REV-1002-R1.md"), "# REV-1002-R1 — TASK-1002-R1\n\n- 结论：通过\n- P0=0；P1=0；P2=0\n");
     write(path.join(qualityDir, ".ai-team", "security", "SEC-1002.md"), "# SEC-1002 — TASK-1002\n\n- 结论：通过\n- P0=0；P1=1；P2=0\n");
+    write(path.join(qualityDir, "src", "App.vue"), "<template>ok</template>\n");
+    write(path.join(qualityDir, ".ai-team", "design", "ux", "PAGE-MAP.json"), JSON.stringify({
+      schema: 1,
+      current_milestone: "M1",
+      milestones: ["M1"],
+      pages: [{ id: "P-001", path: "/", priority: "P0", milestone: "M1", status: "real", evidence: "src/App.vue" }],
+    }, null, 2));
 
     const qualityRun = run(qualityReport, ["--project", qualityDir, "--json"], qualityDir);
     let qualityData = null;
@@ -521,6 +612,7 @@ async function main() {
     check("quality window first pass", qualityData?.summary?.window_first_pass_rate === 0.5, String(qualityData?.summary?.window_first_pass_rate));
     check("quality review rounds", qualityData?.summary?.review_rounds_avg === 1.5, String(qualityData?.summary?.review_rounds_avg));
     check("quality p1 escapes", qualityData?.summary?.p1_escapes === 1, String(qualityData?.summary?.p1_escapes));
+    check("quality surface page metrics", qualityData?.summary?.surface_pages_present === true && qualityData?.summary?.surface_p0_real === 1, JSON.stringify({ present: qualityData?.summary?.surface_pages_present, p0: qualityData?.summary?.surface_p0_real }));
 
     const qualityMarkdown = run(qualityReport, ["--project", qualityDir], qualityDir);
     check("quality markdown escapes cells", qualityMarkdown.status === 0 && qualityMarkdown.stdout.includes("&lt;b&gt;") && !qualityMarkdown.stdout.includes("<b>"), `${qualityMarkdown.status}; ${(qualityMarkdown.stdout || qualityMarkdown.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
@@ -862,6 +954,13 @@ async function main() {
     write(path.join(gateDir, ".ai-team", "state", "TASKS.md"), "# Tasks\n\n| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |\n|---|---|---|---|---|---|---|\n| TASK-9201 | fixture | ai-team/engineer | - | todo | AC | - |\n");
     fs.mkdirSync(path.join(gateDir, ".ai-team", "team"), { recursive: true });
     fs.copyFileSync(path.join(process.cwd(), ".ai-team", "team", "GROWTH.md"), path.join(gateDir, ".ai-team", "team", "GROWTH.md"));
+    write(path.join(gateDir, "src", "App.vue"), "<template>ok</template>\n");
+    write(path.join(gateDir, ".ai-team", "design", "ux", "PAGE-MAP.json"), JSON.stringify({
+      schema: 1,
+      current_milestone: "M1",
+      milestones: ["M1"],
+      pages: [{ id: "P-001", path: "/", priority: "P0", milestone: "M1", status: "real", evidence: "src/App.vue" }],
+    }, null, 2));
     spawnSync("git", ["init", "-q"], { cwd: gateDir, encoding: "utf8" });
     spawnSync("git", ["config", "user.email", "fixture@example.com"], { cwd: gateDir, encoding: "utf8" });
     spawnSync("git", ["config", "user.name", "fixture"], { cwd: gateDir, encoding: "utf8" });
@@ -871,6 +970,7 @@ async function main() {
     let gateData = null;
     try { gateData = JSON.parse(gateRun.stdout || ""); } catch { gateData = null; }
     check("gate-check unified preflight", gateRun.status === 0 && gateData?.artifacts?.ok === true && gateData?.state?.parsed?.artifacts?.skipped === true, `${gateRun.status}; ${JSON.stringify({ artifacts: gateData?.artifacts?.ok, stateSkipped: gateData?.state?.parsed?.artifacts?.skipped, failures: gateData?.failures })}`);
+    check("gate-check runs page coverage", gateData?.surface?.pages?.ok === true && gateData?.surface?.pages?.parsed?.summary?.real === 1, `${JSON.stringify(gateData?.surface?.pages || {})}`);
   } finally {
     fs.rmSync(gateDir, { recursive: true, force: true });
   }

@@ -8,6 +8,20 @@
 | TASK-IMPROVE-2026-11-09-R11 | 1.11.1 R7 债务与 action pin | build | - | done | 审查/安全复核通过；基线有效 | `TASK-IMPROVE-2026-11-09-R11-EVIDENCE.md` |
 | TASK-IMPROVE-2026-11-08-R7 | 1.9.1 复审残余 P3 | build | - | done | R7-01..05 修复；R7-06 接受/观察 | `TASK-IMPROVE-2026-11-08-R7.md` |
 
+## 交付面覆盖（2026-11-10，1.15.0）
+
+> 来源：riccon-ai 前端完成度审计。目标是把“页面/端点/骨架”覆盖做成团队级可复用门禁，避免其他项目重犯“占位页无延期、契约有端点无实现、骨架不接线、里程碑分母误导”。
+
+| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |
+|---|---|---|---|---|---|---|
+| TASK-SURFACE-2026-11-10-T1 | 页面覆盖门禁：PAGE-MAP + milestone + 延期/骨架校验 | build | - | done | fixture PASS；riccon-ai pilot M1 P0 12/47，35 个无延期占位被拦截 | `.ai-team/work/TASK-SURFACE-2026-11-10-EVIDENCE.md` |
+| TASK-SURFACE-2026-11-10-T2 | 端点覆盖门禁：契约端点 ↔ ENDPOINT-MAP ↔ 实现证据 | build | - | done | fixture PASS；pilot 195 端点仅 9 映射，186 missing 被拦截 | 同上 |
+| TASK-SURFACE-2026-11-10-T3 | brief 增加 `变更面`/`交付面`/`交付状态`/`骨架延期`，按面校验 | build | T1/T2 | done | 10 个 brief fixture PASS（缺面/缺页面/缺端点/骨架无延期均 FAIL） | 同上 |
+| TASK-SURFACE-2026-11-10-T4 | gate-check / checkpoint-check 接入交付面覆盖，HANDOFF/STATUS 自动写 Surface 行 | build | T1/T2 | done | gate-check surface PASS；checkpoint 写入 `Surface: pages M1 1/1 ... endpoints 1/1` | 同上 |
+| TASK-SURFACE-2026-11-10-T5 | quality-report 增加页面/端点覆盖率与里程碑分解 | build | T1/T2 | done | fixture `quality surface page metrics` PASS；无 map warning 不阻断 | 同上 |
+| TASK-SURFACE-2026-11-10-T6 | 标准与反模式：FRONTEND/BACKEND 清单 + BEST-PRACTICES 交付面反模式 | build | - | done | consistency 229 PASS；引用/模板/字段一致 | 同上 |
+| TASK-SURFACE-2026-11-10-T7 | `/ai-improve` 增加“交付面覆盖与骨架闭环”强制检查；版本/文档/测试 | build | T3/T4/T5/T6 | done | 五项检查；verify 234/234、test-gates 101/101、installed 220/230；1.15.0 | 同上 |
+
 ## 审计整改（2026-11-09）
 
 > 来源：`.ai-team/work/AUDIT-2026-11-09-TEAM-AUDIT-V2.md`。按净零规则分批实施；每条必须有命令/退出码/证据。

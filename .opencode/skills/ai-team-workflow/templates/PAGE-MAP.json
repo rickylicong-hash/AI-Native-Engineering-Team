@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "description": "页面覆盖账本：IA/路由 → 里程碑 → 实现状态。团队脚本 page-coverage-check.mjs 读取；项目按 G3/G5 更新，不按任务逐条手改。",
+  "current_milestone": "M1",
+  "milestones": ["M1", "M2", "M3", "M4"],
+  "pages": [
+    {
+      "id": "P-XXX-01",
+      "path": "/xxx",
+      "priority": "P0",
+      "milestone": "M1",
+      "status": "real",
+      "evidence": "src/views/xxx/XxxView.vue"
+    },
+    {
+      "id": "P-XXX-02",
+      "path": "/xxx/detail",
+      "priority": "P0",
+      "milestone": "M1",
+      "status": "skeleton",
+      "evidence": "src/views/xxx/XxxDetailView.vue",
+      "deferral": {
+        "decision": "DEC-0000",
+        "review_at": "2026-12-31",
+        "upgrade_trigger": "后端 GET /v1/xxx/{id} 合并后，替换骨架并补 E2E"
+      }
+    },
+    {
+      "id": "P-XXX-03",
+      "path": "/xxx/settings",
+      "priority": "P1",
+      "milestone": "M2",
+      "status": "placeholder",
+      "evidence": "src/views/PlaceholderView.vue"
+    },
+    {
+      "id": "P-XXX-04",
+      "path": "/xxx/export",
+      "priority": "P2",
+      "milestone": "M3",
+      "status": "deferred",
+      "deferral": {
+        "decision": "DEC-0000",
+        "review_at": "2026-12-31",
+        "upgrade_trigger": "1.1 版本重新评估"
+      }
+    }
+  ]
+}

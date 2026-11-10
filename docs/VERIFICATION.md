@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.14.2**。§1 为 1.14.2 源验证；§2–§4 为 1.13.0/1.12.0/1.11.1 安装与历史基线；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.15.0**。§1 为 1.15.0 源验证；§2–§4 为 1.13.0/1.12.0/1.11.1 安装与历史基线；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -15,7 +15,7 @@ node scripts/verify.mjs
 结果：
 
 ```text
-checks: 230, passed: 230, failed: 0, warnings: 0
+checks: 234, passed: 234, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -24,7 +24,7 @@ OK: package is structurally valid.
 - 10 个 agent：frontmatter、mode、权限结构（仅 shell 破坏性 deny）、manifest、角色边界（流程约定）；
 - 13 个 command：description、agent 引用、body、参数、manifest；
 - 4 个 skill：SKILL.md、name/description、引用文件、manifest；
-- 12 个 workflow 模板（含 GROWTH）+ 4 个项目 profile 示例（README/Java/Spring/Vue/严格安全）；
+- 14 个 workflow 模板（含 GROWTH/PAGE-MAP/ENDPOINT-MAP）+ 4 个项目 profile 示例（README/Java/Spring/Vue/严格安全）；
 - 流程脚本：brief 生成/校验、secret 扫描、checkpoint 同步、review 门禁、持续优化扫描的语法与接线检查；
 - 无绝对路径/stack-specific 泄漏（warning 级）。
 
@@ -99,7 +99,7 @@ node scripts/verify.mjs --root ~/.config/opencode --installed --opencode
 结果：
 
 ```text
-checks: 226, passed: 226, failed: 0, warnings: 0
+checks: 230, passed: 230, failed: 0, warnings: 0
 OK: package is structurally valid.
 ```
 
@@ -1215,6 +1215,33 @@ permission-lint:                 590 checks, PASS
 ownership-lint:                  19 checks, PASS
 ```
 
+### 5.51 交付面覆盖门禁与 brief 交付面字段（1.15.0）
+
+- **`page-coverage-check.mjs`**：`PAGE-MAP.json` 按 `current_milestone` 校验；`real` 必须有证据文件；已到期 P0 占位/骨架必须有 `DEC-*`/`RISK-*` + 复查日期 + 接线触发；`skeleton` 必须写升级条件。输出 due/all、P0、按里程碑计数。
+- **`endpoint-coverage-check.mjs`**：解析 `API-CONTRACTS.md` 的 `| METHOD | \`/path\` |` 表；每个端点必须有 `implemented`（证据文件存在）或 `deferred`（DEC/RISK + 复查日期）；map 多余条目给 stale warning。
+- **`brief-lint`/`brief-new`**：engineer brief 强制 `变更面`/`交付面`；FE/full-stack 必须有页面 ID，BE/full-stack 必须有 `/v1/...` 或 `无端点：<理由>`；`交付状态：骨架` 必须写 `骨架延期`。
+- **集成**：`gate-check --mode gate/release` 自动运行两项；`checkpoint-check --sync-docs` 写 `Surface:` 到 HANDOFF/STATUS；`quality-report` 输出 `surface_pages_*`/`surface_endpoints_*`。
+- **标准**：`references/FRONTEND.md`、`BACKEND.md`；`BEST-PRACTICES` 增加 6 类交付面反模式；`/ai-improve` 从 4 项强制检查扩为 5 项。
+
+验证：
+
+```text
+source verify:                   234/234
+installed:                       220/220
+installed + OpenCode:            230/230
+test-gates:                      101/101
+audit-team-consistency:          229 checks, 0 failed
+permission-lint:                 590 checks, PASS
+version:                         source 1.15.0 = installed 1.15.0
+```
+
+riccon-ai 只读 pilot（临时 map，不提交）：
+
+```text
+page coverage:   M1 P0 12/47 (25.5%); 35 due P0 placeholders without deferral
+endpoint coverage: 9/195 mapped (4.6%); 186 missing
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -1249,7 +1276,7 @@ node scripts/version.mjs --update
 - 一致性审计：通过（195 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令、版本握手、profile/净零检查、团队目标校准与 review-entry 字段检查）。
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）；1.9.2 团队目标/一次通过率分层目标与 `/ai-improve` 目标校准；1.9.3 review-entry 合同与首轮横向面；1.9.4 验证预算与全量基线复用；1.10.0 质量报告与 CI；1.11.0 所有权校验与离线 E2E；1.11.1 R7 P3 债务与 action SHA pin。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应；1.9.2 增加团队目标与 `/ai-improve` 目标校准；1.9.3 增加 review-entry 合同与首轮横向面；1.9.4 增加验证预算与基线复用规则；1.10.0 增加质量报告与 CI 门禁；1.11.0 增加所有权机器校验与离线 E2E；1.11.1 修复 R7 P3 债务并 pin CI action。
-- Shell 权限：通过（1.14.2 当前配置：每角色 45 条 = 43 shell（1 allow + 42 破坏性 deny）+ 2 `.env` read allow；无 ask）。
+- Shell 权限：通过（1.15.0 当前配置：每角色 45 条 = 43 shell（1 allow + 42 破坏性 deny）+ 2 `.env` read allow；无 ask）。
 - Worktree 清理：通过（1.12.0 起非 force 的 `git worktree remove` 允许，`--force`/`-f` 仍 deny；`permission-lint` 590 项、verify 230/230、test-gates 83/83）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准；1.9.3 review-entry/首轮横向面；1.9.4 验证预算/基线复用；1.10.0 质量报告/CI；1.11.0 所有权校验/离线 E2E；1.11.1 R7 债务/action pin）。
 - 质量度量：通过（`quality-report.mjs` 输出一次通过率、review-ready、审查轮次、P1 findings/escapes；fixture 覆盖首轮/修复/空项目；代理指标，不替代语义判断）。

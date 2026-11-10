@@ -252,7 +252,7 @@ check(
   read(path.join(skillsDir, "ai-team-workflow", "scripts", "state-check.mjs")).includes("duplicate TASK-ID"),
   "state-check cannot detect duplicate task rows",
 );
-for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "improve-scan.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs", "gate-check.mjs", "program-check.mjs", "next-task.mjs", "impact-scan.mjs", "integration-check.mjs", "improve-metrics.mjs", "improve-previous.mjs"]) {
+for (const script of ["brief-lint.mjs", "brief-new.mjs", "secret-check.mjs", "review-check.mjs", "audit-state.mjs", "improve-scan.mjs", "permission-lint.mjs", "permission-doctor.mjs", "team-shell.mjs", "gate-check.mjs", "program-check.mjs", "next-task.mjs", "impact-scan.mjs", "integration-check.mjs", "improve-metrics.mjs", "improve-previous.mjs", "page-coverage-check.mjs", "endpoint-coverage-check.mjs"]) {
   check(
     `workflow script ${script} exists`,
     fs.existsSync(path.join(skillsDir, "ai-team-workflow", "scripts", script)),
@@ -292,6 +292,27 @@ check(
   briefLintText.includes("script_help") && briefLintText.includes("contract_ref") && briefLintText.includes("encoding") && briefLintText.includes("independent") && briefLintText.includes("test_path"),
   "brief-lint does not validate the required contract fields",
 );
+for (const field of ["变更面：", "交付面：", "交付状态：", "骨架延期："]) {
+  check(
+    `brief-lint validates ${field.replace(/[：:]/g, "")}`,
+    briefLintText.includes(field),
+    `brief-lint does not validate ${field}`,
+  );
+}
+for (const template of ["PAGE-MAP.json", "ENDPOINT-MAP.json"]) {
+  check(
+    `workflow template ${template} exists`,
+    fs.existsSync(path.join(skillsDir, "ai-team-workflow", "templates", template)),
+    `missing ${template}`,
+  );
+}
+for (const reference of ["FRONTEND.md", "BACKEND.md"]) {
+  check(
+    `standards reference ${reference} exists`,
+    fs.existsSync(path.join(skillsDir, "ai-team-standards", "references", reference)),
+    `missing ${reference}`,
+  );
+}
 for (const file of agentFiles) {
   const role = file.replace(/\.md$/, "");
   const rules = parseRules(read(path.join(agentsDir, file)));
@@ -332,8 +353,13 @@ check(
 const workflowDoc = read(path.resolve("docs", "WORKFLOW.md"));
 check(
   "workflow doc has current brief fields",
-  workflowDoc.includes("构建隔离：") && workflowDoc.includes("独立验证：") && workflowDoc.includes("测试路径：") && workflowDoc.includes("脚本参数：") && workflowDoc.includes("契约影响："),
+  workflowDoc.includes("构建隔离：") && workflowDoc.includes("独立验证：") && workflowDoc.includes("测试路径：") && workflowDoc.includes("脚本参数：") && workflowDoc.includes("契约影响：") && workflowDoc.includes("变更面：") && workflowDoc.includes("交付面："),
   "WORKFLOW brief template is missing new fields",
+);
+check(
+  "workflow doc has surface coverage gates",
+  workflowDoc.includes("page-coverage-check.mjs") && workflowDoc.includes("endpoint-coverage-check.mjs") && workflowDoc.includes("PAGE-MAP.json") && workflowDoc.includes("ENDPOINT-MAP.json"),
+  "WORKFLOW does not describe surface coverage gates",
 );
 check(
   "workflow doc has build mutex",
@@ -381,8 +407,8 @@ check(
   "improve command must restate docs/TEAM.md team goals before analysis",
 );
 const improveCommandText = read(path.join(commandsDir, "ai-improve.md"));
-for (const phrase of ["目标偏移检查", "流程与智能体效率检查", "定义冲突/臃肿/重复/过期检查", "大型项目能力检查"]) {
-  check(`improve command has four-check ${phrase}`, improveCommandText.includes(phrase), "missing mandatory audit check");
+for (const phrase of ["目标偏移检查", "流程与智能体效率检查", "定义冲突/臃肿/重复/过期检查", "大型项目能力检查", "交付面覆盖与骨架闭环检查"]) {
+  check(`improve command has five-check ${phrase}`, improveCommandText.includes(phrase), "missing mandatory audit check");
 }
 for (const phrase of ["成长曲线", "上一轮 improve", "negativeGrowth", "IMPROVEMENT-HISTORY.json"]) {
   check(`improve command has history/previous check ${phrase}`, improveCommandText.includes(phrase), "missing history/previous-round check");

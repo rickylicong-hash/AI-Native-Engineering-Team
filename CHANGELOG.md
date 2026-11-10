@@ -3,6 +3,33 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.15.0] - 2026-11-10
+
+### Added
+
+- **页面覆盖门禁** `page-coverage-check.mjs` + `templates/PAGE-MAP.json`: project-maintained page ledger (id/path/priority/milestone/status/evidence/deferral). `real` requires existing evidence; due P0 placeholders/skeletons require `DEC-*`/`RISK-*` + review date + upgrade trigger; `skeleton` must state when/how it will be wired.
+- **端点覆盖门禁** `endpoint-coverage-check.mjs` + `templates/ENDPOINT-MAP.json`: parses `API-CONTRACTS.md` endpoint tables and requires every contract endpoint to be `implemented` (existing Controller evidence) or `deferred` (DEC/RISK + review date). Catches “FR done, service exists, HTTP endpoint missing”.
+- **Brief 交付面字段**: engineer brief now requires `变更面` (FE/BE/full-stack/infra), `交付面` (page IDs and/or `/v1/...`), `交付状态` (完整/骨架), and `骨架延期` for skeletons. UI brief without page ID, BE brief without endpoint (or `无端点：<理由>`) fails lint.
+- **G3/G5 + checkpoint integration**: `gate-check --mode gate/release` runs both coverage checks when maps exist (missing maps are warnings unless `--strict`); `checkpoint-check --sync-docs` writes a `Surface:` line to HANDOFF/STATUS.
+- **quality-report surface metrics**: page/endpoint coverage, per-milestone P0 numbers, and coverage warnings in `--json` and Markdown.
+- **Standards**: `references/FRONTEND.md` and `references/BACKEND.md` checklists; `BEST-PRACTICES` 6 delivery-surface anti-patterns; `LARGE-PROJECTS` keeps expert profiles without adding FE/BE agents.
+- **`/ai-improve` fifth mandatory check**: “交付面覆盖与骨架闭环”; report template updated.
+
+### Changed
+
+- `PROJECT.md` stale “每轮最多 2 个 TEAM-CORE 改动” corrected to 10 changes / TEAM-CORE new ≤5 + net-zero.
+- `STATUS.md`/`HANDOFF.md` templates include `Surface:`.
+
+### Verified
+
+- `node scripts/verify.mjs` → 234/234, 0 warnings.
+- `node scripts/test-gates.mjs` → 101/101.
+- `node scripts/audit-team-consistency.mjs` → 229 checks, 0 failed.
+- `permission-lint.mjs` → 590 checks, PASS.
+- `node scripts/verify.mjs --installed` → 220/220; `--installed --opencode` → 230/230.
+- `version.mjs --check` → source 1.15.0 = installed 1.15.0.
+- Pilot on riccon-ai (read-only): page coverage M1 P0 **12/47 (25.5%)**, 35 due P0 placeholders without deferral; endpoint coverage **9/195 (4.6%)** mapped, 186 missing. No project files changed.
+
 ## [1.14.2] - 2026-11-10
 
 ### Fixed

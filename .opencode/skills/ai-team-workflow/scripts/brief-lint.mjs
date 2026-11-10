@@ -94,6 +94,10 @@ const fields = {
   gate_surfaces: ["门禁面"],
   test_whitelist: ["必然受影响测试/脚本"],
   request_assertion: ["请求参数断言"],
+  surface: ["变更面：", "变更面:"],
+  delivery: ["交付面：", "交付面:"],
+  delivery_status: ["交付状态：", "交付状态:"],
+  skeleton_deferral: ["骨架延期：", "骨架延期:"],
 };
 
 const required = [
@@ -124,7 +128,7 @@ if (agent === "qa-engineer") {
   required.push("independent", "test_path");
 }
 if (agent === "engineer") {
-  required.push("review_entry", "gate_surfaces", "test_whitelist");
+  required.push("review_entry", "gate_surfaces", "test_whitelist", "surface", "delivery");
 }
 
 const missing = [];
@@ -324,6 +328,56 @@ if (agent === "engineer") {
   if (!ownershipCheckOk) {
     missing.push("ownership_check");
     valueReasons.set("ownership_check", "brief must include ownership-check --diff before dispatch");
+  }
+}
+
+// 1.15.0：交付面覆盖。变更面决定验证矩阵；交付面必须能指到页面或端点，
+// 防止“先做骨架、以后再说”在换项目后变成永久占位。
+if (agent === "engineer") {
+  const surfaceRaw = fieldValue(["变更面：", "变更面:"]) || "";
+  const surfaceMap = { "前端": "FE", "后端": "BE", "全栈": "full-stack", "基础设施": "infra" };
+  const surfaceValue = surfaceMap[surfaceRaw.trim()] || surfaceRaw.trim().toLowerCase();
+  const surfaceOk = /^(fe|be|full-stack|infra)$/i.test(surfaceValue);
+  present.surface = surfaceOk;
+  if (!surfaceOk) {
+    missing.push("surface");
+    valueReasons.set("surface", "变更面 must be FE / BE / full-stack / infra (or 前端/后端/全栈/基础设施)");
+  }
+
+  const deliveryValue = fieldValue(["交付面：", "交付面:"]) || "";
+  const hasPage = /P-[A-Z]+-\d+/i.test(deliveryValue);
+  const hasEndpoint = /(^|\s)\/v1\//i.test(deliveryValue);
+  const noEndpoint = /无端点\s*[:：]\s*\S+/.test(deliveryValue);
+  const noSurface = /不适用\s*[（(]\s*无页面\s*\/\s*端点\s*[)）]/.test(deliveryValue);
+  const needsPage = /^(fe|full-stack)$/i.test(surfaceValue);
+  const needsEndpoint = /^(be|full-stack)$/i.test(surfaceValue);
+  const deliveryOk = isFilled(deliveryValue)
+    && (!needsPage || hasPage)
+    && (!needsEndpoint || hasEndpoint || noEndpoint)
+    && (!/^infra$/i.test(surfaceValue) || noSurface || hasEndpoint || hasPage);
+  present.delivery = deliveryOk;
+  if (!deliveryOk) {
+    missing.push("delivery");
+    valueReasons.set("delivery", needsPage && !hasPage
+      ? "FE/full-stack brief 交付面必须包含页面 ID（P-XXX-01）"
+      : needsEndpoint && !(hasEndpoint || noEndpoint)
+        ? "BE/full-stack brief 交付面必须包含 /v1/... 端点，或写 '无端点：<理由>'"
+        : "交付面 must identify the page/endpoint, or explicit '不适用（无页面/端点）'");
+  }
+
+  const deliveryStatus = (fieldValue(["交付状态：", "交付状态:"]) || "完整").trim();
+  const isSkeleton = /骨架|skeleton/i.test(deliveryStatus);
+  if (isSkeleton) {
+    const skeletonValue = fieldValue(["骨架延期：", "骨架延期:"]) || "";
+    const skeletonOk = isFilled(skeletonValue)
+      && /(DEC|RISK)-[A-Za-z0-9-]+/.test(skeletonValue)
+      && /\d{4}-\d{2}-\d{2}/.test(skeletonValue)
+      && /(接线|升级|触发|trigger|upgrade)/i.test(skeletonValue);
+    present.skeleton_deferral = skeletonOk;
+    if (!skeletonOk) {
+      missing.push("skeleton_deferral");
+      valueReasons.set("skeleton_deferral", "骨架交付必须写 骨架延期：DEC/RISK + 复查日期 + 接线触发条件");
+    }
   }
 }
 

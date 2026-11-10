@@ -137,7 +137,18 @@
 | 工作可视化 | Kanban | `TASKS.md` 状态流 |
 | 限制在制 | WIP limit | 并行任务按文件所有权切分 |
 
-## 11. 团队刻意不做的
+## 11. 交付面反模式（1.15.0）
+
+| 反模式 | 现象 | 团队对策 |
+|---|---|---|
+| 占位无延期 | IA/路由注册了几十页，只有少数真实；其余 `PlaceholderView` 没有 owner/日期 | `PAGE-MAP.json` + `page-coverage-check`；P0 占位必须有 DEC/RISK + 复查日期 + 接线触发 |
+| 契约无实现 | 契约写了端点，任务/FR 标 done，但服务端没有 Controller | `ENDPOINT-MAP.json` + `endpoint-coverage-check`；`implemented` 必须有证据文件 |
+| 骨架不接线 | 先建骨架，后端落地后页面仍写“未开放” | brief `交付状态：骨架` + `骨架延期`；后端合并后自动生成接线任务 |
+| 里程碑分母 | 用全量 76 页当分母，得出 20%，掩盖 M1 未收口 | 按 `current_milestone` 报 `due real/total`、`P0 real/total` |
+| 单队列双流 | 一个 engineer 队列同时做 FE/BE，FE 被关键路径挤掉 | workstream lead + 独立 FE 队列/审查 lane；不新增角色 |
+| 手工视觉验收 | 12 张截图 + 人工走查，CI 无法复跑 | Playwright + axe + 截图 diff；人工只做最终真机确认 |
+
+## 12. 团队刻意不做的
 
 - 不强制 Scrum 仪式/故事点；
 - 不强制微服务/DDD/事件溯源；
@@ -147,7 +158,7 @@
 - 不用“最佳实践”代替验收标准；
 - 不把安全/测试外包给“最后一步”。
 
-## 12. 参考链接（自行查阅最新版）
+## 13. 参考链接（自行查阅最新版）
 
 - ISO/IEC/IEEE 29148 — Requirements engineering
 - OWASP ASVS — https://owasp.org/www-project-application-security-verification-standard/
