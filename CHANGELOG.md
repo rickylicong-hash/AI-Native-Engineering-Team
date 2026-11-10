@@ -3,6 +3,14 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.16.1] - 2026-11-10
+
+### Changed
+
+- **`/ai-improve` 命令瘦身**：`ai-improve.md` 从 10,719 字符 / 256 行降到约 5.3k 字符 / 105 行（−50%）。合并重复的五项检查（原 §0.2 与 §2.8）、历史/成长/上一轮（原 §0.3、§2.9/2.10、§6）与决策硬规则（原 §3 与 §6）；证据采集改为“gate-check 一次预检，只对失败项细分”；实施步骤 11 → 8。所有义务保留，未降低门禁。
+- **同步 1.16.0 语义**：命令补齐端点 `milestone`、到期 deferred 需 DEC/RISK、`TASK-*` 延期需 `authorized_by`，以及 checkpoint 提交需有 `TASKS.md` 行。
+- **命令字符预算**：`verify.mjs` 的 command body 检查增加上限（`ai-improve` ≤ 6,500 字符，其他命令 ≤ 4,000），防止逐轮追加导致再次膨胀。
+
 ## [1.16.0] - 2026-11-10
 
 ### Added

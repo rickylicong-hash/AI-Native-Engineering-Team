@@ -222,7 +222,7 @@ for (const file of commandFiles) {
   const label = `command /${id}`;
   addCheck(`${label} description`, typeof data.description === "string" && data.description.length >= 5);
   addCheck(`${label} agent exists`, typeof data.agent === "string" && (agentIds.has(data.agent) || externalCommandAgents.has(data.agent)), String(data.agent));
-  addCheck(`${label} body`, body.trim().length > 40);
+  addCheck(`${label} body`, body.trim().length > 40 && body.length <= (id === "ai-improve" ? 6500 : 4000), `${body.length} chars (limit ${id === "ai-improve" ? 6500 : 4000})`);
   addCheck(`${label} passes arguments or is a read-only command`, body.includes("$ARGUMENTS") || id === "ai-status" || id === "ai-resume" || id === "ai-handoff");
   if (manifestCommands.size > 0) addCheck(`${label} in manifest`, manifestCommands.has(id));
 }

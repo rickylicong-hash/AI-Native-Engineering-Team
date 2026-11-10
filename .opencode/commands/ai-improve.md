@@ -7,249 +7,97 @@ agent: build
 
 $ARGUMENTS
 
-执行“跨项目团队优化”。默认只做分析和提案，**不修改 AI Native 团队源**；用户阅读报告并明确授权后，才进入实施。
+执行“跨项目团队优化”：默认只分析与提案，**不改团队源、不改项目 GROWTH**；用户明确授权后才进入实施。
 
-## 0. 目标校准（强制，先于一切分析）
+## 0. 目标校准（先于一切分析）
 
-在执行参数解析、证据读取或任何改动之前，先读取 `docs/TEAM.md` §0 与 §0.1，并在回复开头复述一个不超过 8 行的“目标校准”块：
+先读 `docs/TEAM.md` §0/§0.1，在回复开头复述 ≤8 行：使命、6 条团队目标、质量目标口径（实现任务首次进入 review、无 R1/R2、P0/P1=0、无跨角色返工、无 checkpoint 阻断；基线 56.8%；10 任务 ≥70%、30 任务 ≥80%；review-ready 10 任务 ≥90%；护栏 P1 不升、轮次 ≤2、安全不降；**不作硬门禁**）。
 
-- 一句话使命：可全局安装、技术栈无关的 AI 工程团队，一句 `/ai <目标>` 跑完产品→设计→架构→实现→审查→测试→安全→部署→文档闭环。
-- 6 条团队目标：端到端交付、角色化质量、门禁与证据、安全与发布纪律、可复用/可分享、证据驱动的持续优化。
-- 质量目标：一次通过率口径（实现任务首次进入 review；无 R1/R2、P0/P1=0、无跨角色返工、无 checkpoint 阻断）；基线 56.8%；整体 10 任务 ≥70%、30 任务 ≥80%、长期约 85%；T1/T2 长期 ≥90%；review-ready 10 任务 ≥90%；护栏是 P1 逃逸不上升、审查轮次 ≤2、安全覆盖不降；**不作为硬门禁**。
+请求与目标冲突时（降审查/安全门禁、用“重跑通过”关 flake、为单项目改通用规则、把一次通过率当硬门禁）先停止等裁决；否则不要用“目标校准”拖延。
 
-复述后直接继续本命令，不额外等待确认。若用户请求与任一目标冲突（例如要求降低审查/安全门禁、用“重跑通过”关闭 flake、为单项目改通用规则、把一次通过率当硬门禁），先停止并说明冲突，等待用户裁决；否则不要用“目标校准”拖延任务。
+## 1. 定位与模式
 
-## 0.1 参数与定位
+| 模式 | 行为 |
+|---|---|
+| 默认 | 只分析与报告；输出后停止，等授权 |
+| `--apply` | 视为已授权：先校验最新 `TEAM-IMPROVEMENT-*.md` 与当前项目/团队版本一致，再进第 6 节；缺报告或过期 → `BLOCKED` |
+| `--analyze-only` | 只分析，不请求实施，不创建实施证据 |
 
-1. **模式**
-   - 无 `--apply`：默认分析模式。只读项目和团队源，输出报告，然后停止等待授权。
-   - `--apply`：用户已阅读分析报告并授权实施。读取项目最新 `TEAM-IMPROVEMENT-*.md`，校验后进入第 5 节；没有报告或报告已过期 → `BLOCKED`，先跑默认分析。
-   - `--analyze-only`：只分析，不询问实施，也不创建实施证据。
+- **项目**：剥离标记后按绝对路径 → 当前目录 → 父目录 → `$HOME/Development` → `D:/Development` → `$HOME/Documents` 找唯一目录；找不到/多命中 → `BLOCKED`；无 `.ai-team/` 只做会话观察并标“无项目记忆”。
+- **团队源**：当前目录有 `team-manifest.json` → 用它；否则 `$AI_NATIVE_HOME`；否则 `$HOME/.config/opencode/ai-team-install.json` 的 `source`；仍无 → `BLOCKED`。只改源，不改安装副本。
+- **边界**：分析阶段只读业务代码、只写项目侧报告；实施阶段才改项目 GROWTH 与团队源；不新增角色，除非满足 `ROLE-GAP`。
 
-2. **项目路径**
-   - 参数包含 `--apply`/`--analyze-only` 时先剥离标记。
-   - 绝对路径优先；相对路径相对当前目录；项目名按当前目录、父目录、`$HOME/Development`、`D:/Development`、`$HOME/Documents` 查找唯一目录。
-   - 找不到/多个命中 → `BLOCKED`，不要猜。
-   - 项目没有 `.ai-team/` 时只做会话观察，明确标注“无项目记忆”。
-
-3. **AI Native 源**
-   - 当前目录有 `team-manifest.json` → 当前目录。
-   - 否则读 `$AI_NATIVE_HOME`。
-   - 否则读 `$HOME/.config/opencode/ai-team-install.json` 的 `source`。
-   - 仍找不到 → `BLOCKED`。不要修改安装副本。
-
-4. **边界**
-   - 分析阶段：只读项目业务代码；只能写项目侧分析报告，不修改目标项目 GROWTH，不修改 AI Native 源。
-   - 实施阶段：只在用户授权后修改目标项目 GROWTH 和 AI Native 源。
-   - 不新增角色，除非满足第 3 节的 `ROLE-GAP` 门槛。
-
-## 0.2 五项强制检查（每次运行必须逐项给结论）
-
-每次 `/ai-improve` 都必须检查以下五项；任一项无证据时写“数据缺口”，不能省略：
-
-1. **目标偏移检查**：使命/6 目标/质量目标是否仍一致；一次通过率、review-ready、P1 逃逸、审查轮次、GROWTH open 债务是否在改善；是否出现“流程自证”替代“结果管理”。
-2. **流程与智能体效率检查**：重复全量测试、定向/全量比例、artifact/secret/state/checkpoint 扫描次数、每个任务的 gate 调用、agent prompt 大小、review/security token 占比；用 `improve-scan`、`quality-report` 和会话数据给数字。
-3. **定义冲突/臃肿/重复/过期检查**：manifest / TEAM / agent prompt / COMMAND / SKILL 的所有权、Track、G0–G8、brief 字段是否一致；是否有多份重复模板；是否有过期文案（版本、权限条数、验证计数、LARGE-PROJECTS 结论）。
-4. **大型项目能力检查**：按 `docs/LARGE-PROJECTS.md` 复核评分与 P0/P1/P2；检查 Program/Workstream、集成列车、影响面分析、持久队列、成本/容量是否有真实实现和证据；没有就写缺口，不要用角色数量冒充规模化能力。
-5. **交付面覆盖与骨架闭环检查**：页面/端点覆盖率（`PAGE-MAP.json`/`ENDPOINT-MAP.json` + 两个 coverage 脚本）；是否有 P0 占位无延期、契约有端点无实现、骨架后端已落地但未接线、用全量页面数掩盖当前里程碑；没有账本写“数据缺口”并列为本轮任务。
-
-每项输出：结论 / 证据（文件/命令/退出码/计数）/ 影响 / 建议。五项结论必须进入项目侧 `TEAM-IMPROVEMENT-*.md` 和最终汇报；只有一次证据的现象写 `RISKS.md`，不写成 GROWTH 提案。
-
-## 0.3 历史指标、成长曲线与上一轮达成（强制）
-
-每次 `/ai-improve` 必须先做历史对比和上一轮验收，不能只看当前快照：
-
-1. **采集并记录本轮指标**：运行
-   ```powershell
-   node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-metrics.mjs" `
-     --project . --write --json
-   ```
-   历史文件为 `.ai-team/team/IMPROVEMENT-HISTORY.json`；采集 quality-report、growth-check、TASKS、reviews/security、improve-scan（可用 `--no-sessions` 跳过会话扫描）。
-2. **输出成长曲线**：在报告中列出最近 6–8 轮的关键指标（first-pass、review-ready、team open、project open、review rounds、P1 escapes、tasks done），并与上一轮逐项比较：`improved / declined / flat`、delta、`growthScore`、`verdict`。
-3. **负成长处理**：若 `negativeGrowth=true`，必须做根因分析（流程/角色/工具/文档），并在本轮任务中至少增加 1 个直接改善恶化指标的任务（owner、验收、证据）；不能只解释不行动，也不能把 `NO-OP` 当作结论。
-4. **检查上一轮 improve 达成情况**：运行
-   ```powershell
-   node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-previous.mjs" `
-     --project . --json
-   ```
-   它读取最新 `TEAM-IMPROVEMENT-*.md` 的“本轮任务”，对照 `TASKS.md`/`GROWTH.md`，输出 `done/partial/missed/unverified`；`missed/partial/unverified` 必须结转为本轮任务或写入 `RISK-*`，不能静默丢失。
-5. **报告模板**：使用 `ai-team-workflow/templates/IMPROVEMENT-REPORT.md`，必须包含“历史指标与成长曲线”“上一轮达成情况”“负成长原因与优化策略”“本轮任务”四节。
-
-## 1. 建立证据基线（只读）
-
-在项目目录优先运行一次统一预检（artifact/secret 只扫一次，state/checkpoint 复用结果）：
+## 2. 证据基线（只读，一次预检）
 
 ```powershell
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/gate-check.mjs" `
-  --project . --mode handoff --json
+node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/gate-check.mjs" --project . --mode handoff --json
 ```
 
-需要单独定位时再运行（没有 `.ai-team/` 时跳过前四项）：
+只对失败项或需定位项再跑 `state-check` / `growth-check --debt` / `retro-check` / `checkpoint-check --handoff`，避免重复 artifact/secret 扫描。然后采集证据（缺数据写“数据缺口”，不能当成“没发生”）：
 
 ```powershell
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/state-check.mjs" --project .
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/growth-check.mjs" --project . --debt
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/retro-check.mjs" --project .
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/checkpoint-check.mjs" --project . --handoff
+node ".../improve-metrics.mjs" --project . --write --json   # 写 IMPROVEMENT-HISTORY.json
+node ".../improve-previous.mjs" --project . --json
+node ".../improve-scan.mjs" --project "<path>" --out "<path>/.ai-team/team/IMPROVEMENT-SCAN-YYYY-MM-DD.md"
 ```
 
-然后运行证据扫描：
+读取：`team/GROWTH.md`（frontmatter/索引/RETRO/落地版本是否真实）、`IMPROVEMENT-HISTORY.json`、最新 `TEAM-IMPROVEMENT-*.md`、`AUDIT.json`、`STATUS/TASKS/RISKS/HANDOFF/CHECKPOINT`、`reviews|qa|security|release`、`git status --short`、`git log --oneline -10`。
 
-```powershell
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-metrics.mjs" `
-  --project . --write --json
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-previous.mjs" `
-  --project . --json
-node "$HOME/.config/opencode/skills/ai-team-workflow/scripts/improve-scan.mjs" `
-  --project "<project-path>" `
-  --out "<project-path>/.ai-team/team/IMPROVEMENT-SCAN-YYYY-MM-DD.md"
-```
+## 3. 五项检查 + 历史（逐项给证据）
 
-`improve-metrics` 会写 `.ai-team/team/IMPROVEMENT-HISTORY.json`，本轮报告必须引用它的成长曲线；如果只需要观察、不想写历史，用 `--json` 不加 `--write`。
+每项输出 结论 / 证据（文件·命令·退出码·计数）/ 影响 / 建议，并进入报告与最终汇报。
 
-同时读取：
+| 检查 | 口径 | 证据 |
+|---|---|---|
+| 目标偏移检查 | 使命/6 目标/质量目标是否一致；first-pass、review-ready、P1 逃逸、轮次、GROWTH 债务是否改善；是否“流程自证”替代结果 | `quality-report`、`growth-check --debt` |
+| 流程与智能体效率检查 | 重复全量、定向/全量比、artifact/secret/state/checkpoint 扫描次数、每任务 gate 调用、prompt 大小、review/security token 占比 | `improve-scan`、会话数据 |
+| 定义冲突/臃肿/重复/过期检查 | manifest/TEAM/agent/COMMAND/SKILL 的所有权、Track、G0–G8、brief 字段是否一致；重复模板；过期版本/计数/结论；checkpoint 提交是否有 `TASKS.md` 行 | `audit-team-consistency`、`checkpoint-check --handoff`、`rg` |
+| 大型项目能力检查 | 按 `docs/LARGE-PROJECTS.md` 复评；Program/Workstream、集成列车、影响面、队列、成本/容量是否有真实实现与证据 | 项目 `.ai-team/` 工件 |
+| 交付面覆盖与骨架闭环检查 | `PAGE-MAP`/`ENDPOINT-MAP` 覆盖率；P0 占位是否延期；契约有端点无实现；骨架未接线；是否用全量页数掩盖当前里程碑 | 两个 coverage 脚本（1.16.0：端点须 `milestone`，到期 deferred 须 DEC/RISK，`TASK-*` 延期须 `authorized_by`） |
 
-- `.ai-team/team/GROWTH.md`：frontmatter、提案处置索引、RETRO、未处置项、落地版本是否真实存在；
-- `.ai-team/team/IMPROVEMENT-HISTORY.json`：历史指标与成长曲线；
-- 最新 `TEAM-IMPROVEMENT-*.md`：上一轮任务、验收、未达成项；
-- `.ai-team/team/AUDIT.json`：上次全量审计水位、覆盖会话数、报告路径；
-- `.ai-team/team/TEAM-USAGE-AUDIT-*.md`：最近一次会话审计结论；
-- `STATUS.md`、`TASKS.md`、`RISKS.md`、`HANDOFF.md`、`CHECKPOINT.json`；
-- `reviews/**`、`qa/**`、`security/**`、`release/**`；
-- `git status --short`、`git log --oneline -10`。
+**历史与上一轮 improve**（不得只看快照）：
 
-如果会话数据库不可用或 `parts` 已清理，必须写“数据缺口”，不能把“没有数据”当成“没有发生”。
+1. 列最近 6–8 轮 first-pass / review-ready / team open / project open / rounds / P1 escapes / tasks done，与本轮比 `improved|declined|flat` + delta + `growthScore` + `verdict`；不足 6 轮写数据缺口。
+2. `negativeGrowth=true` 必须给根因（流程/角色/工具/文档），本轮至少 1 个直接改善恶化指标的任务（owner/验收/证据）；不得 `NO-OP`。
+3. `improve-previous` 的 `partial/missed/unverified` 必须结转本轮或写 `RISK-*` + 复查日期，不得静默丢失。
+4. 报告用 `ai-team-workflow/templates/IMPROVEMENT-REPORT.md`，含“历史指标与成长曲线”“上一轮达成”“负成长原因与优化策略”“本轮任务”。
 
-## 2. 分析维度（必须逐项给证据）
+## 4. 决策分级（分析阶段）
 
-1. **GROWTH 健康度**：未处置提案、证据是否 ≥2 次、是否重复、是否长期 `proposed`、落地版本/任务是否真实、处置后是否回填日期。
-2. **会话使用**：会话/消息/工具调用/错误/权限拒绝/角色分布/子会话深度/token 与耗时；只观察，不做 token/成本预算，除非用户另行批准。
-3. **交付质量**：一次验收通过率、返工、P1 复发、审查轮次、QA 逃逸、checkpoint/artifact/secret 失败、HANDOFF 缺失。
-4. **角色覆盖**：反复出现的未归属工作、跨角色返工、审查/QA/安全独立性、Chief 是否替成员干活；单次现象不构成新增角色理由。
-5. **文档漂移**：README/INSTALL/docs/CHANGELOG/manifest 与当前行为、命令数、验证计数、版本号是否一致；文档命令是否可执行。
-6. **行业对照**：只引用相关实践——PDCA/Kaizen、DORA、SRE 无责复盘、Diátaxis、最小权限/供应链安全。
-7. **成本与延迟**：报告趋势和异常，不建立预算机制，不因单次高消耗直接改流程。
-8. **五项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力、**交付面覆盖与骨架闭环**；按 0.2 逐项输出，不能省略。交付面检查必须回答：页面/端点覆盖率、是否有无延期占位、是否有“契约有端点无实现”、是否有骨架未接线；有 `PAGE-MAP.json`/`ENDPOINT-MAP.json` 时运行 `page-coverage-check.mjs`、`endpoint-coverage-check.mjs`。
-9. **历史成长曲线**：按 0.3 比较最近 6–8 轮指标；负成长必须有根因和本轮优化任务。
-10. **上一轮 improve 达成**：按 0.3 检查最新 `TEAM-IMPROVEMENT-*.md` 的任务状态；未达成项必须结转。
-
-每个结论必须有文件路径、命令、退出码或计数；只有一次证据的现象写入 `RISKS.md`，不写成 GROWTH 提案。
-
-## 3. 决策分级（分析阶段）
-
-在项目 `.ai-team/team/TEAM-IMPROVEMENT-YYYY-MM-DD.md` 输出；没有 `.ai-team/` 时写到项目根，并标注“项目未初始化”。
+报告写到项目 `.ai-team/team/TEAM-IMPROVEMENT-YYYY-MM-DD.md`（无 `.ai-team/` 写项目根并标“未初始化”）。
 
 | 结论 | 条件 | 动作 |
 |---|---|---|
-| `NO-OP` | 无反复出现的缺口，文档也一致 | 记录“本轮不优化”+ 下次复查触发点 |
-| `DOCS-ONLY` | 仅文档/计数/版本/命令与行为不一致 | 授权后只改文档与 manifest；patch 版本 |
-| `PATCH` | 单个小修 ≤2 个文件；一轮可由多个 PATCH 组成，最多 10 个改动（每个改动仍写验收/回滚） | 授权后实施；patch 版本 |
-| `FEATURE` | 需要新脚本/新命令/新工作流 | 授权后设计、审查、QA、安全；minor 版本 |
-| `ROLE-GAP` | 同一能力缺口在 ≥2 个任务/项目出现 ≥3 次，且现有角色无法覆盖 | 先提案；默认不新增角色，需单独明确批准 |
-| `DEFER` | 证据不足或环境阻塞 | 写 `RISK-*` + 复查日期，不硬改 |
+| `NO-OP` | 无反复缺口，文档一致 | 记录“本轮不优化”+ 复查触发点 |
+| `DOCS-ONLY` | 只文档/计数/版本/命令不一致 | 授权后只改文档与 manifest |
+| `PATCH` | 单修 ≤2 文件，一轮 ≤10 个改动 | 授权后实施 |
+| `FEATURE` | 需新脚本/命令/工作流 | 授权后设计 + 审查 + QA + 安全 |
+| `ROLE-GAP` | 同缺口 ≥2 项目/任务且 ≥3 次，现有角色无法覆盖 | 先提案，单独批准 |
+| `DEFER` | 证据不足或环境阻塞 | 写 `RISK-*` + 复查日期 |
 
-硬规则：
+硬规则：每轮最多推进 **10 个改动**，优先 1–2 个系统性瓶颈；只有 `TEAM-CORE`（跨项目复用、通用缺陷、≥2 项目或 ≥3 任务）进团队源，单项目特例归 `PROJECT-PROFILE`；`TEAM-CORE` 新增 ≤5 且 ≤ 本轮关闭/合并数（团队 open 连升两轮先清债）；提案含目标/证据/验收/风险/回滚/文档影响/版本/scope/复查；分析阶段不改 GROWTH、团队源、版本或安装；报告写清授权后要改哪些文件、调用哪些角色。
 
-- 每轮最多推进 **10 个改动**，优先解决 1–2 个系统性瓶颈；其余用于同簇小修/债务关闭。
-- 不把单项目特例写进通用团队规则；单项目策略归 `PROJECT-PROFILE`（项目 `.ai-team/tasks` 或 `profiles/`），一次性现象写 `RISKS.md`。
-- 只有 `TEAM-CORE`（跨项目复用、通用脚本/模板缺陷、≥2 项目或 ≥3 任务证据）才进团队 GROWTH / AI Native 源。
-- 净零：每轮新增 `TEAM-CORE` 提案 ≤5，且 ≤ 本轮关闭/合并数；团队 open 连续两轮上升时停止新增，先清债。10 个改动中应包含关闭/合并旧提案的名额，避免只新增不清债。
-- 提案必须有：目标、证据、验收标准、风险、回滚、文档影响、版本级别、scope、复查日期。
-- 分析阶段**不修改** `GROWTH.md`、AI Native 源、版本或安装。
-- 报告必须写清“授权后将要改哪些文件、调用哪些角色、版本级别、风险”。
-- `negativeGrowth=true` 时不得选择 `NO-OP`；本轮至少 1 个任务直接改善恶化指标，并写清 owner/验收/证据。
-- 上一轮 `partial/missed` 不得静默消失：必须结转到本轮任务，或写 `RISK-*` + 复查日期并说明原因。
+触发与撤回：每 10 个 `done`、每月、版本发布后、P0/P1 事故后、同类问题第 2 次；观察一个完整节奏无改善则标记 `rejected`/`superseded`。反模式见 `docs/IMPROVEMENT.md`。
 
-## 4. 授权门（强制）
+## 5. 授权门（停）
 
-分析完成后，输出一个不超过 20 行的授权请求：
+输出 ≤20 行授权请求：结论+证据摘要、拟改文件/命令/agent/skill、是否新增命令/脚本/角色、版本级别、是否调子智能体、风险与回滚、是否含 commit/push（push 单独批准）。然后停止等“同意修改”。`--analyze-only` 不请求；`--apply` 校验后直接实施。
 
-- 结论与证据摘要；
-- 拟修改文件/命令/agent/skill；
-- 是否新增命令/脚本/角色；
-- 版本级别；
-- 是否调用子智能体（按第 5 节矩阵）；
-- 风险与回滚；
-- 是否包含 commit/push（push 必须单独明确批准）。
+## 6. 实施（仅授权后）
 
-然后**停止**，等待用户明确回复“同意修改”或类似授权。
+1. 项目 `GROWTH.md` 增 `P-*`（`proposed` + scope；已实施改 `done` 并写落地版本/任务/证据/日期）；`scope: project` 不计团队 open。
+2. 团队源建 `TASK-IMPROVE-*`（本地 `.ai-team/`，完成后归档；保留发布摘要）。
+3. `brief-new.mjs` 生成 brief，`brief-lint` 通过再派发。
+4. 执行者：`DOCS-ONLY` → build；`PATCH` → build + code-reviewer；涉脚本/权限/安全 → 加 security-auditor；`FEATURE` → engineer + reviewer + security + DevOps；`NO-OP`/`DEFER` 不派。
+5. 同步文档：manifest 版本与清单、`verify` 预期、README/INSTALL、WORKFLOW/TEAM/IMPROVEMENT、VERIFICATION/CHANGELOG；新增命令同步 manifest/README/安装说明/一致性审计；`rg` 查旧版本/旧计数并实跑命令示例。
+6. 验证：`scripts/verify.mjs`、audit-team-consistency.mjs、audit-git-permissions.mjs、permission-lint.mjs、version.mjs --update，再跑 installed verify 与 version.mjs --check（均用 node 运行）。
+7. 提交：团队源由 build 精选提交；项目按自身策略（checkpoint 归 devops）；不用 `git add -A`；push 需批准；安装后提示 `RESTART REQUIRED`。
+8. 完成后重跑 `improve-metrics --write` 记录改善后指标，供下一轮验收。
 
-- 默认模式：不得在同一轮自动进入实施。
-- `--analyze-only`：只输出报告，不请求实施。
-- `--apply`：视为用户已阅读报告并授权；仍需先校验报告与当前项目/团队版本一致，再实施。
+## 7. 汇报（≤20 行）
 
-## 5. 实施（仅在授权后）
+按模板输出，至少含：目标校准是否一致；五项各 1 行（结论+证据）；成长曲线 + 本轮 vs 上轮 verdict 与 `negativeGrowth`；上一轮 done/partial/missed + 结转；模式；结论分级；GROWTH 债务与会话/工具/权限数字、审计水位；3 条主要发现（带路径）；1–10 条任务（目标/验收/版本级别）；风险与复查点；是否 commit/push。
 
-1. 更新目标项目 `GROWTH.md`：新增 `P-*` 提案并登记 `proposed` + `scope`；如果本轮已实施，授权后改为 `done` 并写落地版本/任务、证据、日期。`scope: project` 的提案不计入团队 open。
-2. 在 AI Native 源建 `TASK-IMPROVE-*`；默认写本地 `.ai-team/`（gitignored），实施完成后归档/清理。
-3. 用 `brief-new.mjs` 生成 brief，`brief-lint` 通过后再派发。
-4. 按风险决定执行者：
+输出前自检：五项齐全、历史与上一轮已写、`negativeGrowth` 已处置、决策与授权门已给、证据为路径 + 命令 + 退出码。
 
-| 结论 | 执行者 |
-|---|---|
-| `DOCS-ONLY` | `build` 自己改文档 |
-| `PATCH` | `build` 实现 + `ai-team/code-reviewer` 审查 |
-| 涉及脚本/权限/安全语义 | 加 `ai-team/security-auditor` |
-| `FEATURE` | `ai-team/engineer` + reviewer + security + DevOps |
-| `NO-OP` / `DEFER` | 不调用子智能体 |
-
-5. 修改 AI Native 源；不直接改安装副本。
-6. 按影响同步：
-   - `team-manifest.json` 版本与清单；
-   - `scripts/verify.mjs` 预期数量；
-   - `README.md`、`INSTALL.md`；
-   - `docs/WORKFLOW.md`、`docs/TEAM.md`、`docs/IMPROVEMENT.md`；
-   - `docs/VERIFICATION.md`、`CHANGELOG.md`；
-   - 新增命令时同步 manifest、README、安装说明、一致性审计。
-7. 文档准确性检查：
-   - `rg -n "<旧版本>|<旧计数>|<旧命令数>|<旧角色数>" README.md INSTALL.md docs team-manifest.json`
-   - 检查相对链接；
-   - 命令示例实际执行并记录退出码。
-8. 验证：
-   - `node scripts/verify.mjs`
-   - `node scripts/audit-team-consistency.mjs`
-   - `node scripts/audit-git-permissions.mjs`
-   - `node .opencode/skills/ai-team-workflow/scripts/permission-lint.mjs`
-   - `node scripts/version.mjs --update`，然后 installed verify 和 `version.mjs --check`
-9. 提交与发布：
-   - AI Native 团队源变更由 `build` 作为维护者精选提交；
-   - 目标项目 `.ai-team`/`GROWTH` 变更按该项目自身策略提交；若项目使用本团队 checkpoint，派 `ai-team/devops-engineer`；
-   - 不使用 `git add -A` / `git add .`；push 前需用户批准；
-   - 更新安装后提示新开会话（`RESTART REQUIRED`）。
-10. 实施完成后归档/清理 AI Native 本地 `.ai-team/` 证据，保留发布所需摘要。
-11. 实施完成后重新运行 `improve-metrics.mjs --project <project> --write --json`，把改善后的指标写入历史；下一轮 `/ai-improve` 用它检查本轮达成情况。
-
-## 6. 持续优化策略
-
-- **三层入口**：`TEAM-CORE` / `PROJECT-PROFILE` / `OBSERVE`；单项目策略进 `profiles/` 或项目 `.ai-team/tasks`，不进团队核心。
-- **净零**：每轮新增 `TEAM-CORE` ≤5，且 ≤ 关闭/合并数；团队 open 连续两轮上升→停止新增，先清债。
-- **债务指标**：`growth-check --debt` 看 team/project open、年龄、重复簇；`improve-scan` 报告趋势。
-- **触发**：每 10 个 `done`、每月、每次团队版本发布后、P0/P1 事故后、同类问题第 2 次出现、GROWTH 未处置 ≥3。
-- **基线**：先记录当前指标，再改；至少保留一组改动前后对比。`improve-metrics` 写 `IMPROVEMENT-HISTORY.json`，每轮报告展示成长曲线。
-- **成长曲线**：最近 6–8 轮 first-pass/review-ready/team open/project open/rounds/P1 escapes/tasks done 对比；负成长必须当轮加优化任务。
-- **上一轮验收**：每次先检查最新 `TEAM-IMPROVEMENT-*.md` 的任务状态；`partial/missed` 结转到本轮或写 `RISK-*`。
-- **小步**：一次最多 10 个改动，按主题分批；优先 prompt/命令/模板，再脚本，最后才角色；单批仍须可回滚。
-- **可回滚**：每个提案写回滚方式和观察窗口。
-- **无改善就撤回**：观察一个完整节奏后仍无改善，标记 `rejected`/`superseded`。
-- **文档同轮**：行为、命令、计数、版本必须同轮同步；文档不一致视为未完成。
-- **证据优先**：一次证据写 RISK，两次以上再写提案。
-- **反模式**：为单项目特例改通用团队；用更多权限/更多角色解决流程问题；只改文档不改行为；只改行为不改文档；用“重跑通过”关闭 flake。
-
-## 7. 汇报格式
-
-不超过 20 行：
-
-- 目标校准：已复述 `docs/TEAM.md` §0/§0.1；与请求一致 / 冲突（冲突时先停）；
-- 五项检查：目标偏移 / 流程效率 / 定义冲突与过期 / 大型项目能力 / 交付面覆盖与骨架闭环；每项 1 行结论 + 证据；
-- 成长曲线：最近 6–8 轮关键指标 + 本轮 vs 上轮 delta / verdict；`negativeGrowth` 是/否；
-- 上一轮达成：done/partial/missed 数量 + 未达成项结转；
-- 模式：分析 / 实施；
-- 结论：`NO-OP` / `DOCS-ONLY` / `PATCH` / `FEATURE` / `ROLE-GAP` / `DEFER`；负成长时不得 NO-OP；
-- 项目与证据：GROWTH 未处置数、会话/消息/工具错误/权限拒绝、最近审计水位；
-- 主要发现 3 条（带证据路径）；
-- 提案/任务 1–10 条（可按 1–3 个主题归纳；每条写目标/验收/版本级别）；
-- 如需实施：拟改文件、拟调用角色、风险、是否等待授权；
-- 风险与复查触发点；
-- 是否已 commit/push。
-
-若 `.ai-team/` 不存在，先说明“无项目记忆”，只输出会话观察和初始化建议，不要伪造复盘结论。
+无 `.ai-team/` 时只输出会话观察与初始化建议，不伪造复盘。

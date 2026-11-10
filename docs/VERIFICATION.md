@@ -1272,6 +1272,23 @@ endpoint coverage（M1 口径，回填后）: PASS（195/195；M1 due 64 impl + 
 
 
 
+### 5.53 `/ai-improve` 命令瘦身与字符预算（1.16.1）
+
+- **瘦身**：`ai-improve.md` 10,719 字符 / 256 行 → **5,298 字符 / 105 行**（−50.6%）。合并重复的五项检查（原 §0.2 + §2.8）、历史/成长/上一轮（原 §0.3 + §2.9/§2.10 + §6）与决策硬规则（原 §3 + §6）；实施步骤 11 → 8；证据采集改为 gate-check 一次预检、只对失败项细分。
+- **语义同步**：补齐 1.16.0 端点 `milestone`、到期 deferred 需 DEC/RISK、`TASK-*` 延期需 `authorized_by`、checkpoint 提交需有 `TASKS.md` 行。
+- **字符预算**：`verify.mjs` 的 command body 检查增加上限（`ai-improve` ≤ 6,500，其他命令 ≤ 4,000），超限即 FAIL；不新增 check 数。
+- **保留义务**：目标校准、五项检查、历史曲线、上一轮达成、决策分级、授权门、实施/验证/提交、汇报格式均在；审计关键字（五项名称、成长曲线、上一轮 improve、negativeGrowth、IMPROVEMENT-HISTORY.json、每轮 10 个改动）逐条通过。
+
+验证：
+
+```text
+source verify:                   234/234
+test-gates:                      113/113
+audit-team-consistency:          229 checks, 0 failed
+permission-lint:                 590 checks, PASS
+ai-improve body:                 5298 chars (limit 6500)
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
