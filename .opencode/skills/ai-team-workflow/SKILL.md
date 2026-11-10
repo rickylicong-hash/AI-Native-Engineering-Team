@@ -338,7 +338,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" `
   --brief .ai-team/tasks/TASK-xxxx-BRIEF.md --agent ai-team/qa-engineer
 ```
 
-缺 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 必填；devops 运行构建/冒烟时必填）、`独立验证`、`证据位置`（含 UTF-8）、`证据门禁`（`artifact-check --strict --max-files 2000` + 允许的日志路径）、`运行时取证`（runtime 任务）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `Done gate`、`构建隔离` 时，不得派发 subagent。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
+缺 `脚本参数`、`契约影响`、`验证预算`（engineer/reviewer/QA 必填；devops 运行构建/冒烟时必填）、`独立验证`、`证据位置`（含 UTF-8）、`证据门禁`（`artifact-check --strict --max-files 2000` + 允许的日志路径）、`运行时取证`（runtime 任务）、QA `测试路径`、Reviewer/Security `P2 处置` 或 `Done gate`、`构建隔离` 时，不得派发 subagent。engineer brief 还必须填 `Review-entry 自检`（语义源对照 + P1 场景）、`门禁面`（≤2）、`必然受影响测试/脚本`，涉及查询/幂等/筛选时填 `请求参数断言`；`所有权` 必须含测试路径 glob/清单（或显式 `无测试：<理由>`），并写 `ownership-check --diff`，否则 brief-lint FAIL。脚本参数一律写“以 `<script> --help` 实跑为准”，契约只引章节号/字段名，不复制定义。
 
 P-32/P-34 起，涉及重试/幂等/事务/并发/回滚/迁移的 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`（组件故障 / 事务回滚或部分提交 / 导出或依赖链不可用 / 拒绝顺序与豁免）。字段值必须与字段名同行；写“不适用/N/A/无”视为未填。
 

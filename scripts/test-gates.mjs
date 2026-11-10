@@ -131,14 +131,14 @@ function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev,
   return frontmatter;
 }
 
-function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配" } = {}) {
+function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配", ownership = "只允许修改 `src/**`、`tests/**`；禁止 `docs/**`", mustExecute = "node scripts/test-gates.mjs；node ownership-check.mjs --brief .ai-team/tasks/TASK-BRIEF-FIXTURE.md --diff .ai-team/work/changed-files.txt" } = {}) {
   return `角色：ai-team/engineer
 技能：ai-team-workflow
 任务 ID：TASK-BRIEF-FIXTURE
 Track / 阶段：T2 / G4
 目标：${goal}
 背景与输入：fixture
-所有权：只允许修改 fixture
+所有权：${ownership}
 约束：无
 契约影响：不适用（无契约变更）
 回归范围：fixture
@@ -148,7 +148,7 @@ Review-entry 自检：${reviewEntry}
 请求参数断言：${requestAssertion}
 验收标准：
 - [ ] fixture
-必须执行：node scripts/test-gates.mjs
+必须执行：${mustExecute}
 脚本参数：以 \`<script> --help\` 实跑为准
 验证预算：${verificationBudget}
 独立验证：node scripts/test-gates.mjs
@@ -473,6 +473,8 @@ async function main() {
       { name: "brief-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "TODO 定向 全量 提交 复用" }) },
       { name: "brief-chinese-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "待补充：定向 全量 提交 复用" }) },
       { name: "brief-mid-placeholder-verification-budget", expect: 1, text: engineerBrief({ verificationBudget: "定向 全量 提交 复用，待确认" }) },
+      { name: "brief-missing-ownership-tests", expect: 1, text: engineerBrief({ ownership: "只允许修改 fixture" }) },
+      { name: "brief-missing-ownership-check", expect: 1, text: engineerBrief({ mustExecute: "node scripts/test-gates.mjs" }) },
     ];
     for (const scenario of briefScenarios) {
       const briefFile = path.join(briefDir, `${scenario.name}.md`);
@@ -492,12 +494,13 @@ async function main() {
       "| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |",
       "|---|---|---|---|---|---|---|",
       "| TASK-1001 | 实现登录 | ai-team/engineer | - | done | AC | - |",
+      "| TASK-1001-R1 | 复核登录 | ai-team/code-reviewer | - | done | AC | - |",
       "| TASK-1002 | 实现支付 | ai-team/engineer | - | done | AC | - |",
       "| TASK-1003 | 审查登录 | ai-team/code-reviewer | - | done | AC | - |",
       "| TASK-1004 | 实现导出 | ai-team/engineer<b> | - | doing | AC | - |",
       "",
     ].join("\n"));
-    write(path.join(qualityDir, ".ai-team", "reviews", "REV-1001.md"), "# REV-1001 — TASK-1001\n\n- 结论：通过\n- P0=0；P1=0；P2=0\n");
+    write(path.join(qualityDir, ".ai-team", "reviews", "REV-1001.md"), "# REV-1001 — TASK-1001\n\n| 项 | 内容 |\n|---|---|\n| 结论 | **通过** |\n| P0 | 0 |\n| P1 | 0 |\n| P2 | 0 |\n");
     write(path.join(qualityDir, ".ai-team", "reviews", "REV-1002.md"), "# REV-1002 — TASK-1002\n\n- 结论：修改后通过\n- P0=0；P1=1；P2=0\n");
     write(path.join(qualityDir, ".ai-team", "reviews", "REV-1002-R1.md"), "# REV-1002-R1 — TASK-1002-R1\n\n- 结论：通过\n- P0=0；P1=0；P2=0\n");
     write(path.join(qualityDir, ".ai-team", "security", "SEC-1002.md"), "# SEC-1002 — TASK-1002\n\n- 结论：通过\n- P0=0；P1=1；P2=0\n");
@@ -510,8 +513,12 @@ async function main() {
       qualityData = null;
     }
     check("quality report json", qualityRun.status === 0 && qualityData !== null, `${qualityRun.status}; ${(qualityRun.stdout || qualityRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
-    check("quality first pass", qualityData?.summary?.first_pass_rate === 0.5, JSON.stringify(qualityData?.summary || {}));
+    check("quality first pass verified", qualityData?.summary?.first_pass_rate === 0.5, JSON.stringify(qualityData?.summary || {}));
+    check("quality first pass all reviewed", qualityData?.summary?.first_pass_rate_all === 0.5, String(qualityData?.summary?.first_pass_rate_all));
+    check("quality first pass unverified", qualityData?.summary?.first_pass_unverified === 0, String(qualityData?.summary?.first_pass_unverified));
     check("quality review ready", Math.abs((qualityData?.summary?.review_ready_rate ?? -1) - (2 / 3)) < 0.001, String(qualityData?.summary?.review_ready_rate));
+    check("quality review ready done", qualityData?.summary?.review_ready_rate_done === 1, String(qualityData?.summary?.review_ready_rate_done));
+    check("quality window first pass", qualityData?.summary?.window_first_pass_rate === 0.5, String(qualityData?.summary?.window_first_pass_rate));
     check("quality review rounds", qualityData?.summary?.review_rounds_avg === 1.5, String(qualityData?.summary?.review_rounds_avg));
     check("quality p1 escapes", qualityData?.summary?.p1_escapes === 1, String(qualityData?.summary?.p1_escapes));
 
@@ -980,13 +987,14 @@ async function main() {
       "| ID | 标题 | Owner | 验收 | 证据 |",
       "|---|---|---|---|---|",
       "| TASK-9401 | done fixture | ai-team/engineer | AC | - |",
-      "| TASK-9402 | missed fixture | ai-team/engineer | AC | - |",
+      "| TASK-9402 | missed fixture closes P-66 (title must not be parsed as task) | ai-team/engineer | AC | - |",
+      "| P-99 | proposed fixture | ai-team/chief | AC | - |",
       "",
     ].join("\n"));
     const prevRun = run(improvePrevious, ["--project", previousDir, "--json"], previousDir);
     let prevData = null;
     try { prevData = JSON.parse(prevRun.stdout || ""); } catch { prevData = null; }
-    check("improve-previous checks last round", prevRun.status === 0 && prevData?.done === 1 && prevData?.missed === 1, `${prevRun.status}; ${JSON.stringify({ done: prevData?.done, missed: prevData?.missed })}`);
+    check("improve-previous checks last round", prevRun.status === 0 && prevData?.done === 1 && prevData?.missed === 1 && prevData?.unverified === 1 && prevData?.items?.length === 3, `${prevRun.status}; ${JSON.stringify({ done: prevData?.done, missed: prevData?.missed, unverified: prevData?.unverified, items: prevData?.items?.length })}`);
   } finally {
     fs.rmSync(previousDir, { recursive: true, force: true });
   }

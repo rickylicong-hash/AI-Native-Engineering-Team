@@ -137,17 +137,6 @@ function replaceFirstHash(line, commit) {
   return `${line.trimEnd()} \`${commit}\``;
 }
 
-function replaceLastHash(line, commit) {
-  const hashes = [...line.matchAll(/`?([0-9a-f]{7,40})`?/gi)];
-  if (hashes.length > 0) {
-    const last = hashes[hashes.length - 1];
-    const start = last.index;
-    const end = start + last[0].length;
-    return `${line.slice(0, start)}\`${commit}\`${line.slice(end)}`;
-  }
-  return `${line.trimEnd()} \`${commit}\``;
-}
-
 /**
  * 清洗写入 Markdown 单行的文本（P3-01）：
  * - CR/LF 折成空格，避免一行拆成两行破坏 HANDOFF 结构；
@@ -333,12 +322,41 @@ function buildStateDocs(commit, doneCount) {
     if (updated !== handoffLines[nextGitIndex]) changes.push("HANDOFF.md Git");
     handoffLines[nextGitIndex] = updated;
   }
-  const nextBaselineIndex = handoffLines.findIndex((line) => /^-\s*Baseline[：:]/.test(line));
-  if (nextBaselineIndex >= 0) {
-    const updated = replaceLastHash(handoffLines[nextBaselineIndex], commit);
-    if (updated !== handoffLines[nextBaselineIndex]) changes.push("HANDOFF.md Baseline");
-    handoffLines[nextBaselineIndex] = updated;
+  // Baseline 是冻结的全量测试候选，不由 checkpoint 改写；只更新 Git/远程/Checkpoint/Retro/Growth。
+  // 旧实现 replaceLastHash 会把 baseline_id 里的 SHA 换成文档 checkpoint，导致 RISK-0132。
+
+  // P-70：HANDOFF 的 Retro/Growth/Checkpoint 也由同步脚本维护，禁止手写漂移。
+  const derivedHandoff = [
+    {
+      regex: /^-\s*Checkpoint[：:]/,
+      label: "HANDOFF.md Checkpoint",
+      value: `- Checkpoint: \`${commit}\`（done ${doneCount}）`,
+    },
+    ...(meta?.last_retro ? [{
+      regex: /^-\s*Retro[：:]/,
+      label: "HANDOFF.md Retro",
+      value: `- Retro: ${meta.last_retro}（done ${doneCount} → next ${meta.next_due_at || "?"}）`,
+    }] : []),
+    ...(growth ? [{
+      regex: /^-\s*Growth[：:]/,
+      label: "HANDOFF.md Growth",
+      value: `- Growth: open ${growth.openAll ?? growth.open} / done ${growth.done}（以 \`growth-check\` 为准）`,
+    }] : []),
+  ];
+  let insertAt = handoffLines.findIndex((line) => /^-\s*Baseline[：:]/.test(line));
+  if (insertAt >= 0) insertAt += 1;
+  for (const item of derivedHandoff) {
+    const index = handoffLines.findIndex((line) => item.regex.test(line));
+    if (index >= 0) {
+      if (handoffLines[index] !== item.value) changes.push(item.label);
+      handoffLines[index] = item.value;
+    } else if (insertAt > 0) {
+      handoffLines.splice(insertAt, 0, item.value);
+      insertAt += 1;
+      changes.push(item.label);
+    }
   }
+
   const nextHandoff = handoffLines.join(handoffEol);
 
   const statusText = read(statusFile);

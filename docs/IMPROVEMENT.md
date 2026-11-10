@@ -148,6 +148,8 @@ Standardize  更新 SKILL/模板/命令/文档/CHANGELOG/VERIFICATION
 
 - 脚本：`improve-metrics.mjs --project . --write --json`；历史文件 `.ai-team/team/IMPROVEMENT-HISTORY.json`。
 - 指标：first-pass、review-ready、review rounds、P1 findings/escapes、team/project open、tasks done、review/security 报告数、会话/工具错误（可选）。
+- 口径（1.14.2）：`quality-report` 同时解析 `结论：通过` 与表格 `| 结论 | 通过 |`；review 任务（如 `TASK-XXXX-R1`，owner=code-reviewer）不再计为父任务 fix；缺失结论/P0/P1 单列 `first_pass_unverified`，first-pass 分母只算 verified；同时输出 all-reviewed、done/review 与最近 N 个任务窗口（`--window`，默认 30）。
+- 上一轮检查（1.14.2）：`improve-previous` 只读“本轮任务”表的 ID 列，不从标题/证据路径误抽；`proposed/accepted/pending` 记 `unverified`，不记 `missed`。
 - 成长判定：关键指标改善/恶化超过阈值 → `improving / stable / declining`；`team open` 上升、first-pass/review-ready 下降 >5pp、P1 escapes 上升、rounds 上升 >0.25 视为 `negativeGrowth`。
 - 负成长：必须分析根因，并在本轮任务中至少增加 1 个直接改善恶化指标的任务（owner/验收/证据）；不得以 `NO-OP` 结束。
 - 上一轮达成：读取最新 `TEAM-IMPROVEMENT-*.md` 的“本轮任务”，对照 `TASKS.md`/`GROWTH.md`，输出 done/partial/missed/unverified；`improve-previous.mjs` 自动抽取 ID 并分类；未达成项结转到本轮或写 `RISK-*`。

@@ -227,7 +227,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 - **基础**：角色、技能：、任务 ID、Track / 阶段、目标、背景与输入、所有权、约束。
 - **设计与契约**：设计预审：、装配清单：、契约影响：只引章节号/字段名，不复制定义、回归范围、事务边界与部分提交、旧行为反证、边界四问。
 - **执行与验证**：验收标准、必须执行、脚本参数：以 `<script> --help` 实跑为准、验证预算、独立验证：、证据位置：、证据门禁、测试路径：、构建隔离：、P2 处置：、运行时取证、Done gate。
-- **角色条件**：engineer 的 Review-entry 自检、门禁面、必然受影响测试/脚本、请求参数断言。
+- **角色条件**：engineer 的 Review-entry 自检、门禁面、必然受影响测试/脚本、请求参数断言；`所有权` 必须含测试路径 glob/清单（或显式 `无测试：<理由>`）并写 `ownership-check --diff`。
 - **收口**：证据要求、禁止、回报格式。
 
 缺任何 lint 必填项不得派发。P-32/P-34 起，事务类 engineer brief 还必须填 `事务边界与部分提交` 与 `旧行为反证`；reviewer/QA brief 必须填 `边界四问`。字段值必须与字段名同行；写“不适用/N/A/无”视为未填（非运行时任务按 lint 规则写“不适用（无容器/外部依赖）”）。
@@ -367,7 +367,7 @@ Checkpoint 由 DevOps 执行，Chief 只提供明确路径/TASK/角色/message�
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\checkpoint-check.mjs" --project .
 ```
 
-DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `远程`/`Git`/`Baseline` 与 `STATUS.md` 的 `Retro`/`Growth`/`Checkpoint`/`远程`/`HEAD`。`远程` 行由脚本用 `git ls-remote` 读取远端 SHA 计算 ahead（远端不可达时回退本地并显式标记 `local`），并剥离 userinfo；`Retro` 取 `GROWTH.md` frontmatter，`Growth` 取 `growth-check --json`，不要手写。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。证据扫描默认 2000 起步，截断时自动升限到 20000；可用 `--max-evidence-files` 调整起点。`--mark --sync-docs` 先完成 HANDOFF/STATUS 校验与内容计算，失败时零写入；成功后才落 `CHECKPOINT.json`。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
+DevOps 提交后运行 `--mark --sync-docs` 更新 `state/CHECKPOINT.json` 并自动同步 `HANDOFF.md` 的 `远程`/`Git`/`Retro`/`Growth`/`Checkpoint` 与 `STATUS.md` 的 `Retro`/`Growth`/`Checkpoint`/`远程`/`HEAD`。**`Baseline` 行不被 checkpoint 改写**：它指向冻结的全量测试候选，由 DevOps 在干净候选上单独更新；改写 Baseline 的 SHA 属于 RISK-0132。`远程` 行由脚本用 `git ls-remote` 读取远端 SHA 计算 ahead（远端不可达时回退本地并显式标记 `local`），并剥离 userinfo；`Retro` 取 `GROWTH.md` frontmatter，`Growth` 取 `growth-check --json`，不要手写。`checkpoint-check` 会同时扫描根目录产物、证据编码和明文凭据；有 artifact error 时 `--mark` 拒绝。证据扫描默认 2000 起步，截断时自动升限到 20000；可用 `--max-evidence-files` 调整起点。`--mark --sync-docs` 先完成 HANDOFF/STATUS 校验与内容计算，失败时零写入；成功后才落 `CHECKPOINT.json`。**同步后提交纯文档变更并运行 `state-check`；未同步不算 checkpoint 完成。** 若本次 checkpoint 包含 `GROWTH.md` 变更，DevOps 先运行 `growth-check`，有缺失处置状态时退回 Chief。Chief 不得自己 `git add`/`git commit`/`git push`；用户要求暂不提交时，在 HANDOFF 写 `Checkpoint: WAIVED` + 原因 + `RISK-*`。
 
 ### 7.4 状态一致性
 
@@ -423,7 +423,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\gate-check.mjs" --p
 - **T-38 升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存；普通命令被拒先查版本，不扩 allow。
 - **T-39 验证预算与全量基线复用（1.9.4）**：迭代只跑 V0/V1；全量基线只对冻结候选提交跑 1 条并登记 `baseline_id`（commit + 干净工作区 + 日志 + 计数）；同一候选提交不重复全量，同一任务默认 ≤2 条，第 3 条需 Chief 批准 + `RISK-*`/`DEC-*`。Reviewer/QA 可复用基线，但必须校验 commit+工作区指纹、读取计数，并独立执行受影响模块/关键路径；基线后有任何变更即失效。禁止用“重跑通过”关闭 flaky/P1/安全项。
 - **T-40 质量报告与 CI（1.10.0）**：`quality-report.mjs` 从 `TASKS.md`/`reviews`/`security`/`qa` 计算一次通过率、review-ready、审查轮次、P1 findings/escapes；指标是趋势，不是硬门禁。`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission、artifact、secret、review-check 与质量报告；CI 失败必须修复，不能以“本地通过”替代。
-- **T-41 所有权机器校验（1.11.0）**：brief 的 `所有权` 行用反引号写 glob（如 `src/**`, `docs/**`）；reviewer 运行 `ownership-check.mjs --brief ... --diff ...` 对比变更，越权/禁止路径 exit 1。没有可解析路径/空 diff 时 `--strict` 失败；普通模式 SKIP 并记录原因。已提交候选用 `--base <parent>`；diff 必须由 reviewer 从 `git status --porcelain --ignored` 或 `git diff --name-only <base>` 生成并记录来源，不能只信自报文件。
+- **T-41 所有权机器校验（1.11.0；1.14.2 起 brief-lint 强制）**：brief 的 `所有权` 行用反引号写 glob（如 `src/**`, `docs/**`），并含测试路径 glob/清单（如 `src/test/**`、`**/*.spec.ts`；无测试写 `无测试：<理由>`）；brief 必须写 `ownership-check --diff`，否则 `brief-lint` FAIL。reviewer 运行 `ownership-check.mjs --brief ... --diff ...` 对比变更，越权/禁止路径 exit 1。没有可解析路径/空 diff 时 `--strict` 失败；普通模式 SKIP 并记录原因。已提交候选用 `--base <parent>`；diff 必须由 reviewer 从 `git status --porcelain --ignored` 或 `git diff --name-only <base>` 生成并记录来源，不能只信自报文件。
 - **T-42 离线端到端冒烟（1.11.0）**：`test-gates` 的 e2e fixture 用临时项目串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络；CI 通过 test-gates 自动执行。
 
 ### 7.7 跨项目持续优化（1.7.0）

@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.14.1**。§1 为 1.14.1 源验证；§2–§4 为 1.13.0/1.12.0/1.11.1 安装与历史基线；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.14.2**。§1 为 1.14.2 源验证；§2–§4 为 1.13.0/1.12.0/1.11.1 安装与历史基线；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -1194,6 +1194,26 @@ permission-lint:                 590 checks, PASS
 ownership-lint:                  19 checks, PASS
 ```
 
+### 5.50 quality-report 口径修正与 P-66 brief 所有权（1.14.2）
+
+- **quality-report**：`conclusionOf` 同时解析 `结论：通过` 与表格 `| 结论 | 通过 |`；`countOf` 支持 `| P0 | 0 |` 表格列；`fixTaskIds` 只统计 engineer-owned 的 `-R\d+` 任务，reviewer 的 `TASK-XXXX-R1` 不再把父任务误判为 has_fix；缺失结论/P0/P1 单列 `first_pass_unverified`，first-pass 分母只算 verified；新增 all-reviewed、done/review、最近 N 个完成/审查任务窗口（`--window`，默认 30）；`improve-metrics` 快照增加 `metricVersion=2`，旧口径对比会显式 warning。
+- **improve-previous**：只读“本轮任务”表的 ID 列（支持 `# | ID` 两列格式），不从标题/证据路径误抽；`proposed/accepted/pending` 归 `unverified`，`in_progress` 归 `partial`，不再误报 `missed`。
+- **brief-lint**：engineer brief 的 `所有权` 必须含测试路径 glob/清单（或 `无测试：<理由>`），且 brief 必须写 `ownership-check --diff`；缺失 → FAIL。关闭 P-66。
+- **checkpoint-check Baseline 保护**：`--sync-docs` 不再改写 `Baseline` 行的 SHA，只更新 `Git`/`远程`/`Retro`/`Growth`/`Checkpoint`；避免文档 checkpoint 把 `baseline_id` 改成文档提交（RISK-0132/GIT-075）。
+- **fixtures**：`test-gates` 覆盖表格结论、review-task R1 不误判、unverified/window、brief 缺测试路径/缺 ownership-check、improve-previous 的 proposed/标题误抽。
+
+验证：
+
+```text
+source verify:                   230/230
+installed:                       216/216
+installed + OpenCode:            226/226
+test-gates:                      89/89
+audit-team-consistency:          215 checks, 0 failed
+permission-lint:                 590 checks, PASS
+ownership-lint:                  19 checks, PASS
+```
+
 ## 6. 未执行项
 
 - 未用 CLI 执行顶层 `/ai` 交互：CLI 环境没有 provider credential（`0 credentials`），无法发起模型请求；团队 agent 的调用路径已通过 subagent 编排验证。
@@ -1228,7 +1248,7 @@ node scripts/version.mjs --update
 - 一致性审计：通过（195 项；新增 brief 生成/校验、secret 扫描、checkpoint 同步、持续优化命令、版本握手、profile/净零检查、团队目标校准与 review-entry 字段检查）。
 - 成长提案落地：截至 1.3.0，RETRO-0001 P-01..P-06、RETRO-0002/0003 P-07..P-14、RETRO-0004/0005 P-15..P-22 已落地；1.6.0 继续落地 P-24..P-27/P-29；1.8.7 落地 P-31/P-33/P-35/P-39/P-46/P-49/P-51/P-53；1.9.0 落地 P-28/P-30/P-37/P-38/P-42/P-48/P-54；1.9.1 落地 R5 P2-01/P2-02 + P2-06（净零真值、扫描自适应）；1.9.2 团队目标/一次通过率分层目标与 `/ai-improve` 目标校准；1.9.3 review-entry 合同与首轮横向面；1.9.4 验证预算与全量基线复用；1.10.0 质量报告与 CI；1.11.0 所有权校验与离线 E2E；1.11.1 R7 P3 债务与 action SHA pin。
 - 成长处置：机制通过（`GROWTH.md` 提案处置索引、`growth-check --strict`、`team/archive/` 归档）；1.9.0 增加 `scope`、`--debt` 与净零校验；1.9.1 增加净零真值校验（frontmatter 陈旧即 error）与扫描自适应；1.9.2 增加团队目标与 `/ai-improve` 目标校准；1.9.3 增加 review-entry 合同与首轮横向面；1.9.4 增加验证预算与基线复用规则；1.10.0 增加质量报告与 CI 门禁；1.11.0 增加所有权机器校验与离线 E2E；1.11.1 修复 R7 P3 债务并 pin CI action。
-- Shell 权限：通过（1.14.1 当前配置：每角色 45 条 = 43 shell（1 allow + 42 破坏性 deny）+ 2 `.env` read allow；无 ask）。
+- Shell 权限：通过（1.14.2 当前配置：每角色 45 条 = 43 shell（1 allow + 42 破坏性 deny）+ 2 `.env` read allow；无 ask）。
 - Worktree 清理：通过（1.12.0 起非 force 的 `git worktree remove` 允许，`--force`/`-f` 仍 deny；`permission-lint` 590 项、verify 230/230、test-gates 83/83）。
 - 流程自动化：通过（P-24 brief-new/brief-lint；P-25 UTF-8；P-26 `--mark --sync-docs`；P-27 secret-check；P-29 restart handshake；P-39 remote truth；P-46/P-49 证据与运行时门禁；P-51 STATUS 行；P-53 done gate；P-54 三层入口/净零；P-42 债务视图；1.9.1 净零真值/扫描自适应；1.9.2 团队目标/`/ai-improve` 目标校准；1.9.3 review-entry/首轮横向面；1.9.4 验证预算/基线复用；1.10.0 质量报告/CI；1.11.0 所有权校验/离线 E2E；1.11.1 R7 债务/action pin）。
 - 质量度量：通过（`quality-report.mjs` 输出一次通过率、review-ready、审查轮次、P1 findings/escapes；fixture 覆盖首轮/修复/空项目；代理指标，不替代语义判断）。

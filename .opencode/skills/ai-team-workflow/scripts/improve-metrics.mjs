@@ -110,7 +110,13 @@ const current = {
   openTotal: Number.isFinite(Number(g.openAll)) ? Number(g.openAll) : null,
   proposalsDone: Number.isFinite(Number(g.done)) ? Number(g.done) : null,
   firstPassRate: typeof q.first_pass_rate === "number" ? q.first_pass_rate : null,
+  firstPassRateAll: typeof q.first_pass_rate_all === "number" ? q.first_pass_rate_all : null,
+  firstPassUnverified: Number.isFinite(Number(q.first_pass_unverified)) ? Number(q.first_pass_unverified) : null,
   reviewReadyRate: typeof q.review_ready_rate === "number" ? q.review_ready_rate : null,
+  reviewReadyRateDone: typeof q.review_ready_rate_done === "number" ? q.review_ready_rate_done : null,
+  windowFirstPassRate: typeof q.window_first_pass_rate === "number" ? q.window_first_pass_rate : null,
+  windowReviewReadyRate: typeof q.window_review_ready_rate === "number" ? q.window_review_ready_rate : null,
+  windowSize: Number.isFinite(Number(q.window_size)) ? Number(q.window_size) : null,
   reviewRoundsAvg: typeof q.review_rounds_avg === "number" ? q.review_rounds_avg : null,
   p1Findings: Number.isFinite(Number(q.p1_findings)) ? Number(q.p1_findings) : null,
   p1Escapes: Number.isFinite(Number(q.p1_escapes)) ? Number(q.p1_escapes) : null,
@@ -137,6 +143,10 @@ if (fs.existsSync(historyFile)) {
 }
 
 const previous = history.entries.length > 0 ? history.entries[history.entries.length - 1] : null;
+const METRIC_VERSION = 2;
+if (previous && previous.metricVersion !== METRIC_VERSION) {
+  warnings.push(`metric definition changed (previous=${previous.metricVersion ?? "legacy"}, current=${METRIC_VERSION}); first-pass now excludes unverified reviews and review-task R1 false fixes`);
+}
 const METRICS = [
   { key: "teamOpen", label: "团队 open", direction: "lower", negativeDelta: 1, format: "int" },
   { key: "projectOpen", label: "项目 open", direction: "lower", negativeDelta: 1, format: "int" },
@@ -178,6 +188,7 @@ const verdict = !previous ? "first-run" : negativeGrowth ? "declining" : improve
 const growthScore = improved.length - declined.length;
 
 const snapshot = {
+  metricVersion: METRIC_VERSION,
   recordedAt: new Date().toISOString(),
   date: new Date().toISOString().slice(0, 10),
   metrics: current,
@@ -197,8 +208,15 @@ if (write) {
 
 const curve = history.entries.slice(-8).map((entry) => ({
   date: entry.date,
+  metricVersion: entry.metricVersion ?? null,
   firstPassRate: entry.metrics?.firstPassRate ?? null,
+  firstPassRateAll: entry.metrics?.firstPassRateAll ?? null,
+  firstPassUnverified: entry.metrics?.firstPassUnverified ?? null,
   reviewReadyRate: entry.metrics?.reviewReadyRate ?? null,
+  reviewReadyRateDone: entry.metrics?.reviewReadyRateDone ?? null,
+  windowFirstPassRate: entry.metrics?.windowFirstPassRate ?? null,
+  windowReviewReadyRate: entry.metrics?.windowReviewReadyRate ?? null,
+  windowSize: entry.metrics?.windowSize ?? null,
   teamOpen: entry.metrics?.teamOpen ?? null,
   projectOpen: entry.metrics?.projectOpen ?? null,
   reviewRoundsAvg: entry.metrics?.reviewRoundsAvg ?? null,
@@ -208,6 +226,7 @@ const curve = history.entries.slice(-8).map((entry) => ({
 
 const result = {
   ok: true,
+  metricVersion: METRIC_VERSION,
   project,
   historyFile,
   entries: history.entries.length,
@@ -236,7 +255,13 @@ if (json) {
       const pct = (value) => (typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "-");
       console.log(`${row.date}  ${pct(row.firstPassRate).padEnd(10)}  ${pct(row.reviewReadyRate).padEnd(12)}  ${String(row.teamOpen ?? "-").padEnd(8)}  ${String(row.projectOpen ?? "-").padEnd(11)}  ${String(row.reviewRoundsAvg ?? "-").padEnd(6)}  ${String(row.p1Escapes ?? "-").padEnd(9)}  ${row.tasksDone ?? "-"}`);
     }
+    const latest = curve[curve.length - 1];
+    if (latest) {
+      const pct = (value) => (typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "-");
+      console.log(`window(${latest.windowSize ?? "-"}): first-pass ${pct(latest.windowFirstPassRate)} | review-ready ${pct(latest.windowReviewReadyRate)} | first-pass-all-reviewed ${pct(latest.firstPassRateAll)} | unverified ${latest.firstPassUnverified ?? "-"}`);
+    }
   }
+  console.log(`metricVersion: ${METRIC_VERSION}`);
   if (previous) {
     console.log(`growth: ${verdict} (${growthScore >= 0 ? "+" : ""}${growthScore})`);
     for (const item of comparisons) {

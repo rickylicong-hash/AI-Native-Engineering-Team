@@ -97,15 +97,43 @@ const tasks = statusMap(path.join(project, ".ai-team", "state", "TASKS.md"), tru
 const growth = statusMap(path.join(project, ".ai-team", "team", "GROWTH.md"), false);
 const text = readText(reportFile);
 
-// 优先取“本轮任务”小节里的 ID；找不到再退回全文 ID。
+// 优先取“本轮任务”表里的 ID；只读 ID 列，避免从标题/证据路径误抽。
 const section = sectionByHeading(text, /^##\s+(?:\d+\.\s*)?本轮任务/);
-const ids = new Set();
-for (const match of (section || text).matchAll(/\b(TASK-[A-Za-z0-9-]+|[PT]-\d+)\b/g)) ids.add(match[1]);
+function idsFromTaskSection(value) {
+  const ids = new Set();
+  if (!value) return ids;
+  let idIndex = 1;
+  let inTable = false;
+  for (const line of value.split(/\r?\n/)) {
+    if (!/^\|/.test(line)) {
+      inTable = false;
+      continue;
+    }
+    const cells = line.split("|").map((cell) => cell.trim());
+    if (!inTable) {
+      const headerIndex = cells.findIndex((cell) => /^ID$/i.test(cell));
+      if (headerIndex >= 1) {
+        idIndex = headerIndex;
+        inTable = true;
+      }
+      continue;
+    }
+    const id = cells[idIndex] || "";
+    if (/^(TASK-[A-Za-z0-9-]+|[PT]-\d+)$/.test(id)) ids.add(id);
+  }
+  return ids;
+}
+const ids = idsFromTaskSection(section);
+if (ids.size === 0) {
+  // 兼容旧报告：没有标准“本轮任务”表时退回全文 ID。
+  for (const match of (section || text).matchAll(/\b(TASK-[A-Za-z0-9-]+|[PT]-\d+)\b/g)) ids.add(match[1]);
+}
 
 const classify = (status) => {
   if (!status) return "unverified";
   if (/^(done|rejected|superseded)\b/.test(status)) return "done";
-  if (/^(deferred|partial)\b/.test(status)) return "partial";
+  if (/^(deferred|partial|in_progress)\b/.test(status)) return "partial";
+  if (/^(proposed|accepted|pending)\b/.test(status)) return "unverified";
   return "missed";
 };
 

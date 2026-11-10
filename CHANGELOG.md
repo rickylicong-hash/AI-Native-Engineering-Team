@@ -3,6 +3,26 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.14.2] - 2026-11-10
+
+### Fixed
+
+- **`quality-report` first-pass口径**: parse Markdown table conclusions (`| 结论 | 通过 |`) and table P0/P1 counts; exclude reviewer-owned `TASK-XXXX-R1` from `fixTaskIds`; report missing conclusion/P0/P1 as `first_pass_unverified` instead of silently failing first-pass; first-pass denominator uses verified reviews only. Added all-reviewed, done/review and last-N window metrics (`--window`, default 30).
+- **`improve-previous` false positives**: only read IDs from the “本轮任务” table's ID column (supports `# | ID`); ignore IDs in titles/evidence paths; `proposed/accepted/pending` are `unverified`, `in_progress` is `partial`, not `missed`.
+- **`improve-metrics` metric version**: snapshots now carry `metricVersion=2`; comparing against legacy snapshots emits an explicit warning instead of silently mixing definitions.
+- **`brief-lint` P-66**: engineer brief `所有权` must include a test path glob/list (or `无测试：<原因>`), and the brief must include `ownership-check --diff`; otherwise FAIL.
+- **`checkpoint-check` Baseline protection**: `--sync-docs` no longer rewrites the `Baseline` line's SHA; only `Git`/`远程`/`Retro`/`Growth`/`Checkpoint` are derived. This closes the GIT-075/RISK-0132 class where a docs checkpoint changed `baseline_id` to the checkpoint commit.
+
+### Verified
+
+- `node scripts/verify.mjs` → 230/230, 0 warnings.
+- `node scripts/test-gates.mjs` → 89/89.
+- `node scripts/audit-team-consistency.mjs` → 215 checks, 0 failed.
+- `node scripts/ownership-lint.mjs` → 19 checks, PASS.
+- `permission-lint.mjs` → 590 checks, PASS.
+- `node scripts/verify.mjs --installed` → 216/216; `--installed --opencode` → 226/226.
+- `version.mjs --check` → source 1.14.2 = installed 1.14.2.
+
 ## [1.14.1] - 2026-11-10
 
 ### Changed

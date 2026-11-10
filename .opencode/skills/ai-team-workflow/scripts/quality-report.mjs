@@ -4,8 +4,8 @@
  *
  * 从 `.ai-team/state/TASKS.md`、`.ai-team/reviews/**`、`.ai-team/security/**`、
  * `.ai-team/qa/**` 计算团队质量目标 §0.1 的代理指标：
- *   - 一次通过率（实现任务首次进入 review）
- *   - review-ready 率
+ *   - 一次通过率（实现任务首次进入 review；未识别结论单列 unverified）
+ *   - review-ready 率（全量与最近 N 个完成/审查任务窗口）
  *   - 审查轮次
  *   - P1 findings / P1 escapes
  *
@@ -21,6 +21,7 @@
  *   node quality-report.mjs --project . --json
  *   node quality-report.mjs --project . --out .ai-team/work/QUALITY-REPORT.md
  *   node quality-report.mjs --project . --strict
+ *   node quality-report.mjs --project . --window 10
  *
  * 退出码：0 = 生成成功；1 = --strict 且数据不足/有错误；2 = 参数/项目错误；3 = 读取失败。
  */
@@ -38,7 +39,7 @@ const getArg = (name, fallback = null) => {
 const hasFlag = (name) => args.includes(name);
 
 if (hasFlag("--help") || hasFlag("-h")) {
-  console.log(`Usage: node quality-report.mjs [--project DIR] [--json] [--out FILE] [--max-files N] [--strict]`);
+  console.log(`Usage: node quality-report.mjs [--project DIR] [--json] [--out FILE] [--max-files N] [--window N] [--strict]`);
   process.exit(0);
 }
 
@@ -47,6 +48,8 @@ const aiTeam = path.join(project, ".ai-team");
 const json = hasFlag("--json");
 const strict = hasFlag("--strict");
 const out = getArg("--out");
+const WINDOW_DEFAULT = 30;
+const windowSize = Math.max(1, Number.parseInt(getArg("--window", String(WINDOW_DEFAULT)), 10) || WINDOW_DEFAULT);
 const MAX_FILES_DEFAULT = 2000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const maxFiles = Number.parseInt(getArg("--max-files", String(MAX_FILES_DEFAULT)), 10) || MAX_FILES_DEFAULT;
@@ -169,13 +172,22 @@ function isImplementationTask(task) {
 /* ------------------------------------------------------------------ */
 
 function conclusionOf(text) {
-  const match = text.match(/结论[：:]\s*\**\s*(修改后通过|不通过|通过)/);
-  return match ? match[1] : null;
+  const patterns = [
+    /结论[：:]\s*\**\s*(修改后通过|不通过|通过)/,
+    /\|\s*结论\s*\|\s*\**\s*(修改后通过|不通过|通过)/,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 function countOf(label, text) {
   const equal = text.match(new RegExp(`${label}\\s*[=:：]\\s*(\\d+)`, "i"));
   if (equal) return Number.parseInt(equal[1], 10);
+  const table = text.match(new RegExp(`\\|\\s*${label}\\s*\\|\\s*(\\d+)`, "i"));
+  if (table) return Number.parseInt(table[1], 10);
   const markers = text.match(new RegExp(`^\\s*[-*]\\s*\\[${label}(?:-\\d+)?\\]`, "gmi"));
   return markers ? markers.length : null;
 }
@@ -265,10 +277,14 @@ if (implementation.length === 0) {
   warn("no-implementation-tasks", "没有识别到实现任务；检查 TASKS.md owner/标题，或项目是否只含 review/维护任务");
 }
 
+const implementationTaskIds = new Set(implementation.map((task) => task.id));
 const fixTaskIds = new Set(
-  [...tasks.map((task) => task.id), ...evidence.map((item) => item.taskId)]
-    .filter((id) => /-R\d+$/.test(id))
-    .map((id) => baseTaskId(id)),
+  tasks
+    .filter((task) => /-R\d+$/.test(task.id)
+      && implementationTaskIds.has(baseTaskId(task.id))
+      && /engineer/i.test(task.owner)
+      && !/qa|review|security|devops|writer/i.test(task.owner))
+    .map((task) => baseTaskId(task.id)),
 );
 
 function escapeRegex(value) {
@@ -291,8 +307,9 @@ const taskRows = implementation.map((task) => {
   const rounds = reviews.reduce((max, item) => Math.max(max, item.round), 0);
   const blocked = /blocked/i.test(task.status);
   const hasFix = fixTaskIds.has(task.id);
+  const firstVerified = Boolean(first && first.conclusion && first.p0 !== null && first.p1 !== null);
   const firstPass = Boolean(
-    first
+    firstVerified
     && first.conclusion === "通过"
     && first.p0 === 0
     && first.p1 === 0
@@ -315,6 +332,7 @@ const taskRows = implementation.map((task) => {
     reviews: reviews.length,
     rounds,
     first_conclusion: first ? first.conclusion : null,
+    first_verified: firstVerified,
     first_pass: firstPass,
     p1_findings: p1Findings,
     p1_escapes: p1Escapes,
@@ -325,17 +343,31 @@ const taskRows = implementation.map((task) => {
 });
 
 const reviewed = taskRows.filter((row) => row.review_ready);
+const verified = reviewed.filter((row) => row.first_verified);
+const unverified = reviewed.filter((row) => !row.first_verified);
 const firstPass = taskRows.filter((row) => row.first_pass);
-const firstPassRate = reviewed.length ? firstPass.length / reviewed.length : null;
+const firstPassRate = verified.length ? firstPass.length / verified.length : null;
+const firstPassRateAll = reviewed.length ? firstPass.length / reviewed.length : null;
 const reviewReadyRate = taskRows.length ? reviewed.length / taskRows.length : null;
+const completedRows = taskRows.filter((row) => /^(done|review|qa)/i.test(row.status));
+const completedReviewed = completedRows.filter((row) => row.review_ready);
+const reviewReadyRateDone = completedRows.length ? completedReviewed.length / completedRows.length : null;
+const windowRows = completedRows.slice(-windowSize);
+const windowReviewed = windowRows.filter((row) => row.review_ready);
+const windowVerified = windowReviewed.filter((row) => row.first_verified);
+const windowFirstPass = windowReviewed.filter((row) => row.first_pass);
+const windowFirstPassRate = windowVerified.length ? windowFirstPass.length / windowVerified.length : null;
+const windowReviewReadyRate = windowRows.length ? windowReviewed.length / windowRows.length : null;
+const windowRoundsAvg = windowReviewed.length
+  ? windowReviewed.reduce((sum, row) => sum + row.rounds, 0) / windowReviewed.length
+  : null;
 const reviewRoundsAvg = reviewed.length
   ? reviewed.reduce((sum, row) => sum + row.rounds, 0) / reviewed.length
   : null;
 const p1Findings = evidence.reduce((sum, item) => sum + (item.p1 || 0), 0);
 const p1Escapes = taskRows.reduce((sum, row) => sum + row.p1_escapes, 0);
-const implementationIds = new Set(taskRows.map((row) => row.id));
 const p1Unattributed = evidence
-  .filter((item) => !implementationIds.has(item.baseTaskId))
+  .filter((item) => !implementationTaskIds.has(item.baseTaskId))
   .reduce((sum, item) => sum + (item.p1 || 0), 0);
 
 const isTeamSource = fs.existsSync(path.join(project, "team-manifest.json"))
@@ -345,11 +377,27 @@ const summary = {
   mode: isTeamSource ? "team-source" : "project",
   implementation_tasks: taskRows.length,
   reviewed_tasks: reviewed.length,
+  verified_reviewed_tasks: verified.length,
+  first_pass_unverified: unverified.length,
   first_pass_tasks: firstPass.length,
   first_pass_rate: firstPassRate,
   first_pass_pct: firstPassRate === null ? null : `${(firstPassRate * 100).toFixed(1)}%`,
+  first_pass_rate_all: firstPassRateAll,
+  first_pass_pct_all: firstPassRateAll === null ? null : `${(firstPassRateAll * 100).toFixed(1)}%`,
   review_ready_rate: reviewReadyRate,
   review_ready_pct: reviewReadyRate === null ? null : `${(reviewReadyRate * 100).toFixed(1)}%`,
+  review_ready_rate_done: reviewReadyRateDone,
+  review_ready_done_pct: reviewReadyRateDone === null ? null : `${(reviewReadyRateDone * 100).toFixed(1)}%`,
+  window_size: windowSize,
+  window_tasks: windowRows.length,
+  window_reviewed_tasks: windowReviewed.length,
+  window_first_pass_tasks: windowFirstPass.length,
+  window_first_pass_unverified: windowReviewed.length - windowVerified.length,
+  window_first_pass_rate: windowFirstPassRate,
+  window_first_pass_pct: windowFirstPassRate === null ? null : `${(windowFirstPassRate * 100).toFixed(1)}%`,
+  window_review_ready_rate: windowReviewReadyRate,
+  window_review_ready_pct: windowReviewReadyRate === null ? null : `${(windowReviewReadyRate * 100).toFixed(1)}%`,
+  window_review_rounds_avg: windowRoundsAvg,
   review_rounds_avg: reviewRoundsAvg,
   p1_findings: p1Findings,
   p1_escapes: p1Escapes,
@@ -386,8 +434,9 @@ const result = {
     warnings,
     errors,
     notes: [
-      "一次通过率分母 = 已进入 review 的实现任务；分子 = 首轮“通过”且 P0/P1=0、无 R1/R2、无 blocked。",
-      "review-ready = 已进入 review 的实现任务 / 全部实现任务。",
+      "一次通过率分母 = 已进入 review 且首审结论/P0/P1 可解析的实现任务；缺失结论或 P0/P1 的任务单列 unverified，不默认算失败。",
+      "首审结论同时支持 `结论：通过` 和 Markdown 表格 `| 结论 | 通过 |`；review 任务（如 TASK-XXXX-R1，owner=code-reviewer）不再计为父任务的 fix task。",
+      "review-ready 同时给全量、done/review 口径和最近 N 个完成/审查任务窗口；目标 10/30 任务应看窗口值。",
       "P1 escapes = 首轮之后 review 轮次或 security/QA 中的 P1 数；为代理指标，需人工复核。",
       "P1 findings 含未能归属到实现任务的 P1；p1_unattributed 单独列出，避免与 escapes 混淆。",
       "checkpoint 阻断与跨角色返工无法完全从 Markdown 推断；报告不替代 reviewer/Chief 判断。",
@@ -429,8 +478,13 @@ function markdown() {
   lines.push(`| Implementation tasks | ${summary.implementation_tasks} |`);
   lines.push(`| Reviewed tasks | ${summary.reviewed_tasks} |`);
   lines.push(`| First-pass tasks | ${summary.first_pass_tasks} |`);
-  lines.push(`| First-pass rate | ${summary.first_pass_pct ?? "n/a"} |`);
-  lines.push(`| Review-ready rate | ${summary.review_ready_pct ?? "n/a"} |`);
+  lines.push(`| First-pass unverified | ${summary.first_pass_unverified} |`);
+  lines.push(`| First-pass rate (verified) | ${summary.first_pass_pct ?? "n/a"} |`);
+  lines.push(`| First-pass rate (all reviewed) | ${summary.first_pass_pct_all ?? "n/a"} |`);
+  lines.push(`| Review-ready rate (all) | ${summary.review_ready_pct ?? "n/a"} |`);
+  lines.push(`| Review-ready rate (done/review) | ${summary.review_ready_done_pct ?? "n/a"} |`);
+  lines.push(`| Window ${summary.window_size} first-pass | ${summary.window_first_pass_pct ?? "n/a"} |`);
+  lines.push(`| Window ${summary.window_size} review-ready | ${summary.window_review_ready_pct ?? "n/a"} |`);
   lines.push(`| Average review rounds | ${summary.review_rounds_avg === null ? "n/a" : summary.review_rounds_avg.toFixed(2)} |`);
   lines.push(`| P1 findings | ${summary.p1_findings} |`);
   lines.push(`| P1 escapes | ${summary.p1_escapes} |`);
@@ -438,12 +492,12 @@ function markdown() {
   lines.push("");
   lines.push("## Tasks");
   lines.push("");
-  lines.push("| Task | Owner | Status | Reviews | Rounds | First conclusion | First pass | P1 findings | P1 escapes |");
-  lines.push("|---|---|---|---:|---:|---|---|---:|---:|");
+  lines.push("| Task | Owner | Status | Reviews | Rounds | First conclusion | Verified | First pass | P1 findings | P1 escapes |");
+  lines.push("|---|---|---|---:|---:|---|---|---|---:|---:|");
   for (const row of taskRows) {
-    lines.push(`| ${mdCell(row.id)} | ${mdCell(row.owner || "-")} | ${mdCell(row.status || "-")} | ${row.reviews} | ${row.rounds} | ${mdCell(row.first_conclusion || "-")} | ${row.first_pass ? "yes" : "no"} | ${row.p1_findings} | ${row.p1_escapes} |`);
+    lines.push(`| ${mdCell(row.id)} | ${mdCell(row.owner || "-")} | ${mdCell(row.status || "-")} | ${row.reviews} | ${row.rounds} | ${mdCell(row.first_conclusion || "-")} | ${row.first_verified ? "yes" : "no"} | ${row.first_pass ? "yes" : "no"} | ${row.p1_findings} | ${row.p1_escapes} |`);
   }
-  if (taskRows.length === 0) lines.push("| - | - | - | 0 | 0 | - | - | 0 | 0 |");
+  if (taskRows.length === 0) lines.push("| - | - | - | 0 | 0 | - | no | no | 0 | 0 |");
   lines.push("");
   lines.push("## Data quality");
   lines.push("");

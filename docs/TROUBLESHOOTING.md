@@ -92,7 +92,7 @@ commit/push、publish/deploy、`.env`/密钥、`git add -A` 都**不再**被权�
 
 **处理**：
 
-1. 先确认版本 ≥ `1.14.1`（在团队仓库根目录；安装副本不含 `scripts/`）：
+1. 先确认版本 ≥ `1.14.2`（在团队仓库根目录；安装副本不含 `scripts/`）：
 
 ```bash
 node scripts/version.mjs --update
@@ -189,7 +189,7 @@ Shell mvn -v                                                  Permission denied
 处理：
 
 1. 看提示里的 action/resource；
-2. 确认已安装 1.14.1：`node scripts/version.mjs --check`；
+2. 确认已安装 1.14.2：`node scripts/version.mjs --check`；
 3. 重开 `/ai-resume` 或新会话，让 OpenCode 重新加载 agent 配置；`version.mjs --update` 后会提示 `RESTART REQUIRED`；
 4. 如果新会话仍弹 `ask`，用 `permission-doctor` 检查是否有旧的 `ask` 规则；
 5. 项目级可覆盖：项目 `.opencode/opencode.jsonc` 的 `agents`。

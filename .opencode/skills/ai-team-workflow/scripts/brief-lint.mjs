@@ -308,6 +308,25 @@ if (reviewerAgent) {
   }
 }
 
+// P-66：engineer brief 的所有权必须含测试路径 glob/清单，并显式要求 ownership-check --diff。
+if (agent === "engineer") {
+  const ownershipValue = fieldValue(["## 所有权", "所有权：", "## 审查权"]);
+  const ownershipHasTests = isFilled(ownershipValue)
+    && (/(\*\*|\.test\.|\.spec\.|__tests__|src[\\/]test|tests?[\\/]|测试路径|测试文件)/i.test(ownershipValue)
+      || /无测试\s*[:：]\s*\S+/.test(ownershipValue));
+  present.ownership_test_paths = ownershipHasTests;
+  if (!ownershipHasTests) {
+    missing.push("ownership_test_paths");
+    valueReasons.set("ownership_test_paths", "ownership must include a test path glob/list, or explicit '无测试：<reason>'");
+  }
+  const ownershipCheckOk = /ownership-check(?:\.mjs)?[^\n]*--diff/i.test(text);
+  present.ownership_check = ownershipCheckOk;
+  if (!ownershipCheckOk) {
+    missing.push("ownership_check");
+    valueReasons.set("ownership_check", "brief must include ownership-check --diff before dispatch");
+  }
+}
+
 const ok = missing.length === 0;
 const result = {
   ok,
