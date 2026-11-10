@@ -96,6 +96,7 @@ const fields = {
   request_assertion: ["请求参数断言"],
   surface: ["变更面：", "变更面:"],
   delivery: ["交付面：", "交付面:"],
+  e2e_scope: ["受影响 E2E/集成测试：", "受影响 E2E/集成测试:"],
   delivery_status: ["交付状态：", "交付状态:"],
   skeleton_deferral: ["骨架延期：", "骨架延期:"],
 };
@@ -128,7 +129,7 @@ if (agent === "qa-engineer") {
   required.push("independent", "test_path");
 }
 if (agent === "engineer") {
-  required.push("review_entry", "gate_surfaces", "test_whitelist", "surface", "delivery");
+  required.push("review_entry", "gate_surfaces", "test_whitelist", "surface", "delivery", "e2e_scope");
 }
 
 const missing = [];
@@ -379,6 +380,36 @@ if (agent === "engineer") {
       valueReasons.set("skeleton_deferral", "骨架交付必须写 骨架延期：DEC/RISK + 复查日期 + 接线触发条件");
     }
   }
+
+  // P-72（1.16.0）：brief 必须显式列“受影响 E2E/集成测试”。
+  // 鉴权/事务/存储映射类变更最容易漏 E2E（riccon-ai AC-11 两次逃逸），
+  // 这类 brief 不接受“不适用”。
+  const e2eValue = fieldValue(["受影响 E2E/集成测试：", "受影响 E2E/集成测试:"]) || "";
+  const e2eNotApplicable = /不适用\s*(?:[（(][^）)]+[）)]|\s*[:：]\s*\S+)/.test(e2eValue);
+  const e2eHasTarget = /(E2E|集成测试|integration|\.test\.|\.spec\.|测试类|测试路径|TASK-)/i.test(e2eValue);
+  const e2eSensitive = /鉴权|认证|权限|事务|存储映射|SQL|迁移/i.test(keywordText);
+  let e2eOk = isFilled(e2eValue) && (e2eHasTarget || e2eNotApplicable);
+  let e2eReason = "受影响 E2E/集成测试 必须写测试类/路径，或 '不适用：<理由>'";
+  if (e2eOk && e2eNotApplicable && e2eSensitive) {
+    e2eOk = false;
+    e2eReason = "brief 涉及鉴权/事务/存储映射，不能只写“不适用”；必须列出受影响 E2E/集成测试类";
+  }
+  present.e2e_scope = e2eOk;
+  if (!e2eOk) {
+    missing.push("e2e_scope");
+    valueReasons.set("e2e_scope", e2eReason);
+  }
+}
+
+// P-73（1.16.0）：canonical 命令口径。PowerShell 原生管道/`Get-Content -Raw`
+// 在 Windows PowerShell 5.1 下会破坏 UTF-8 或改变输出，只 WARN 不阻断，
+// 避免历史 brief 全部失败；新 brief 应使用 cmd/sh 等价写法。
+const warnings = [];
+if (/Get-Content\s+(-Raw|-raw)\b/.test(text)) {
+  warnings.push("Get-Content -Raw 在 Windows PowerShell 5.1 下按 ANSI 解码会破坏 UTF-8；改用 node 读取文件或 Get-Content -Encoding utf8");
+}
+if (/\b(node|git|mvn|npm|pnpm|opencode|docker|kubectl)\b[^\n|]*\|\s*(Select-String|Select-Object|ForEach-Object|Where-Object)\b/i.test(text)) {
+  warnings.push("PowerShell 原生命令管道会二次编码；brief 改用 exit code + 文件重定向的 cmd/sh 等价命令");
 }
 
 const ok = missing.length === 0;
@@ -390,6 +421,7 @@ const result = {
   present,
   missing,
   value_issues: Object.fromEntries(valueReasons),
+  warnings,
   needs_transaction: needsTransaction,
   needs_runtime: needsRuntime,
 };
@@ -409,6 +441,7 @@ if (json) {
       console.log(`  MISSING ${key}${reason ? ` (${reason})` : valueMissing.has(key) ? " (value empty or placeholder)" : ""}`);
     }
   }
+  for (const warning of warnings) console.log(`  WARN  ${warning}`);
 }
 
 process.exit(ok ? 0 : 1);

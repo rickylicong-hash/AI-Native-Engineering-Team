@@ -3,6 +3,21 @@
 All notable changes to the AI Native Engineering Team are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## [1.16.0] - 2026-11-10
+
+### Added
+
+- **端点里程碑口径**：`templates/ENDPOINT-MAP.json` 新增 `current_milestone` / `milestones` / 每条 `milestone`；`endpoint-coverage-check.mjs` 新增 `--milestone`（默认读 map 的 `current_milestone`），到期里程碑的 `deferred` 端点必须有 `DEC-*`/`RISK-*` 授权，否则 FAIL。`--allow-missing-milestone` 提供一个版本的迁移过渡。
+- **延期授权字段**：`page-coverage-check.mjs` / `endpoint-coverage-check.mjs` 在 `deferral.decision` 为 `TASK-*` 时强制 `authorized_by: DEC-*/RISK-*`；只建任务不算“授权延期”。授权 ID 在 `state/DECISIONS.md`/`RISKS.md` 查不到时给 warning。
+- **Brief 受影响 E2E 字段（P-72 关闭）**：engineer brief 新增必填 `受影响 E2E/集成测试：`；涉及鉴权/事务/存储映射时不接受“不适用”，必须列出 E2E/集成测试类。
+- **Canonical 命令告警（P-73 关闭）**：`brief-lint.mjs` 检出 `Get-Content -Raw` 或 PowerShell 原生管道（`node ... | Select-Object`）时输出 WARN，提示改用 cmd/sh 等价命令或 node 读取。
+- **Checkpoint 任务行校验**：`checkpoint-check.mjs --handoff/--mark` 扫描最近 50 条提交主题，要求 `TASK-*` 在 `TASKS.md` 有行（支持 baseline_id 前缀匹配），缺失即 FAIL，堵住“checkpoint 提交了但账本没行”。
+
+### Fixed
+
+- **`quality-report.mjs` 多任务 review 归属**：一份 review 在标题同时审多个任务（如 `REV-0058 — TASK-0263-R1 + TASK-0264`）时逐单归属；同一文件同一父任务去重，避免重复计轮次。
+- **轮次解析**：`-R<n>` 只认 `TASK-<id>-R<n>`，不再把评审编号（`REV-0013-R1`）当成任务轮次；`P1 findings`/`P1 unattributed` 按文件去重，避免多任务归属后重复求和。
+
 ## [1.15.0] - 2026-11-10
 
 ### Added

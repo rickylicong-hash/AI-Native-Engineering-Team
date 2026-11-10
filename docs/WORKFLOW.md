@@ -158,7 +158,7 @@ Chief 拆任务：
 - 关键路径/并行路径；
 - 风险/回退。
 
-**交付面覆盖（1.15.0）**：T3/T4 或含 UI/API 的项目，G3 必须初始化 `.ai-team/design/ux/PAGE-MAP.json` 与 `.ai-team/design/architecture/ENDPOINT-MAP.json`；每个当前里程碑 P0 页面/契约端点必须映射到任务，或写 `DEC-*`/`RISK-*` 延期 + 复查日期 + 接线触发条件。没有账本不得进入实现。
+**交付面覆盖（1.15.0 / 1.16.0）**：T3/T4 或含 UI/API 的项目，G3 必须初始化 `.ai-team/design/ux/PAGE-MAP.json` 与 `.ai-team/design/architecture/ENDPOINT-MAP.json`；每个当前里程碑 P0 页面/契约端点必须映射到任务，或写 `DEC-*`/`RISK-*` 延期 + 复查日期 + 接线触发条件（`decision` 写 `TASK-*` 时必须带 `authorized_by`）。端点账本每条要写 `milestone`。没有账本不得进入实现。
 
 DoR 检查后进入实现。
 
@@ -183,7 +183,7 @@ Code Reviewer 与 QA 可并行：
 - 修复由 owner 执行；
 - 复审只回归原阻断项。
 
-**交付面覆盖（1.15.0）**：G5 必须运行 `page-coverage-check.mjs` 与 `endpoint-coverage-check.mjs`（有对应 map 时）；当前里程碑 P0 页面不得无依据占位，契约端点不得无实现/无延期。覆盖率写入 REVIEW/STATUS；失败不得宣称 G5 通过。
+**交付面覆盖（1.15.0 / 1.16.0）**：G5 必须运行 `page-coverage-check.mjs` 与 `endpoint-coverage-check.mjs`（有对应 map 时）；当前里程碑 P0 页面不得无依据占位，契约端点不得无实现/无延期，到期里程碑的延期必须由 DEC/RISK 授权。覆盖率写入 REVIEW/STATUS；失败不得宣称 G5 通过。
 
 ### G6 Secure
 
@@ -217,16 +217,18 @@ Chief：
 - 遗留项；
 - HANDOFF。
 
-### 4.1 交付面覆盖检查（1.15.0）
+### 4.1 交付面覆盖检查（1.15.0 / 1.16.0）
 
 ```powershell
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\page-coverage-check.mjs" --project . --json
 node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\endpoint-coverage-check.mjs" --project . --json
+node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\endpoint-coverage-check.mjs" --project . --milestone M1 --json
 ```
 
 - 输入：`.ai-team/design/ux/PAGE-MAP.json`、`.ai-team/design/architecture/ENDPOINT-MAP.json`（模板在 skill `templates/`）。
 - 页面：`real` 必须有证据；已到期 P0 占位必须有 `DEC-*`/`RISK-*` + 复查日期 + 接线触发；`skeleton` 必须写升级条件。
-- 端点：契约端点必须有 `implemented` 证据或 `deferred` 决策；不允许“契约有、实现无”。
+- 端点：契约端点必须有 `implemented` 证据或 `deferred` 决策；1.16.0 起每条要写 `milestone`，到期里程碑的 deferred 必须有 DEC/RISK。
+- 延期授权：`decision` 写 `TASK-*` 时必须有 `authorized_by: DEC-*/RISK-*`；只建任务不算授权延期。
 - `gate-check --mode gate` 自动运行两项；`checkpoint-check --sync-docs` 把 `Surface:` 写进 HANDOFF/STATUS。
 - 没有 map 的老项目只 warning；新 T3/T4/UI/API 项目必须在 G3 建账本。
 
@@ -244,7 +246,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\brief-lint.mjs" --b
 - **基础**：角色、技能：、任务 ID、Track / 阶段、目标、背景与输入、所有权、约束。
 - **设计与契约**：设计预审：、装配清单：、契约影响：只引章节号/字段名，不复制定义、回归范围、事务边界与部分提交、旧行为反证、边界四问。
 - **执行与验证**：验收标准、必须执行、脚本参数：以 `<script> --help` 实跑为准、验证预算、独立验证：、证据位置：、证据门禁、测试路径：、构建隔离：、P2 处置：、运行时取证、Done gate。
-- **交付面（1.15.0）**：`变更面：FE | BE | full-stack | infra`、`交付面：P-XXX-01 和/或 /v1/...`、`交付状态：完整 | 骨架`、`骨架延期：DEC/RISK + 复查日期 + 接线触发条件`。UI brief 缺页面 ID、BE brief 缺端点（且无“无端点：<理由>”）时 lint FAIL。
+- **交付面（1.15.0 / 1.16.0）**：`变更面：FE | BE | full-stack | infra`、`交付面：P-XXX-01 和/或 /v1/...`、`交付状态：完整 | 骨架`、`骨架延期：DEC/RISK + 复查日期 + 接线触发条件`、`受影响 E2E/集成测试：<测试类/路径 | 不适用：<理由>>`。UI brief 缺页面 ID、BE brief 缺端点（且无“无端点：<理由>”）、鉴权/事务/存储映射 brief 只写“不适用”时 lint FAIL。
 - **角色条件**：engineer 的 Review-entry 自检、门禁面、必然受影响测试/脚本、请求参数断言；`所有权` 必须含测试路径 glob/清单（或显式 `无测试：<理由>`）并写 `ownership-check --diff`。
 - **收口**：证据要求、禁止、回报格式。
 

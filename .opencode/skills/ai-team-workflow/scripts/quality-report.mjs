@@ -200,6 +200,22 @@ function taskIdOf(text) {
   return match ? match[0] : null;
 }
 
+/**
+ * 1.16.0：一份 review 可以同时审多个任务（如 `REV-0058 — TASK-0263-R1 + TASK-0264`）。
+ * 只从标题区（前 3 行）取全部任务 ID：多任务报告会在标题里同时列出；
+ * 正文/被审单里的历史任务引用不算本次归属，避免过度归因。
+ */
+function taskIdsOf(text) {
+  const head = text.split(/\r?\n/).slice(0, 3).join("\n");
+  const ids = [];
+  for (const match of head.matchAll(/\bTASK-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*/g)) {
+    if (!ids.includes(match[0])) ids.push(match[0]);
+  }
+  if (ids.length > 0) return ids.slice(0, 3);
+  const fallback = text.split(/\r?\n/).slice(0, 30).join("\n").match(/\bTASK-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*/);
+  return fallback ? [fallback[0]] : [];
+}
+
 function baseTaskId(id) {
   return id.replace(/-R\d+$/, "");
 }
@@ -208,13 +224,10 @@ function roundOf(file, text, taskId) {
   const base = path.basename(file);
   const fullToken = taskId.replace(/^TASK-/, "");
   const baseToken = baseTaskId(taskId).replace(/^TASK-/, "");
+  // 1.16.0：只在 `TASK-<id>` 之后找 -R<n>，避免把评审编号（REV-0013-R1）误当成任务轮次。
   for (const token of [fullToken, baseToken]) {
-    const idx = base.lastIndexOf(token);
-    if (idx < 0) continue;
-    const rest = base.slice(idx + token.length);
-    const suffix = rest.match(/^-R(\d+)/i);
-    if (suffix) return 1 + Number.parseInt(suffix[1], 10);
-    return 1;
+    const matched = base.match(new RegExp(`TASK-${escapeRegex(token)}(?:-R(\\d+))?`, "i"));
+    if (matched) return matched[1] ? 1 + Number.parseInt(matched[1], 10) : 1;
   }
   const fromText = text.match(/(?:第\s*|轮次[：:]\s*R?)(\d+)\s*轮/i);
   return fromText ? Number.parseInt(fromText[1], 10) : 1;
@@ -222,7 +235,8 @@ function roundOf(file, text, taskId) {
 
 function parseEvidenceFile(file, phase) {
   const text = readText(file);
-  const id = taskIdOf(text);
+  const ids = taskIdsOf(text);
+  const id = ids[0] || taskIdOf(text);
   if (!id) {
     warn("review-without-task-id", `${path.relative(project, file)} 未找到 TASK-* ID`);
     return null;
@@ -235,8 +249,10 @@ function parseEvidenceFile(file, phase) {
     file: path.relative(project, file),
     phase,
     taskId: id,
+    taskIds: ids.length > 0 ? ids : [id],
     baseTaskId: baseTaskId(id),
     round: roundOf(file, text, id),
+    roundById: Object.fromEntries((ids.length > 0 ? ids : [id]).map((taskId) => [taskId, roundOf(file, text, taskId)])),
     conclusion,
     p0: countOf("P0", text),
     p1: countOf("P1", text),
@@ -254,10 +270,27 @@ const evidenceFiles = [
 ];
 
 const evidence = [];
+const evidenceByKey = new Map();
 for (const item of evidenceFiles) {
   const parsed = parseEvidenceFile(item.file, item.phase);
-  if (parsed) evidence.push(parsed);
+  if (!parsed) continue;
+  const ids = parsed.taskIds && parsed.taskIds.length > 0 ? parsed.taskIds : [parsed.taskId];
+  for (const id of ids) {
+    const base = baseTaskId(id);
+    const entry = {
+      ...parsed,
+      taskId: id,
+      baseTaskId: base,
+      round: parsed.roundById && parsed.roundById[id] ? parsed.roundById[id] : parsed.round,
+    };
+    // 同一文件同一父任务只保留一条：优先父任务 ID，避免“TASK-0013 + TASK-0013-R1”
+    // 在同一标题里出现时被算成两轮 review。
+    const key = `${parsed.file}::${base}`;
+    const existing = evidenceByKey.get(key);
+    if (!existing || (entry.taskId === base && existing.taskId !== base)) evidenceByKey.set(key, entry);
+  }
 }
+evidence.push(...evidenceByKey.values());
 
 if (scanState.truncated) {
   warn("scan-truncated", `扫描达到 --max-files=${maxFiles}，结果可能不完整`);
@@ -366,10 +399,14 @@ const windowRoundsAvg = windowReviewed.length
 const reviewRoundsAvg = reviewed.length
   ? reviewed.reduce((sum, row) => sum + row.rounds, 0) / reviewed.length
   : null;
-const p1Findings = evidence.reduce((sum, item) => sum + (item.p1 || 0), 0);
+const p1Findings = [...new Map(evidence.map((item) => [item.file, item])).values()]
+  .reduce((sum, item) => sum + (item.p1 || 0), 0);
 const p1Escapes = taskRows.reduce((sum, row) => sum + row.p1_escapes, 0);
-const p1Unattributed = evidence
-  .filter((item) => !implementationTaskIds.has(item.baseTaskId))
+const attributedFiles = new Set(
+  evidence.filter((item) => implementationTaskIds.has(item.baseTaskId)).map((item) => item.file),
+);
+const p1Unattributed = [...new Map(evidence.map((item) => [item.file, item])).values()]
+  .filter((item) => !attributedFiles.has(item.file))
   .reduce((sum, item) => sum + (item.p1 || 0), 0);
 
 const isTeamSource = fs.existsSync(path.join(project, "team-manifest.json"))

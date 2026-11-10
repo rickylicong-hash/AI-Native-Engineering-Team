@@ -133,7 +133,7 @@ function growthText({ lastRetroNew, lastRetroClosed, teamOpenLast, teamOpenPrev,
   return frontmatter;
 }
 
-function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配", ownership = "只允许修改 `src/**`、`tests/**`；禁止 `docs/**`", mustExecute = "node scripts/test-gates.mjs；node ownership-check.mjs --brief .ai-team/tasks/TASK-BRIEF-FIXTURE.md --diff .ai-team/work/changed-files.txt", surface = "BE", delivery = "/v1/test", deliveryStatus = "完整", skeletonDeferral = "不适用（完整交付）" } = {}) {
+function engineerBrief({ goal = "实现一个门禁脚本", reviewEntry = "语义源：ADR §1 → 实现 → 测试；P1 场景逐项对照已填", gateSurfaces = "≤2：growth-check、brief-lint", testWhitelist = "无（仅生产代码）", requestAssertion = "不适用（非检索类任务）", verificationBudget = "V0/V1 迭代用定向；V2 全量只对冻结候选提交跑 1 条并登记 baseline_id；commit+工作区指纹必须匹配", ownership = "只允许修改 `src/**`、`tests/**`；禁止 `docs/**`", mustExecute = "node scripts/test-gates.mjs；node ownership-check.mjs --brief .ai-team/tasks/TASK-BRIEF-FIXTURE.md --diff .ai-team/work/changed-files.txt", surface = "BE", delivery = "/v1/test", deliveryStatus = "完整", skeletonDeferral = "不适用（完整交付）", e2e = "不适用：fixture 无相关路径" } = {}) {
   return `角色：ai-team/engineer
 技能：ai-team-workflow
 任务 ID：TASK-BRIEF-FIXTURE
@@ -148,6 +148,7 @@ Track / 阶段：T2 / G4
 交付面：${delivery}
 交付状态：${deliveryStatus}
 骨架延期：${skeletonDeferral}
+受影响 E2E/集成测试：${e2e}
 Review-entry 自检：${reviewEntry}
 门禁面：${gateSurfaces}
 必然受影响测试/脚本：${testWhitelist}
@@ -487,12 +488,17 @@ async function main() {
       { name: "brief-skeleton-without-deferral", expect: 1, text: engineerBrief({ deliveryStatus: "骨架", skeletonDeferral: "TBD" }) },
       { name: "brief-fe-with-page", expect: 0, text: engineerBrief({ surface: "FE", delivery: "P-XXX-01", deliveryStatus: "完整", skeletonDeferral: "不适用（完整交付）" }) },
       { name: "brief-skeleton-with-deferral", expect: 0, text: engineerBrief({ deliveryStatus: "骨架", skeletonDeferral: "DEC-0124，复查 2026-12-07，端点合并后接线并补 E2E" }) },
+      { name: "brief-missing-e2e-scope", expect: 1, text: engineerBrief().replace(/^受影响 E2E\/集成测试：.*$/m, "") },
+      { name: "brief-auth-e2e-not-applicable", expect: 1, text: engineerBrief({ goal: "修改鉴权链路并补权限校验", e2e: "不适用（无相关路径）" }) },
+      { name: "brief-auth-e2e-target", expect: 0, text: engineerBrief({ goal: "修改鉴权链路并补权限校验", e2e: "SessionManagementE2ETest、AuthServiceTest" }) },
+      { name: "brief-powershell-pipe-warns", expect: 0, text: engineerBrief({ mustExecute: "node ownership-check.mjs --brief .ai-team/tasks/TASK-BRIEF-FIXTURE.md --diff .ai-team/work/changed-files.txt；Get-Content -Raw docs/x.md；node scripts/test-gates.mjs | Select-Object -First 5" }), warn: /WARN\s+.*Get-Content -Raw/ },
     ];
     for (const scenario of briefScenarios) {
       const briefFile = path.join(briefDir, `${scenario.name}.md`);
       write(briefFile, scenario.text);
       const result = run(briefLint, ["--brief", briefFile, "--agent", "ai-team/engineer"], briefDir);
-      check(`brief ${scenario.name}`, result.status === scenario.expect, `expected exit ${scenario.expect}, got ${result.status}; ${(result.stdout || result.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+      const warnOk = !scenario.warn || scenario.warn.test(result.stdout || "");
+      check(`brief ${scenario.name}`, result.status === scenario.expect && warnOk, `expected exit ${scenario.expect}${scenario.warn ? " + warn" : ""}, got ${result.status}; ${(result.stdout || result.stderr || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
     }
   } finally {
     fs.rmSync(briefDir, { recursive: true, force: true });
@@ -529,6 +535,16 @@ async function main() {
     let pagePassData = null;
     try { pagePassData = JSON.parse(pagePass.stdout || ""); } catch { pagePassData = null; }
     check("page coverage accepts documented deferral", pagePass.status === 0 && pagePassData?.ok === true, `${pagePass.status}; ${(pagePass.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    write(mapFile, JSON.stringify(baseMap({ decision: "TASK-0239", review_at: "2026-12-07", upgrade_trigger: "TASK done 后接线" }), null, 2));
+    const pageTaskOnly = run(pageCoverage, ["--project", pageDir, "--json"], pageDir);
+    let pageTaskOnlyData = null;
+    try { pageTaskOnlyData = JSON.parse(pageTaskOnly.stdout || ""); } catch { pageTaskOnlyData = null; }
+    check("page coverage rejects TASK deferral without authorized_by", pageTaskOnly.status === 1 && (pageTaskOnlyData?.errors || []).some((line) => /authorized_by/.test(line)), `${pageTaskOnly.status}; ${(pageTaskOnly.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    write(mapFile, JSON.stringify(baseMap({ decision: "TASK-0239", authorized_by: "DEC-0130", review_at: "2026-12-07", upgrade_trigger: "TASK done 后接线" }), null, 2));
+    const pageTaskAuthorized = run(pageCoverage, ["--project", pageDir, "--json"], pageDir);
+    check("page coverage accepts TASK deferral with authorized_by", pageTaskAuthorized.status === 0, `${pageTaskAuthorized.status}; ${(pageTaskAuthorized.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
   } finally {
     fs.rmSync(pageDir, { recursive: true, force: true });
   }
@@ -566,6 +582,45 @@ async function main() {
     let endpointPassData = null;
     try { endpointPassData = JSON.parse(endpointPass.stdout || ""); } catch { endpointPassData = null; }
     check("endpoint coverage accepts documented deferral", endpointPass.status === 0 && endpointPassData?.summary?.covered === 2, `${endpointPass.status}; ${(endpointPass.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    // 1.16.0：里程碑口径 + TASK 延期授权
+    const milestoneMap = (deferral, extra = {}) => ({
+      schema: 1,
+      current_milestone: "M1",
+      milestones: ["M1", "M2"],
+      endpoints: [
+        { method: "GET", path: "/v1/ok", milestone: "M1", status: "implemented", evidence: "server/OkController.java" },
+        { method: "GET", path: "/v1/missing", milestone: "M1", status: "deferred", deferral },
+      ],
+      ...extra,
+    });
+    write(mapFile, JSON.stringify(milestoneMap({ decision: "TASK-0245", review_at: "2026-12-07" }), null, 2));
+    const dueTaskOnly = run(endpointCoverage, ["--project", endpointDir, "--json"], endpointDir);
+    let dueTaskOnlyData = null;
+    try { dueTaskOnlyData = JSON.parse(dueTaskOnly.stdout || ""); } catch { dueTaskOnlyData = null; }
+    check("endpoint coverage rejects due-milestone TASK-only deferral", dueTaskOnly.status === 1 && (dueTaskOnlyData?.errors || []).some((line) => /authorized_by|due milestone/.test(line)), `${dueTaskOnly.status}; ${(dueTaskOnly.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    write(mapFile, JSON.stringify(milestoneMap({ decision: "DEC-0130", review_at: "2026-12-07", upgrade_trigger: "模块任务完成后接线" }), null, 2));
+    const dueAuthorized = run(endpointCoverage, ["--project", endpointDir, "--json"], endpointDir);
+    let dueAuthorizedData = null;
+    try { dueAuthorizedData = JSON.parse(dueAuthorized.stdout || ""); } catch { dueAuthorizedData = null; }
+    check("endpoint coverage accepts due-milestone DEC deferral", dueAuthorized.status === 0 && dueAuthorizedData?.summary?.due?.deferred === 1, `${dueAuthorized.status}; ${(dueAuthorized.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+
+    write(mapFile, JSON.stringify({
+      schema: 1,
+      current_milestone: "M1",
+      milestones: ["M1"],
+      endpoints: [
+        { method: "GET", path: "/v1/ok", status: "implemented", evidence: "server/OkController.java" },
+        { method: "GET", path: "/v1/missing", status: "deferred", deferral: { decision: "DEC-0130", review_at: "2026-12-07" } },
+      ],
+    }, null, 2));
+    const noMilestone = run(endpointCoverage, ["--project", endpointDir, "--json"], endpointDir);
+    const noMilestoneAllowed = run(endpointCoverage, ["--project", endpointDir, "--json", "--allow-missing-milestone"], endpointDir);
+    let noMilestoneData = null;
+    try { noMilestoneData = JSON.parse(noMilestone.stdout || ""); } catch { noMilestoneData = null; }
+    check("endpoint coverage requires milestone when current_milestone set", noMilestone.status === 1 && noMilestoneData?.summary?.missing_milestone === 2, `${noMilestone.status}; ${(noMilestone.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
+    check("endpoint coverage allow-missing-milestone relaxes to warning", noMilestoneAllowed.status === 0, `${noMilestoneAllowed.status}; ${(noMilestoneAllowed.stdout || "").trim().split(/\r?\n/).slice(-4).join(" | ")}`);
   } finally {
     fs.rmSync(endpointDir, { recursive: true, force: true });
   }
@@ -651,6 +706,41 @@ async function main() {
       check("quality strict empty fails", strictRun.status === 1, `${strictRun.status}; ${(strictRun.stdout || strictRun.stderr || "").trim().split(/\r?\n/).slice(-3).join(" | ")}`);
     } finally {
       fs.rmSync(emptyQualityDir, { recursive: true, force: true });
+    }
+
+    // 1.16.0：一份 review 同时审多个任务时，必须逐单归属。
+    const multiDir = tmp("quality-multi");
+    try {
+      write(path.join(multiDir, ".ai-team", "state", "TASKS.md"), [
+        "# Tasks",
+        "",
+        "| ID | 标题 | Owner | 依赖 | 状态 | 验收 | 证据 |",
+        "|---|---|---|---|---|---|---|",
+        "| TASK-5001 | 实现甲 | ai-team/engineer | - | done | AC | - |",
+        "| TASK-5002 | 实现乙 | ai-team/engineer | - | done | AC | - |",
+        "",
+      ].join("\n"));
+      write(path.join(multiDir, ".ai-team", "reviews", "REV-5001-TASK-5001-5002.md"), [
+        "# REV-5001 — TASK-5001 + TASK-5002",
+        "",
+        "- 被审单：",
+        "  - `TASK-5001`：甲",
+        "  - `TASK-5002`：乙",
+        "",
+        "- 结论：通过",
+        "- P0=0；P1=0；P2=0",
+        "",
+      ].join("\n"));
+      const multiRun = run(qualityReport, ["--project", multiDir, "--json"], multiDir);
+      let multiData = null;
+      try { multiData = JSON.parse(multiRun.stdout || ""); } catch { multiData = null; }
+      const rows = multiData?.tasks || [];
+      const first = rows.find((row) => row.id === "TASK-5001");
+      const second = rows.find((row) => row.id === "TASK-5002");
+      check("quality attributes multi-task review to every task", multiRun.status === 0 && first?.reviews === 1 && second?.reviews === 1, JSON.stringify({ first: first?.reviews, second: second?.reviews }));
+      check("quality multi-task review-ready done", multiData?.summary?.review_ready_rate_done === 1, String(multiData?.summary?.review_ready_rate_done));
+    } finally {
+      fs.rmSync(multiDir, { recursive: true, force: true });
     }
   } finally {
     fs.rmSync(qualityDir, { recursive: true, force: true });

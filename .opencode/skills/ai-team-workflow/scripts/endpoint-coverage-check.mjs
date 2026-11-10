@@ -10,12 +10,16 @@
  * `| METHOD | \`/path\` |` 表，校验：
  *   - 每个契约端点都有 map 条目；
  *   - `implemented` 的证据文件存在；
- *   - `deferred` 有 DEC/RISK + 复查日期；
+ *   - `deferred` 有 DEC/RISK + 复查日期；`TASK-*` 只能作为承接任务，
+ *     必须带 `authorized_by`（DEC 或 RISK）（1.16.0）；
+ *   - 1.16.0：map 声明 `current_milestone`（或传 `--milestone`）时，条目必须有
+ *     `milestone`，且**到期里程碑的 deferred 端点**必须由 DEC/RISK 授权；
  *   - map 中多出的端点给出 stale warning。
  *
  * 用法：
  *   node endpoint-coverage-check.mjs --project .
  *   node endpoint-coverage-check.mjs --project . --json
+ *   node endpoint-coverage-check.mjs --project . --milestone M1
  *   node endpoint-coverage-check.mjs --project . --contract .ai-team/design/architecture/API-CONTRACTS.md
  *   node endpoint-coverage-check.mjs --project . --require-map --strict
  *
@@ -34,7 +38,7 @@ const getArg = (name, fallback = null) => {
 const hasFlag = (name) => args.includes(name);
 
 if (hasFlag("--help") || hasFlag("-h")) {
-  console.log("Usage: node endpoint-coverage-check.mjs [--project DIR] [--contract FILE] [--map FILE] [--json] [--strict] [--require-map]");
+  console.log("Usage: node endpoint-coverage-check.mjs [--project DIR] [--contract FILE] [--map FILE] [--milestone M1] [--json] [--strict] [--require-map] [--allow-missing-milestone]");
   process.exit(0);
 }
 
@@ -44,6 +48,8 @@ const mapFile = path.resolve(project, getArg("--map", ".ai-team/design/architect
 const json = hasFlag("--json");
 const strict = hasFlag("--strict");
 const requireMap = hasFlag("--require-map");
+const milestoneOverride = getArg("--milestone", null);
+const allowMissingMilestone = hasFlag("--allow-missing-milestone");
 
 if (!fs.existsSync(project) || !fs.statSync(project).isDirectory()) {
   console.error(`ERROR project not found: ${project}`);
@@ -180,6 +186,30 @@ const implemented = [];
 const deferred = [];
 const missing = [];
 
+const DEFAULT_MILESTONES = ["M1", "M2", "M3", "M4"];
+const milestones = Array.isArray(data.milestones) && data.milestones.length > 0
+  ? data.milestones.map((item) => String(item).trim()).filter(Boolean)
+  : DEFAULT_MILESTONES;
+const rank = new Map(milestones.map((item, index) => [item, index]));
+const current = String(milestoneOverride || data.current_milestone || "").trim();
+if (current && !rank.has(current)) {
+  errors.push(`current_milestone "${current}" is not in milestones (${milestones.join(", ")})`);
+}
+const currentRank = rank.has(current) ? rank.get(current) : Number.POSITIVE_INFINITY;
+const dueKeys = [];
+let missingMilestone = 0;
+
+// 1.16.0：TASK-* 只是承接任务，授权必须来自 DEC/RISK。
+let authStateText = null;
+function authorizationExists(id) {
+  if (authStateText === null) {
+    const files = ["DECISIONS.md", "RISKS.md"].map((name) => path.join(project, ".ai-team", "state", name));
+    authStateText = files.filter((file) => fs.existsSync(file)).map((file) => read(file)).join("\n");
+  }
+  if (!authStateText.trim()) return true;
+  return authStateText.includes(id);
+}
+
 function evidenceExists(value) {
   const values = Array.isArray(value) ? value : value ? [value] : [];
   return values.some((item) => fs.existsSync(path.resolve(project, String(item))));
@@ -191,6 +221,20 @@ for (const [key, endpoint] of contractEndpoints) {
     missing.push(key);
     continue;
   }
+  const entryMilestone = String(entry.milestone || "").trim();
+  let due = false;
+  if (current) {
+    if (!entryMilestone) {
+      missingMilestone++;
+      if (allowMissingMilestone) warnings.push(`${key}: milestone missing (allowed by --allow-missing-milestone)`);
+      else errors.push(`${key}: milestone is required when current_milestone is set (add "milestone": "M1..M4")`);
+    } else if (!rank.has(entryMilestone)) {
+      errors.push(`${key}: milestone "${entryMilestone}" is not in milestones (${milestones.join(", ")})`);
+    } else {
+      due = rank.get(entryMilestone) <= currentRank;
+    }
+  }
+  if (due) dueKeys.push(key);
   const status = String(entry.status || "").trim().toLowerCase();
   if (status === "implemented") {
     if (!evidenceExists(entry.evidence)) {
@@ -204,9 +248,20 @@ for (const [key, endpoint] of contractEndpoints) {
     const deferral = entry.deferral || {};
     const decision = String(deferral.decision || "").trim();
     const reviewAt = String(deferral.review_at || "").trim();
+    const authorizedBy = String(deferral.authorized_by || "").trim();
     if (!/^(DEC|RISK|TASK)-[A-Za-z0-9-]+$/.test(decision)) errors.push(`${key}: deferred requires deferral.decision DEC-*/RISK-*/TASK-*`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(reviewAt)) errors.push(`${key}: deferred requires deferral.review_at YYYY-MM-DD`);
     else if (reviewAt < today) warnings.push(`${key}: deferral review_at ${reviewAt} is overdue`);
+    if (/^TASK-/.test(decision)) {
+      if (!/^(DEC|RISK)-[A-Za-z0-9-]+$/.test(authorizedBy)) {
+        errors.push(`${key}: deferral.decision ${decision} requires deferral.authorized_by DEC-*/RISK-*`);
+      } else if (!authorizationExists(authorizedBy)) {
+        warnings.push(`${key}: deferral.authorized_by ${authorizedBy} not found in state/DECISIONS.md or state/RISKS.md`);
+      }
+    }
+    if (due && !/^(DEC|RISK)-/.test(decision) && !/^(DEC|RISK)-[A-Za-z0-9-]+$/.test(authorizedBy)) {
+      errors.push(`${key}: deferred endpoint in due milestone ${entryMilestone} needs DEC/RISK decision or authorized_by (task backlog is not a decision)`);
+    }
     deferred.push(key);
     continue;
   }
@@ -219,6 +274,8 @@ for (const key of map.keys()) {
 }
 
 const covered = implemented.length + deferred.length;
+const dueImplemented = dueKeys.filter((key) => implemented.includes(key)).length;
+const dueDeferred = dueKeys.filter((key) => deferred.includes(key)).length;
 const summary = {
   contract_endpoints: contractEndpoints.size,
   map_entries: map.size,
@@ -227,6 +284,21 @@ const summary = {
   covered,
   missing: missing.length,
   coverage_rate: contractEndpoints.size > 0 ? covered / contractEndpoints.size : null,
+  current_milestone: current || null,
+  missing_milestone: missingMilestone,
+  due: {
+    endpoints: dueKeys.length,
+    implemented: dueImplemented,
+    deferred: dueDeferred,
+  },
+  by_milestone: Object.fromEntries(milestones.map((milestone) => {
+    const selected = entries.filter((entry) => String(entry.milestone || "").trim() === milestone);
+    return [milestone, {
+      total: selected.length,
+      implemented: selected.filter((entry) => String(entry.status || "").toLowerCase() === "implemented").length,
+      deferred: selected.filter((entry) => String(entry.status || "").toLowerCase() === "deferred").length,
+    }];
+  })),
 };
 const ok = errors.length === 0 && (!strict || warnings.length === 0);
 const result = {
@@ -249,6 +321,9 @@ if (json) {
   console.log(`contract: ${contractFile}`);
   console.log(`map:      ${mapFile}`);
   console.log(`endpoints:${summary.implemented} implemented + ${summary.deferred} deferred / ${summary.contract_endpoints} (${pct}); missing ${summary.missing}`);
+  if (summary.current_milestone) {
+    console.log(`milestone:${summary.current_milestone} due ${summary.due.implemented} implemented + ${summary.due.deferred} deferred / ${summary.due.endpoints}; missing milestone ${summary.missing_milestone}`);
+  }
   console.log(`result:   ${ok ? "PASS" : "FAIL"}`);
   for (const error of errors) console.log(`  ERROR ${error}`);
   for (const warning of result.warnings) console.log(`  WARN  ${warning}`);

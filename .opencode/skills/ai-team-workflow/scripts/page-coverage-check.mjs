@@ -10,6 +10,8 @@
  *   - `real` 必须有存在的证据文件；
  *   - 已到期里程碑的 P0 页若不是 real，必须有 `DEC-*`/`RISK-*` 延期、复查日期
  *     和接线触发条件；
+ *   - 1.16.0：`deferral.decision` 允许 `TASK-*`，但必须带 `authorized_by`（DEC 或 RISK），
+ *     否则只能算“挂起”而不是“授权延期”；
  *   - `skeleton` 必须写清何时接线；`deferred` 必须有决策与复查日期；
  *   - 输出按里程碑的 real/total、P0 real/total，供 quality-report/gate-check 使用。
  *
@@ -64,6 +66,18 @@ function pctText(value) {
 
 const errors = [];
 const warnings = [];
+
+// 1.16.0：TASK-* 只能作为“承接任务”，授权必须来自 DEC/RISK。
+// 只做存在性软校验：状态文件缺失时不阻断（交给 state-check/gate-check）。
+let authStateText = null;
+function authorizationExists(id) {
+  if (authStateText === null) {
+    const files = ["DECISIONS.md", "RISKS.md"].map((name) => path.join(project, ".ai-team", "state", name));
+    authStateText = files.filter((file) => fs.existsSync(file)).map((file) => read(file)).join("\n");
+  }
+  if (!authStateText.trim()) return true;
+  return authStateText.includes(id);
+}
 
 if (!fs.existsSync(mapFile)) {
   const message = `PAGE-MAP.json not found: ${mapFile}`;
@@ -145,8 +159,15 @@ function validateDeferral(page, due) {
   const decision = String(deferral.decision || "").trim();
   const reviewAt = String(deferral.review_at || "").trim();
   const trigger = String(deferral.upgrade_trigger || "").trim();
+  const authorizedBy = String(deferral.authorized_by || "").trim();
   if (!/^(DEC|RISK|TASK)-[A-Za-z0-9-]+$/.test(decision)) {
     errors.push(`${label}: deferral.decision must be DEC-*/RISK-*/TASK-* (got "${decision || "-"}")`);
+  } else if (/^TASK-/.test(decision)) {
+    if (!/^(DEC|RISK)-[A-Za-z0-9-]+$/.test(authorizedBy)) {
+      errors.push(`${label}: deferral.decision ${decision} requires deferral.authorized_by DEC-*/RISK-* (task alone is not an authorized deferral)`);
+    } else if (!authorizationExists(authorizedBy)) {
+      warnings.push(`${label}: deferral.authorized_by ${authorizedBy} not found in state/DECISIONS.md or state/RISKS.md`);
+    }
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(reviewAt)) {
     errors.push(`${label}: deferral.review_at must be YYYY-MM-DD (got "${reviewAt || "-"}")`);

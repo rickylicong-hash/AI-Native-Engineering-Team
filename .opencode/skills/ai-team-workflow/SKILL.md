@@ -442,7 +442,7 @@ node "$HOME\.config\opencode\skills\ai-team-workflow\scripts\team-shell.mjs" `
 `/ai-improve <project>` 由 `build` 维护者运行，用真实项目证据优化团队本身：
 
 1. 读取项目 `team/GROWTH.md`、`AUDIT.json`、最近 `TEAM-USAGE-AUDIT-*.md` 和交付证据；
-2. **五项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力（按 `docs/LARGE-PROJECTS.md`）、交付面覆盖与骨架闭环（`page-coverage-check.mjs`/`endpoint-coverage-check.mjs`）；每项给证据，缺证据写“数据缺口”；
+2. **五项强制检查**：目标偏移、流程与智能体效率、定义冲突/臃肿/重复/过期、大型项目能力（按 `docs/LARGE-PROJECTS.md`）、交付面覆盖与骨架闭环（`page-coverage-check.mjs`/`endpoint-coverage-check.mjs`；1.16.0 起端点按 `milestone` 校验到期项，`decision: TASK-*` 必须有 `authorized_by: DEC/RISK`，checkpoint 还要核对 `TASKS.md` 行）；每项给证据，缺证据写“数据缺口”；
 3. **历史成长曲线 + 上一轮达成**：运行 `improve-metrics.mjs --write` 比较最近 6–8 轮指标；运行 `improve-previous.mjs` 检查最新 `TEAM-IMPROVEMENT-*.md` 的任务 done/partial/missed/unverified；负成长必须当轮加优化任务，未达成项必须结转；
 4. 运行 `improve-scan.mjs --project <project>` 汇总会话、工具、权限拒绝、token 与角色分布；优先用 `gate-check.mjs --mode handoff` 做一次证据预检；
 5. 按 `NO-OP / DOCS-ONLY / PATCH / FEATURE / ROLE-GAP / DEFER` 决策，写项目侧报告；
@@ -738,6 +738,7 @@ Track / 阶段：
 交付面：<页面 ID（P-XXX-01）和/或端点（/v1/...）；无页面/端点写“不适用（无页面/端点）”；BE 无端点写“无端点：<理由>”>
 交付状态：<完整 | 骨架；骨架必须填下一行>
 骨架延期：<DEC-*/RISK-* + 复查日期 + 接线触发条件；非骨架写“不适用（完整交付）”>
+受影响 E2E/集成测试：<测试类/路径，或“不适用：<理由>”；鉴权/事务/存储映射变更必须列 E2E 类>
 验收标准：
 必须执行：
 脚本参数：以 `<script> --help` 实跑为准；不手抄参数

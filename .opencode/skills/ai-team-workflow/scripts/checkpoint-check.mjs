@@ -105,6 +105,41 @@ function countDone(text) {
   return done;
 }
 
+/**
+ * 1.16.0：checkpoint 提交必须在 TASKS.md 有行。
+ * 起因：riccon-ai 连续 3 个 checkpoint（TASK-GIT-086/087/088）只改了 CHECKPOINT/HANDOFF，
+ * TASKS.md 没有对应行，`state-check` 仍 PASS，账本与提交漂移却无人发现。
+ * 只看最近 50 条提交主题，避免历史噪声；git 不可用时跳过并给出 warning。
+ */
+function checkCheckpointTaskRows() {
+  const empty = { checked: 0, missing: [], skipped: null };
+  if (!fs.existsSync(tasksFile)) return { ...empty, skipped: "TASKS.md missing" };
+  const log = git(["log", "-50", "--pretty=%s"]);
+  if (log.status !== 0) return { ...empty, skipped: `git log failed: ${(log.stderr || "").trim().slice(0, 200)}` };
+  const tasksText = read(tasksFile);
+  const known = new Set();
+  for (const line of tasksText.split(/\r?\n/)) {
+    const match = line.match(/^\|\s*(TASK-[A-Za-z0-9-]+)\s*\|/);
+    if (match) known.add(match[1]);
+  }
+  const tokens = new Set();
+  for (const subject of (log.stdout || "").split(/\r?\n/)) {
+    for (const match of subject.matchAll(/\bTASK-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*/g)) tokens.add(match[0]);
+  }
+  // 提交主题里常带 baseline_id（TASK-GIT-082-4a3dcb1-run1），按“最长已知前缀”判定，
+  // 避免把证据指纹当成缺失任务。
+  const missing = [];
+  for (const token of tokens) {
+    const parts = token.split("-");
+    let found = false;
+    for (let end = parts.length; end >= 2; end -= 1) {
+      if (known.has(parts.slice(0, end).join("-"))) { found = true; break; }
+    }
+    if (!found) missing.push(token);
+  }
+  return { checked: tokens.size, missing: missing.sort(), skipped: null };
+}
+
 function detectStage() {
   if (!fs.existsSync(statusFile)) return "unknown";
   const match = read(statusFile).match(/^-\s*Stage:\s*([^\r\n]+)/m);
@@ -636,6 +671,9 @@ if (!artifactsOk) {
 const artifactErrors = artifactResult.errors;
 const artifactWarnings = artifactResult.warnings;
 
+// 1.16.0：只在 handoff/mark 时检查，避免普通调用额外跑 git log。
+const taskRows = handoff || mark ? checkCheckpointTaskRows() : { checked: 0, missing: [], skipped: "not-handoff" };
+
 const reasons = [];
 if (changed > 0) {
   if (handoff) reasons.push("handoff");
@@ -649,6 +687,7 @@ if (headViolations.length > 0) reasons.push("head-noncompliant");
 if (artifactErrors.length > 0) reasons.push(`artifacts-${artifactErrors.length}`);
 if (strict && artifactWarnings.length > 0) reasons.push(`artifact-warnings-${artifactWarnings.length}`);
 if (force) reasons.push("forced");
+if (taskRows.missing.length > 0) reasons.push(`checkpoint-task-row-${taskRows.missing.length}`);
 
 if (mark) {
   if (changed > 0) {
@@ -672,6 +711,12 @@ if (mark) {
   if (strict && artifactWarnings.length > 0) {
     const message = `working tree has ${artifactWarnings.length} artifact warning(s) under --strict; fix or omit --strict only with a documented risk`;
     if (json) console.log(JSON.stringify({ ok: false, error: message, artifacts: artifactResult }, null, 2));
+    else console.log(`ERROR  ${message}`);
+    process.exit(3);
+  }
+  if (taskRows.missing.length > 0) {
+    const message = `checkpoint commit(s) reference ${taskRows.missing.length} task(s) missing from TASKS.md: ${taskRows.missing.join(", ")}; add the rows before marking a checkpoint`;
+    if (json) console.log(JSON.stringify({ ok: false, error: message, task_rows: taskRows }, null, 2));
     else console.log(`ERROR  ${message}`);
     process.exit(3);
   }
@@ -700,8 +745,7 @@ if (mark) {
     `HANDOFF Git/Baseline = ${headCommit}`,
     `STATUS Checkpoint = ${headCommit} (done ${done})`,
     "run checkpoint-check --sync-docs (or update the two doc lines manually), then state-check",
-  ];
-  // 记录旧的 CHECKPOINT.json 内容，文档写盘失败时回滚，避免“已标记但未同步”。
+  ];  // 记录旧的 CHECKPOINT.json 内容，文档写盘失败时回滚，避免“已标记但未同步”。
   const previousCheckpoint = fs.existsSync(checkpointFile) ? read(checkpointFile) : null;
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(checkpointFile, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
@@ -756,6 +800,7 @@ if (json) {
     stage,
     checkpoint: fs.existsSync(checkpointFile) ? path.relative(project, checkpointFile).replace(/\\/g, "/") : null,
     headViolations,
+    task_rows: taskRows,
     strict,
     artifacts: {
       errors: artifactErrors,
@@ -785,6 +830,13 @@ if (json) {
   if (artifactWarnings.length > 3) console.log(`  ... and ${artifactWarnings.length - 3} more artifact warning(s)`);
   console.log(`due:      ${due ? "YES" : "no"}${due ? ` (${reasons.join(", ")})` : ""}`);
   if (warning) console.log(`warning:  ${warning}`);
+  if (taskRows.missing.length > 0) {
+    console.log(`ERROR     ${taskRows.missing.length} checkpoint task(s) missing from TASKS.md (checked ${taskRows.checked} ids in last 50 commits):`);
+    for (const id of taskRows.missing.slice(0, 10)) console.log(`          - ${id}`);
+    if (taskRows.missing.length > 10) console.log(`          ... and ${taskRows.missing.length - 10} more`);
+  } else if (taskRows.skipped) {
+    console.log(`task rows: skipped (${taskRows.skipped})`);
+  }
   if (headViolations.length > 0) {
     console.log(`warning:  HEAD ${headCommit} contains ${headViolations.length} forbidden path(s) (raw logs, secrets, build output); --mark will refuse it:`);
     for (const file of headViolations.slice(0, 10)) console.log(`          - ${file}`);

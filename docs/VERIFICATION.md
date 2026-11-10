@@ -4,7 +4,7 @@
 >
 > 环境：Windows 11 / PowerShell 5.1 / Node v24.15.0 / OpenCode `0.0.0-dev-202610161232`。
 >
-> 当前版本：**1.15.0**。§1 为 1.15.0 源验证；§2–§4 为 1.13.0/1.12.0/1.11.1 安装与历史基线；§5 为各版本历史记录，计数对应当时版本。
+> 当前版本：**1.16.0**。§1 为 1.16.0 源验证；§2–§4 为 1.13.0/1.12.0/1.11.1 安装与历史基线；§5 为各版本历史记录，计数对应当时版本。
 
 ## 1. 结构验证
 
@@ -1241,6 +1241,36 @@ riccon-ai 只读 pilot（临时 map，不提交）：
 page coverage:   M1 P0 12/47 (25.5%); 35 due P0 placeholders without deferral
 endpoint coverage: 9/195 mapped (4.6%); 186 missing
 ```
+
+### 5.52 交付面里程碑、延期授权与账本/度量可信度（1.16.0）
+
+- **`endpoint-coverage-check.mjs`**：`ENDPOINT-MAP.json` 可声明 `current_milestone`/`milestones`，每条写 `milestone`；到期里程碑的 `deferred` 必须有 DEC/RISK 授权，否则 FAIL；`--allow-missing-milestone` 作为迁移过渡。
+- **延期授权**：两个 coverage 脚本在 `deferral.decision` 为 `TASK-*` 时强制 `authorized_by: DEC-*/RISK-*`；授权 ID 在 `state/DECISIONS.md`/`RISKS.md` 查不到时 warning。
+- **`quality-report.mjs`**：标题同时审多个任务的 review 逐单归属；同文件同父任务去重；`-R<n>` 只认 `TASK-<id>-R<n>`；`P1 findings`/`P1 unattributed` 按文件去重。
+- **`checkpoint-check.mjs --handoff/--mark`**：最近 50 条提交主题里的 `TASK-*` 必须在 `TASKS.md` 有行（baseline_id 按最长已知前缀匹配），缺失即 FAIL。
+- **`brief-lint.mjs`**：engineer brief 必填 `受影响 E2E/集成测试`；鉴权/事务/存储映射变更不接受“不适用”；`Get-Content -Raw`/PowerShell 原生管道只 WARN。
+
+验证：
+
+```text
+source verify:                   234/234
+installed:                       220/220
+installed + OpenCode:            230/230
+test-gates:                      113/113
+audit-team-consistency:          229 checks, 0 failed
+permission-lint:                 590 checks, PASS
+version:                         source 1.16.0
+```
+
+riccon-ai 真实回归（只读 + 新增字段，不改业务代码）：
+
+```text
+checkpoint-check --handoff（修复前）: FAIL checkpoint-task-row-3（TASK-GIT-086/087/088 无 TASKS 行）
+quality-report（修复后）:            TASK-0264 归属 1 条 review；P1 findings 165（按文件去重）；P1 escapes 2
+endpoint coverage（M1 口径）:         deferred 端点缺 DEC/RISK → FAIL（由项目 TASK-IMPROVE-2026-11-10-R18 承接回填）
+```
+
+
 
 ## 6. 未执行项
 

@@ -233,7 +233,7 @@ node scripts/merge-default.mjs --config ~/.config/opencode/opencode.jsonc
 
 ### 验证
 
-以下数字以团队 1.15.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
+以下数字以团队 1.16.0 为准；新增 agent/command/skill 后计数会变化，以实际输出为准。
 
 ```bash
 # 1) 包结构验证（在仓库根目录）
@@ -470,9 +470,9 @@ DevOps 提交后运行 `checkpoint-check --mark --sync-docs`：记录 `state/CHE
 - **Worktree 清理（1.12.0）**：非 `--force` 的 `git worktree remove` 允许；只清理自己任务 brief 中 `构建隔离` 指定的 worktree，不删除他人工作区；`--force`/`-f` 仍 deny。
 - **角色边界是流程约定**：审查者只读、PM 只写产品、Chief 不提交等仍是团队规则，但不再有工具权限强制。
 - **质量报告与 CI（1.10.0）**：`quality-report.mjs` 从 `TASKS.md`/`reviews`/`security`/`qa` 计算一次通过率、review-ready、审查轮次、P1 findings/escapes；`.github/workflows/verify.yml` 在 push/PR 跑 verify、test-gates、permission、artifact、secret、review-check 与质量报告。指标是趋势，不是硬门禁。
-- **交付面覆盖（1.15.0）**：`page-coverage-check.mjs` 按 `PAGE-MAP.json` 校验当前里程碑 P0 页面：占位/骨架必须有 `DEC-*`/`RISK-*` + 复查日期 + 接线触发；`endpoint-coverage-check.mjs` 校验契约端点必须有实现证据或显式延期。`gate-check --mode gate` 自动运行，`checkpoint-check --sync-docs` 把 `Surface:` 写进 HANDOFF/STATUS。
+- **交付面覆盖（1.15.0 / 1.16.0）**：`page-coverage-check.mjs` 按 `PAGE-MAP.json` 校验当前里程碑 P0 页面：占位/骨架必须有 `DEC-*`/`RISK-*` + 复查日期 + 接线触发；`endpoint-coverage-check.mjs` 按 `ENDPOINT-MAP.json` 校验契约端点必须有实现证据或显式延期。1.16.0 起端点账本必须写 `milestone`，到期里程碑的延期必须有 DEC/RISK 授权；`deferral.decision` 写 `TASK-*` 时必须带 `authorized_by`。`checkpoint-check` 还会核对 checkpoint 提交在 `TASKS.md` 是否有行。
 - **所有权与离线 E2E（1.11.0）**：`ownership-check.mjs` 按 brief 的反引号 glob 校验 diff，越权/禁止路径 exit 1；`test-gates` 的 e2e fixture 串起 brief-lint → review-check → quality-report → ownership-check → artifact-check，不需要 provider/网络。
-- **Brief 自动化（P-24，1.9.4 验证预算；1.15.0 交付面）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`验证预算`、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`；engineer 还必须填 `Review-entry 自检`、`门禁面 ≤2`、`必然受影响测试/脚本`、`变更面`（FE/BE/full-stack/infra）、`交付面`（页面 ID/端点）、`交付状态`/`骨架延期`；查询/幂等/筛选任务填 `请求参数断言`。
+- **Brief 自动化（P-24，1.9.4 验证预算；1.15.0 交付面；1.16.0 E2E 面）**：`brief-new.mjs` 生成标准骨架；`brief-lint` 强制 `脚本参数`、`契约影响`、`验证预算`、`独立验证`、`证据位置`（UTF-8）、QA `测试路径`、Reviewer/Security `P2 处置`、`构建隔离`；engineer 还必须填 `Review-entry 自检`、`门禁面 ≤2`、`必然受影响测试/脚本`、`变更面`（FE/BE/full-stack/infra）、`交付面`（页面 ID/端点）、`交付状态`/`骨架延期`、`受影响 E2E/集成测试`；查询/幂等/筛选任务填 `请求参数断言`。brief 里出现 `Get-Content -Raw` 或 PowerShell 原生管道时 lint 只 WARN（P-73 canonical 命令口径）。
 - **证据脱敏（P-27/P-44，1.9.1 自适应）**：`secret-check.mjs` 扫描并脱敏 `Set-Cookie`/`Authorization`/Cookie/口令/token，默认 2000 文件起步；截断时自动升限到 20000，到上限仍截断才 `PARTIAL` + exit 3。findings 只输出 `kind/file/line/len/sha256`，不打印明文。`artifact-check`、`state-check`、`checkpoint-check --mark` 内置阻断。
 - **Checkpoint 收口（P-26）**：`checkpoint-check --mark --sync-docs` 自动同步 HANDOFF/STATUS，减少一次纯文档 subagent。
 - **升级后新会话（P-29）**：`version.mjs --update` 后必须新开会话/重启；旧会话可能仍使用旧权限缓存。
