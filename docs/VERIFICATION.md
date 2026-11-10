@@ -1267,7 +1267,7 @@ riccon-ai 真实回归（只读 + 新增字段，不改业务代码）：
 ```text
 checkpoint-check --handoff（修复前）: FAIL checkpoint-task-row-3（TASK-GIT-086/087/088 无 TASKS 行）
 quality-report（修复后）:            TASK-0264 归属 1 条 review；P1 findings 165（按文件去重）；P1 escapes 2
-endpoint coverage（M1 口径）:         deferred 端点缺 DEC/RISK → FAIL（由项目 TASK-IMPROVE-2026-11-10-R18 承接回填）
+endpoint coverage（M1 口径，回填后）: PASS（195/195；M1 due 64 impl + 55 deferred，DEC-0130 授权；milestone 缺失 0）
 ```
 
 
