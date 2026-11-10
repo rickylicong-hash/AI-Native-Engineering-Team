@@ -110,6 +110,7 @@ function isDocOnly(file) {
   const f = file.replace(/\\/g, "/");
   return /^docs\//.test(f)
     || /^\.ai-team\//.test(f)
+    || /^\.githooks\//.test(f)
     || /^(README|INSTALL|CHANGELOG|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT|LICENSE)(\.|$)/.test(f)
     || /^(AGENTS|CLAUDE)\.md$/.test(f)
     || /^opencode\.jsonc?$/.test(f)
@@ -232,7 +233,12 @@ try {
         const checkpointBehind = sameCommit(checkpointCommit, headCommit) || isAncestor(checkpointCommit, headCommit);
         const baselineBehind = isAncestor(baseline, checkpointCommit);
         if (checkpointBehind && baselineBehind) {
-          errors.push(`HANDOFF.md baseline=${baseline} is behind CHECKPOINT.json=${checkpointCommit}; update HANDOFF Git/Baseline to ${checkpointCommit}`);
+          const docs = docOnlySince(baseline, checkpointCommit);
+          if (docs.ok) {
+            warnings.push(`HANDOFF.md baseline=${baseline} is the frozen code candidate; CHECKPOINT=${checkpointCommit} is docs-only ahead`);
+          } else {
+            errors.push(`HANDOFF.md baseline=${baseline} is behind CHECKPOINT.json=${checkpointCommit}; update HANDOFF Git/Baseline to ${checkpointCommit}`);
+          }
         } else {
           warnings.push(`HANDOFF.md baseline=${baseline} differs from CHECKPOINT.json=${checkpointCommit}`);
         }

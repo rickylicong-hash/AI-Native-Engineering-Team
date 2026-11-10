@@ -12,6 +12,7 @@ Format based on Keep a Changelog; versioning follows SemVer.
 - **`improve-metrics` metric version**: snapshots now carry `metricVersion=2`; comparing against legacy snapshots emits an explicit warning instead of silently mixing definitions.
 - **`brief-lint` P-66**: engineer brief `所有权` must include a test path glob/list (or `无测试：<原因>`), and the brief must include `ownership-check --diff`; otherwise FAIL.
 - **`checkpoint-check` Baseline protection**: `--sync-docs` no longer rewrites the `Baseline` line's SHA; only `Git`/`远程`/`Retro`/`Growth`/`Checkpoint` are derived. This closes the GIT-075/RISK-0132 class where a docs checkpoint changed `baseline_id` to the checkpoint commit.
+- **`state-check` frozen-baseline compatibility**: `.githooks/**` is treated as tooling/doc-only; a frozen `Baseline` commit may stay behind a docs-only `CHECKPOINT` commit (warning, not error). A checkpoint with product-code changes still requires Baseline=checkpoint.
 
 ### Verified
 

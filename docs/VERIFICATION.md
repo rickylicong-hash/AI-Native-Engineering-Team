@@ -1200,6 +1200,7 @@ ownership-lint:                  19 checks, PASS
 - **improve-previous**：只读“本轮任务”表的 ID 列（支持 `# | ID` 两列格式），不从标题/证据路径误抽；`proposed/accepted/pending` 归 `unverified`，`in_progress` 归 `partial`，不再误报 `missed`。
 - **brief-lint**：engineer brief 的 `所有权` 必须含测试路径 glob/清单（或 `无测试：<理由>`），且 brief 必须写 `ownership-check --diff`；缺失 → FAIL。关闭 P-66。
 - **checkpoint-check Baseline 保护**：`--sync-docs` 不再改写 `Baseline` 行的 SHA，只更新 `Git`/`远程`/`Retro`/`Growth`/`Checkpoint`；避免文档 checkpoint 把 `baseline_id` 改成文档提交（RISK-0132/GIT-075）。
+- **state-check 冻结基线兼容**：`.githooks/**` 视为 tooling/doc-only；冻结的 `Baseline` 可以落后于 docs-only 的 `CHECKPOINT`（warning，不 error）；含产品代码的 checkpoint 仍要求 `Baseline=checkpoint`。
 - **fixtures**：`test-gates` 覆盖表格结论、review-task R1 不误判、unverified/window、brief 缺测试路径/缺 ownership-check、improve-previous 的 proposed/标题误抽。
 
 验证：
